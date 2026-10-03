@@ -412,9 +412,12 @@ async fn vekk_arbeidsflate(State(app): State<Arc<App>>, Path(kortnavn): Path<Str
 
 // ---------- Vekkesiden (dvale/vekke-mønsteret) ----------
 
-/// Caddy ruter hit ved upstream-feil (stoppet arbeidsflate): svarer 503 med
-/// en side som vekker containeren og laster originaladressen på nytt når
-/// den svarer. Tydelig feilmelding fremfor evig spinner (Skjermsamling F).
+/// Caddy ruter hit ved upstream-feil: svarer 503 med en side som laster
+/// originaladressen på nytt når flaten svarer. Tre tilfeller med hver sin
+/// tydelige melding (Skjermsamling F: aldri evig spinner):
+///   - kjørende, men ikke klar ennå → første oppstart («gjør seg klar»)
+///   - stoppet → dvale: vekkes automatisk, oppe på ~10 s
+///   - ukjent → 404 med vei tilbake til lobbyen
 async fn vekk_side(State(app): State<Arc<App>>, Path(sti): Path<String>) -> Response {
     // sti er originalstien uten ledende skråstrek, f.eks. "w/demo-x-jorn/..."
     let deler: Vec<&str> = sti.splitn(3, '/').collect();
@@ -422,14 +425,16 @@ async fn vekk_side(State(app): State<Arc<App>>, Path(sti): Path<String>) -> Resp
         ["w" | "web", navn, ..] => navn.to_string(),
         _ => String::new(),
     };
-    let kjent = !kortnavn.is_empty()
-        && app
-            .driver
+    let flate = if kortnavn.is_empty() {
+        None
+    } else {
+        app.driver
             .list()
             .await
-            .map(|f| f.iter().any(|w| w.kortnavn == kortnavn))
-            .unwrap_or(false);
-    if !kjent {
+            .ok()
+            .and_then(|f| f.into_iter().find(|w| w.kortnavn == kortnavn))
+    };
+    let Some(flate) = flate else {
         return (
             StatusCode::NOT_FOUND,
             Html(vekk_html(
@@ -440,25 +445,43 @@ async fn vekk_side(State(app): State<Arc<App>>, Path(sti): Path<String>) -> Resp
             )),
         )
             .into_response();
-    }
+    };
     let orig = format!("/{sti}");
-    (
-        StatusCode::SERVICE_UNAVAILABLE,
-        Html(vekk_html(
+    let (tittel, melding, vekk) = if flate.running {
+        (
+            "Arbeidsflaten gjør seg klar …",
+            "Prosjektet starter opp — første gang tar det gjerne et minutt \
+             mens pakkene installeres. Siden laster automatisk på nytt når \
+             alt er klart.",
+            None, // kjører allerede — ingenting å vekke
+        )
+    } else {
+        (
             "Arbeidsflaten vekkes …",
             "Arbeidsflaten har sovet (dvale etter inaktivitet) og startes nå. \
              Siden laster automatisk på nytt — det tar normalt rundt 10 sekunder.",
-            Some((&kortnavn, &orig)),
-        )),
+            Some(kortnavn.as_str()),
+        )
+    };
+    (
+        StatusCode::SERVICE_UNAVAILABLE,
+        Html(vekk_html(tittel, melding, Some((vekk, &orig)))),
     )
         .into_response()
 }
 
-fn vekk_html(tittel: &str, melding: &str, vekk: Option<(&str, &str)>) -> String {
+fn vekk_html(tittel: &str, melding: &str, vekk: Option<(Option<&str>, &str)>) -> String {
     let script = match vekk {
-        Some((kortnavn, orig)) => format!(
-            r#"<script>
-fetch('/api/arbeidsflater/{kortnavn}/vekk', {{method: 'POST'}}).catch(() => {{}});
+        Some((kortnavn, orig)) => {
+            let vekk_kall = match kortnavn {
+                Some(navn) => format!(
+                    "fetch('/api/arbeidsflater/{navn}/vekk', {{method: 'POST'}}).catch(() => {{}});"
+                ),
+                None => String::new(),
+            };
+            format!(
+                r#"<script>
+{vekk_kall}
 setInterval(async () => {{
   try {{
     const r = await fetch({orig:?}, {{cache: 'no-store'}});
@@ -466,7 +489,8 @@ setInterval(async () => {{
   }} catch (e) {{}}
 }}, 2000);
 </script>"#
-        ),
+            )
+        }
         None => String::new(),
     };
     format!(
