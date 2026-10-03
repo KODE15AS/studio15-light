@@ -7,9 +7,10 @@ de leveres. Chat 0 startet 2026-10-03.
 
 - «Erfaringsoverforing Studio15 LIGHT.docx» i `~/dev/studio15/` — hele
   rammen, fellene fra Studio 15 og rådene inn i Zoo Code.
-- Følgedokument: `docs/ERFARINGSOVERFORING-ZOO-CODE.md` i
-  `raven-skjermsamling` (per 03.10 på umerget gren
-  `cursor/skjermsamling-light-brief-24b6`) — samarbeidslaget (70"-veggen).
+- «Erfaringsoverføring: Skjermsamling → Studio 15 Light» (levert 03.10,
+  erstatter dokumentet på den umergede grenen i `raven-skjermsamling`) —
+  samarbeidslaget: 70"-veggen 50/50, se/peke/ta over, presence-protokollen,
+  kiosk-oppsettet (`wall/`), controller-mønsteret (`workspace.rs`, `hub.rs`).
 
 ## Målbilde
 
@@ -40,13 +41,33 @@ Fra kap. 10-avklaringene (erfaringsoverføringen):
 - **Felles master-nøkkel** i LLM-proxyen — kostnadsinnsyn per person
   legges eventuelt til senere med to virtuelle nøkler.
 
+Fra skjermsamling-avklaringene (03.10):
+
+- **Veggen viser begge per halvdel**: arbeidsflate (editor + Zoo Code-chat)
+  og den levende websiden side om side. Veggen er alltid read-only
+  (watch-modus), Ravens tastatur/mus brukes aldri.
+- **Prosjektvelger i lobbyen**: ett prosjekt = eget container/repo-sett,
+  persistent, startes/gjenopptas med klikk. Lobbyen er også vekkeside for
+  dvale/vekke-mønsteret.
+- **Sletting er sletting**: ett skript sletter containere, volumer OG
+  GitHub-repoet (etter eksplisitt bekreftelse) — ingen dangling repos.
+  Merk: PAT-en på raven dekker ikke KODE15AS; sletting av KODE15AS-repoer
+  trenger egen tilgang (avklares når skriptet bygges).
+- Se/peke/ta over videreføres uendret fra Skjermsamling (eierfarge, ghost-
+  cursors med navn, én ekstern controller, take/release broadcastes).
+- Designgrunnlag: `webprofil-kode15` (norm «web-profil»), med Skjermsamlings
+  `app.css` som referanse. Arbeid rett på `main` (norm «tbd»), ikke PR-flyt.
+
 ## Åpne punkter (agentarbeid, første byggetrinn)
 
 - [ ] Zoo Code-verifisering: utvidelses-ID, distribusjon (Open VSX?),
-      `.roomodes`-format, announcement-hack, ripgrep-fellen.
-- [ ] Hente følgedokumentet `docs/ERFARINGSOVERFORING-ZOO-CODE.md` fra
-      umerget gren `cursor/skjermsamling-light-brief-24b6` i
-      `raven-skjermsamling`.
+      `.roomodes`-format, announcement-hack, ripgrep-fellen. Bekreft at
+      arbeidsflaten er ren webapp (code-server) → ingen GUI-streaming.
+- [ ] Se/peke-laget over iframes: flatene må trolig serveres same-origin
+      via en intern reverse proxy i stacken (ikke offentlig ingress) for at
+      ghost-cursors skal kunne fanges i kollegaens flate. Undersøk også om
+      «ta over» kan realiseres med code-servers flerbruker-tilkobling i
+      stedet for input-streaming — før streaming-veien eventuelt velges.
 
 ## Leveranser
 
@@ -68,4 +89,14 @@ Fra kap. 10-avklaringene (erfaringsoverføringen):
 - [ ] Konfetti-testen: modus → proxy → modell → filredigering → synlig på
       levende webside.
 - [ ] To seter verifisert fra wifi med Tailscale.
-- [ ] 70"-visningen 50/50 (etter følgedokumentet fra raven-skjermsamling).
+- [ ] Lobby med prosjektvelger (= vekkeside): starte/gjenoppta prosjekt,
+      mock-driver for utvikling uten Docker (`WORKSPACE_DRIVER=mock`).
+- [ ] Presence-laget: roster-snapshot etter welcome, reconnect med
+      session-token + generasjonsteller, tile-relative cursor-koordinater,
+      se/peke/ta over.
+- [ ] 70"-veggen: kiosk helse-gatet mot /healthz, watch-modus (?watch=1),
+      begge halvdeler med arbeidsflate + levende webside
+      (kiosk-fellene fra `wall/`-skriptene: wmctrl på PID, DISPLAY-vakt,
+      autostart-mappe, fast skjerm).
+- [ ] Sletteskript: containere + volumer + GitHub-repo i én operasjon,
+      etter eksplisitt bekreftelse.
