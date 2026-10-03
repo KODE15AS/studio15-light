@@ -12,6 +12,8 @@ offentlig eksponering — med vilje.
 | Hva | Tilgang | URL |
 |---|---|---|
 | Lobbyen (program → prosjekt → arbeidsflate) | 🔒 Kun Tailscale | https://cadify104raven.tail14de1b.ts.net:8100 |
+| Samlingen (editor + webside + se/peke/ta over) | 🔒 Kun Tailscale | https://cadify104raven.tail14de1b.ts.net:8100/samling/\<program\>/\<prosjekt\>/ |
+| Veggen (70", read-only watch-modus) | 🔒 Kun Tailscale | https://cadify104raven.tail14de1b.ts.net:8100/vegg |
 | Arbeidsflate (per deltager) | 🔒 Kun Tailscale | https://cadify104raven.tail14de1b.ts.net:8100/w/\<flate\>/ |
 | Levende webside (per arbeidsflate) | 🔒 Kun Tailscale | https://cadify104raven.tail14de1b.ts.net:8100/web/\<flate\>/ |
 | Healthcheck (lobbyen) | 🔒 Kun Tailscale | https://cadify104raven.tail14de1b.ts.net:8100/healthz |
@@ -47,6 +49,14 @@ samme origin (forberedt for se/peke-laget i V2).
   Zoo Code 3.87.100557 (Open VSX, pinnet) med alle image-fiksene fra
   Studio 15 (chown på volum, Copilot fjernet, trust/velkomst av,
   ripgrep-symlink, autolagring, announcement-hack).
+- **Presence-laget (V2)**: se/peke/ta over per prosjekt. Samlingen
+  (`/samling/<program>/<prosjekt>/`) viser egen flate interaktivt og
+  kollegaens med peke-overlay (ghost-cursors med navn og eierfarge);
+  dobbeltklikk eller «Ta over» gir kontroll — realisert med code-servers
+  flerbrukertilkobling (avklart 03.10), IKKE input-streaming. Kun én
+  ekstern controller per flate; ta/slipp broadcastes. Veggen (`/vegg`)
+  er alltid read-only (watch-modus: joiner aldri, sender aldri input) og
+  viser begge halvdeler med editor + levende webside, rammer og badges.
 - **Nettskille** (lærdom betalt én gang): lobbyen ligger på et internt nett
   arbeidsflatene ikke kan rute til, og caddy avviser all trafikk fra
   arbeidsflate-subnettet. Arbeidsflater får aldri docker-socket, host-nett
@@ -89,13 +99,23 @@ Sletting er sletting: `skript/slett-prosjekt.sh <program> <prosjekt>`
 og registeroppføring i én operasjon etter eksplisitt bekreftelse.
 GitHub-repo/org-steget er manuelt til vaktmester-appen finnes.
 
+## Veggen (70"-skjermen på raven)
+
+Kiosk-oppsettet bor i `vegg/`: `installer-vegg.sh` legger `vegg-kiosk.sh`
+i Ravens autostart (og flytter Skjermsamlings wall-watcher til side — to
+kiosker kan ikke dele skjermen). Kiosken er helse-gatet mot `/healthz`,
+starter når 70"-skjermen (EDID-match) er tilkoblet og lukker seg når
+skjermen eller tjenesten forsvinner. Veggen vekker aldri sovende flater
+(`?watch=1` på vekkesiden).
+
 ## Testing
 
-Maskinell akseptansetest (konfetti-testens kjede, trygg å kjøre når som
-helst — engangsprosjektet slettes sporløst):
+Maskinelle tester (trygge å kjøre når som helst — engangsprosjektene
+slettes sporløst):
 
 ```sh
-skript/konfetti-test.sh
+skript/konfetti-test.sh    # hele kjeden, inkl. GitHub-varianten (vaktmesteren)
+skript/presence-test.sh    # 16-punkts protokolltest av se/peke/ta over
 ```
 
 Mennesketesten (full Zoo Code-kjede fra nettleser, begge seter over

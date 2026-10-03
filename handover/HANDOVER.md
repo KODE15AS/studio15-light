@@ -1,9 +1,10 @@
 # HANDOVER — Studio 15 LIGHT
 
 Levende spesifikasjon (norm «handover»). Punktene krysses av etter hvert som
-de leveres. Chat 0 startet 2026-10-03. Chat 1 leverte V1 samme dag — chat 2
-starter med `2026-10-03-handover-1-til-2.md` (byggeoppdrag: vaktmester-
-integrasjonen i lobbyen, deretter V2).
+de leveres. Chat 0 startet 2026-10-03. Chat 1 leverte V1 samme dag. Chat 2
+(samme dag) fullførte V1 (vaktmester-integrasjonen) og bygget V2 maskintestet
+grønt — gjenstår kun mennesketestene, resept i
+`2026-10-03-mennesketest-v2.md`.
 
 ## Grunnlag — les disse først
 
@@ -114,10 +115,13 @@ Hovedstruktur (Handover 0-grillingen, 03.10):
       bekreftet → ingen GUI-streaming. NYTT funn: Zoo viser en
       telemetri-dialog ved første oppstart — kveles med
       `telemetrySetting: "disabled"` i settings-malen.
-- [ ] Se/peke-laget over iframes (V2): same-origin-grunnlaget er alt på
-      plass — caddy serverer lobby, editorer og websider fra samme origin.
-      Gjenstår: undersøke om «ta over» kan realiseres med code-servers
-      flerbruker-tilkobling i stedet for input-streaming.
+- [x] Se/peke-laget over iframes (V2) — AVKLART og BYGGET (chat 2, 03.10):
+      «ta over» realiseres med code-servers flerbrukertilkobling (to
+      tilkoblinger til samme /w/<flate>/-URL har begge full kontroll —
+      maskinelt verifisert i nettleser, endring fra tilkobling B landet på
+      disk og var umiddelbart synlig i A). Ingen input-streaming. Presence-
+      laget broadcaster bare tilstand (hvem ser/peker/kontrollerer). Bonus:
+      code-server fungerer fint i same-origin-iframe.
 
 ## Leveranser
 
@@ -151,10 +155,15 @@ alt under levert av chat 1, 03.10):
       @KODE15AS (som er en personlig konto, ikke org — klikkelisten
       rettet), installert i `KODE15-saturday-test-2`. E2E-verifisert:
       JWT → installasjonstoken → repo opprettet i org → repo slettet.
-      Nøkkel i `certs/vaktmester.pem` + Bitwarden. GJENSTÅR neste trinn:
-      lobby-integrasjonen (prosjektrepo i org i stedet for bare-repo på
-      raven, push-tokens til arbeidsflater, repo-sletting i sletteregimet).
-      Til da bruker prosjektene bare-repoer på volumet `s15l-repos`.
+      Nøkkel i `certs/vaktmester.pem` + Bitwarden.
+- [x] Vaktmester-INTEGRASJONEN i lobbyen (chat 2, 03.10): program med org →
+      privat GitHub-repo opprettet/seedet i org-en; arbeidsflater henter
+      FERSKE repo-scopede tokens via POST /api/git-token (det ene
+      caddy-unntaket, per-flate-hemmelighet, HMAC — stateless); sletteregimet
+      sletter GitHub-repoet i samme operasjon. Programmer uten org bruker
+      fortsatt bare-repoer (repo-typen velges ved opprettelse). Lobbyen fikk
+      egress-nettet `s15l-ut` (s15l-front er internal). Konfetti-testen har
+      GitHub-variant — GRØNN 03.10.
 - [x] Lobby (webprofil-kode15, Rust/axum + Svelte 5): programregister
       (YAML i dette repoet), guidet org-opprettingsflyt med manuelle
       GitHub-steg, prosjektoppretting fra mal (Svelte 5 + Vite, pinnet),
@@ -188,12 +197,24 @@ alt under levert av chat 1, 03.10):
       chat 1. Sete 1 (Jørns PC) har alt vist lobby/editor/webside over
       Tailscale med gyldig HTTPS under nettlesertesten.
 
-V2 — samarbeidslaget:
+V2 — samarbeidslaget (bygget og maskintestet av chat 2, 03.10):
 
-- [ ] Presence-laget: roster-snapshot etter welcome, reconnect med
+- [x] Presence-laget (`lobby/src/presence.rs` + `/samling/<program>/
+      <prosjekt>/`): roster-snapshot etter welcome, reconnect med
       session-token + generasjonsteller, tile-relative cursor-koordinater,
-      se/peke/ta over.
-- [ ] 70"-veggen: kiosk helse-gatet mot /healthz, watch-modus (?watch=1),
-      begge halvdeler med arbeidsflate + levende webside
-      (kiosk-fellene fra `wall/`-skriptene: wmctrl på PID, DISPLAY-vakt,
-      autostart-mappe, fast skjerm).
+      se/peke (overlay + ghost-cursors), ta over (code-servers flerbruker-
+      tilkobling; kun én ekstern controller, ta/slipp broadcastes).
+      16-punkts protokolltest `skript/presence-test.sh` — GRØNN 03.10.
+      UI-verifisert i nettleser (ta over/slipp, badges, rammer).
+- [x] 70"-veggen, programvaren: `/vegg` (watch-modus — joiner aldri, sender
+      aldri input; auto-valg av prosjekt; begge halvdeler med editor +
+      levende webside, eierfarge-rammer, controller-badges, ghost-cursors).
+      Veggen vekker aldri sovende flater (?watch=1 på vekkesiden —
+      verifisert maskinelt). Kiosk-skriptene i `vegg/` med alle fellene
+      (wmctrl på PID, DISPLAY-vakt, autostart-MAPPE, helse-gate, frisk
+      profil, VEGG_POSISJON).
+- [ ] Fysisk verifisering på 70"-en (krever menneske på Ravens desktop):
+      kjør `vegg/installer-vegg.sh` (flytter Skjermsamlings wall-watcher
+      til side) — del av mennesketesten.
+- [ ] Omfattende mennesketest med Jørn — full resept i
+      `2026-10-03-mennesketest-v2.md` (inkl. sete 2 som gjenstår fra V1).
