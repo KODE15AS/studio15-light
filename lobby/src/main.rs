@@ -8,6 +8,7 @@
 
 mod driver;
 mod register;
+mod vaktmester;
 
 use axum::{
     extract::{Path, State},
@@ -37,6 +38,8 @@ pub struct Cfg {
     pub prosjektmal: String,
     pub repos_dir: String,
     pub webdir: String,
+    /// Hemmelighet for utledning av per-arbeidsflate-tokens (git-token-stien).
+    pub token_secret: String,
 }
 
 pub struct App {
@@ -45,6 +48,28 @@ pub struct App {
     pub driver: Driver,
     /// Siste aktivitet per arbeidsflate (kortnavn → unix-sekunder).
     pub activity: Mutex<HashMap<String, f64>>,
+    /// GitHub App-klienten — None når appen ikke er konfigurert.
+    pub vaktmester: Option<vaktmester::Vaktmester>,
+}
+
+/// Per-arbeidsflate-hemmelighet for /api/git-token: HMAC(token_secret,
+/// kortnavn). Stateless — lobbyen kan alltid regne den ut på nytt, og den
+/// overlever både lobby-restart og gjenskapte arbeidsflater.
+pub fn flate_hemmelighet(token_secret: &str, kortnavn: &str) -> String {
+    use hmac::Mac;
+    let mut mac = hmac::Hmac::<sha2::Sha256>::new_from_slice(token_secret.as_bytes())
+        .expect("HMAC tar nøkkel av vilkårlig lengde");
+    mac.update(kortnavn.as_bytes());
+    hex::encode(mac.finalize().into_bytes())
+}
+
+/// Sammenligning i konstant tid (hemmeligheter skal aldri time-lekkes).
+fn lik_konstant_tid(a: &str, b: &str) -> bool {
+    a.len() == b.len()
+        && a.bytes()
+            .zip(b.bytes())
+            .fold(0u8, |acc, (x, y)| acc | (x ^ y))
+            == 0
 }
 
 fn env_or(key: &str, default: &str) -> String {
@@ -199,30 +224,25 @@ struct NyttProsjekt {
     navn: String,
 }
 
-/// Oppretter prosjektets bare-repo på repos-volumet og seeder det fra
-/// prosjektmalen. Stand-in til vaktmester-appen gir ekte GitHub-repoer.
-fn seed_bare_repo(app: &App, repo_slug: &str, navn: &str) -> anyhow::Result<String> {
-    use std::process::Command;
-    let bare = format!("{}/{}.git", app.cfg.repos_dir, repo_slug);
-    let url = format!("file://{bare}");
-    if std::path::Path::new(&bare).exists() {
-        return Ok(url); // idempotent: «prøv igjen» er alltid trygt
+fn kjor(cmd: &mut std::process::Command) -> anyhow::Result<()> {
+    let out = cmd.output()?;
+    if !out.status.success() {
+        anyhow::bail!(
+            "{:?}: {}",
+            cmd.get_program(),
+            String::from_utf8_lossy(&out.stderr)
+        );
     }
-    let kjor = |cmd: &mut Command| -> anyhow::Result<()> {
-        let out = cmd.output()?;
-        if !out.status.success() {
-            anyhow::bail!(
-                "{:?}: {}",
-                cmd.get_program(),
-                String::from_utf8_lossy(&out.stderr)
-            );
-        }
-        Ok(())
-    };
-    kjor(Command::new("git").args(["init", "--bare", "-b", "main", &bare]))?;
+    Ok(())
+}
+
+/// Seeder et tomt remote-repo (bare-repo ELLER GitHub) fra prosjektmalen:
+/// git init → malen inn med navnefletting → commit → push HEAD:main.
+fn seed_fra_mal(app: &App, repo_slug: &str, navn: &str, remote: &str) -> anyhow::Result<()> {
+    use std::process::Command;
     let tmp = format!("/tmp/seed-{repo_slug}");
     let _ = std::fs::remove_dir_all(&tmp);
-    kjor(Command::new("git").args(["clone", &bare, &tmp]))?;
+    kjor(Command::new("git").args(["init", "-b", "main", &tmp]))?;
     kjor(Command::new("cp").args(["-rT", &app.cfg.prosjektmal, &tmp]))?;
     // Flett prosjektnavnet inn i malen
     for fil in ["package.json", "index.html", "src/App.svelte"] {
@@ -241,12 +261,51 @@ fn seed_bare_repo(app: &App, repo_slug: &str, navn: &str) -> anyhow::Result<Stri
         "-c", "user.email=lobby@studio15-light.lokal",
         "commit", "-m", "Prosjekt opprettet fra malen",
     ]))?;
-    kjor(Command::new("git").args(["-C", &tmp, "push", "origin", "HEAD:main"]))?;
+    kjor(Command::new("git").args(["-C", &tmp, "push", remote, "HEAD:main"]))?;
     let _ = std::fs::remove_dir_all(&tmp);
+    Ok(())
+}
+
+/// Oppretter prosjektets bare-repo på repos-volumet og seeder det fra
+/// prosjektmalen. Brukes av programmer UTEN GitHub-org (lokale prosjekter).
+fn seed_bare_repo(app: &App, repo_slug: &str, navn: &str) -> anyhow::Result<String> {
+    use std::process::Command;
+    let bare = format!("{}/{}.git", app.cfg.repos_dir, repo_slug);
+    let url = format!("file://{bare}");
+    if std::path::Path::new(&bare).exists() {
+        return Ok(url); // idempotent: «prøv igjen» er alltid trygt
+    }
+    kjor(Command::new("git").args(["init", "--bare", "-b", "main", &bare]))?;
+    seed_fra_mal(app, repo_slug, navn, &url)?;
     // Arbeidsflatene kjører som coder (uid 1000) og skal både klone fra og
     // pushe til repoet — lobbyen kjører som root, så eierskapet må over
     // (samme klasse felle som testfunn 10: root-eide volumer).
     kjor(Command::new("chown").args(["-R", "1000:1000", &bare]))?;
+    Ok(url)
+}
+
+/// Oppretter prosjektrepoet i programmets GitHub-org via vaktmesteren og
+/// seeder det fra malen (push med ferskt installasjonstoken — tokenet
+/// lever 1 time og havner aldri i registeret eller miljøvariabler).
+async fn seed_github_repo(
+    app: &App,
+    org: &str,
+    repo_slug: &str,
+    navn: &str,
+) -> anyhow::Result<String> {
+    let vm = app
+        .vaktmester
+        .as_ref()
+        .ok_or_else(|| anyhow::anyhow!(
+            "programmet har GitHub-org, men vaktmester-appen er ikke konfigurert \
+             (GITHUB_APP_ID/GITHUB_APP_KEY_FILE i .env)"
+        ))?;
+    let url = vm.opprett_repo(org, repo_slug).await?;
+    let tok = vm.repo_token(org, repo_slug).await?;
+    let auth = format!("https://x-access-token:{}@github.com/{org}/{repo_slug}.git", tok.token);
+    // Tokenet må aldri lekke i feilmeldinger (git siterer gjerne URL-en).
+    seed_fra_mal(app, repo_slug, navn, &auth)
+        .map_err(|e| anyhow::anyhow!("{}", e.to_string().replace(&tok.token, "***")))?;
     Ok(url)
 }
 
@@ -262,9 +321,18 @@ async fn nytt_prosjekt(State(app): State<Arc<App>>, Json(b): Json<NyttProsjekt>)
     if prog.prosjekter.iter().any(|p| p.slug == slug) {
         return feil(StatusCode::CONFLICT, "prosjektet finnes allerede");
     }
+    // Repo-typen velges ved opprettelse: GitHub-repo i program-org-en når
+    // org finnes (vaktmesteren), ellers bare-repo på repos-volumet.
     let repo_slug = format!("{}-{}", prog.slug, slug);
+    let github_org = prog.github_org.clone();
     let repo = if app.driver.is_mock() {
         format!("file:///repos/{repo_slug}.git")
+    } else if let Some(org) = &github_org {
+        // Repo-navnet i org-en er prosjekt-sluggen (org-en ER programmet).
+        match seed_github_repo(&app, org, &slug, &b.navn).await {
+            Ok(u) => u,
+            Err(e) => return feil(StatusCode::INTERNAL_SERVER_ERROR, &format!("github: {e}")),
+        }
     } else {
         match seed_bare_repo(&app, &repo_slug, &b.navn) {
             Ok(u) => u,
@@ -305,9 +373,10 @@ async fn slett_prosjekt(
     let Some(prog) = reg.programmer.iter_mut().find(|p| p.slug == program) else {
         return feil(StatusCode::NOT_FOUND, "ukjent program");
     };
-    if !prog.prosjekter.iter().any(|p| p.slug == prosjekt) {
+    let Some(pr) = prog.prosjekter.iter().find(|p| p.slug == prosjekt) else {
         return feil(StatusCode::NOT_FOUND, "ukjent prosjekt");
-    }
+    };
+    let repo_url = pr.repo.clone();
     // 1) alle arbeidsflater (containere + volumer)
     let flater = match app.driver.list().await {
         Ok(f) => f,
@@ -318,8 +387,23 @@ async fn slett_prosjekt(
             return feil(StatusCode::INTERNAL_SERVER_ERROR, &format!("sletting: {e}"));
         }
     }
-    // 2) prosjektrepoet på volumet
-    if !app.driver.is_mock() {
+    // 2) prosjektrepoet — GitHub-repo via vaktmesteren, ellers bare-repoet
+    //    på volumet. Feiler GitHub-sletting, blir prosjektet stående i
+    //    registeret så slettingen kan prøves igjen (sletting er sletting —
+    //    ingen dangling repos).
+    let mut github_slettet = false;
+    if let Some((org, repo)) = vaktmester::parse_github_url(&repo_url) {
+        let Some(vm) = &app.vaktmester else {
+            return feil(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "prosjektet har GitHub-repo, men vaktmesteren er ikke konfigurert",
+            );
+        };
+        if let Err(e) = vm.slett_repo(&org, &repo).await {
+            return feil(StatusCode::INTERNAL_SERVER_ERROR, &format!("github: {e}"));
+        }
+        github_slettet = true;
+    } else if !app.driver.is_mock() {
         let bare = format!("{}/{}-{}.git", app.cfg.repos_dir, program, prosjekt);
         let _ = std::fs::remove_dir_all(&bare);
     }
@@ -330,10 +414,68 @@ async fn slett_prosjekt(
     }
     Json(json!({
         "slettet": prosjekt,
-        "manuelt": "Finnes prosjektet også som GitHub-repo, slettes det manuelt \
-                    (vaktmester-appen automatiserer dette senere)."
+        "github_repo_slettet": github_slettet,
+        "manuelt": if github_slettet {
+            "Ingenting — GitHub-repoet er slettet av vaktmesteren. \
+             (Org-sletting er fortsatt manuell hvis hele programmet legges ned.)"
+        } else {
+            "Lokalt prosjekt — ingenting å gjøre på GitHub."
+        }
     }))
     .into_response()
+}
+
+// ---------- Git-tokens til arbeidsflatene ----------
+
+#[derive(Deserialize)]
+struct GitTokenReq {
+    kortnavn: String,
+    hemmelighet: String,
+}
+
+/// DET ENE unntaket i caddy-vakten (se Caddyfile): arbeidsflater kan POSTe
+/// hit for å få et FERSKT installasjonstoken scopet til sitt eget repo
+/// (contents: write, 1 times levetid). Autentisering: per-arbeidsflate-
+/// hemmelighet (HMAC av kortnavnet) satt som env ved opprettelse.
+/// Arbeidsflaten kan aldri få token til andre repoer enn sitt eget.
+async fn git_token(State(app): State<Arc<App>>, Json(b): Json<GitTokenReq>) -> Response {
+    if app.cfg.token_secret.is_empty() {
+        return feil(StatusCode::SERVICE_UNAVAILABLE, "token-tjenesten er ikke konfigurert");
+    }
+    let riktig = flate_hemmelighet(&app.cfg.token_secret, &b.kortnavn);
+    if !lik_konstant_tid(&riktig, &b.hemmelighet) {
+        return feil(StatusCode::FORBIDDEN, "ugyldig arbeidsflate-hemmelighet");
+    }
+    // Arbeidsflaten må finnes — kortnavnet gir program/prosjekt via labels.
+    let flater = match app.driver.list().await {
+        Ok(f) => f,
+        Err(e) => return feil(StatusCode::INTERNAL_SERVER_ERROR, &format!("docker: {e}")),
+    };
+    let Some(w) = flater.into_iter().find(|w| w.kortnavn == b.kortnavn) else {
+        return feil(StatusCode::NOT_FOUND, "ukjent arbeidsflate");
+    };
+    let repo_url = {
+        let reg = app.register.lock().await;
+        let Some(pr) = reg
+            .programmer
+            .iter()
+            .find(|p| p.slug == w.program)
+            .and_then(|p| p.prosjekter.iter().find(|pr| pr.slug == w.prosjekt))
+        else {
+            return feil(StatusCode::NOT_FOUND, "arbeidsflaten hører ikke til noe prosjekt");
+        };
+        pr.repo.clone()
+    };
+    let Some((org, repo)) = vaktmester::parse_github_url(&repo_url) else {
+        return feil(StatusCode::BAD_REQUEST, "prosjektet bruker lokalt repo — trenger ikke token");
+    };
+    let Some(vm) = &app.vaktmester else {
+        return feil(StatusCode::SERVICE_UNAVAILABLE, "vaktmesteren er ikke konfigurert");
+    };
+    match vm.repo_token(&org, &repo).await {
+        Ok(t) => Json(json!({ "token": t.token, "utloper": t.expires_at })).into_response(),
+        Err(e) => feil(StatusCode::INTERNAL_SERVER_ERROR, &format!("github: {e}")),
+    }
 }
 
 // ---------- Arbeidsflater ----------
@@ -363,6 +505,18 @@ async fn ny_arbeidsflate(State(app): State<Arc<App>>, Json(b): Json<NyArbeidsfla
         (pr.repo.clone(), pr.navn.clone())
     };
     let kortnavn = format!("{}-{}-{}", b.program, b.prosjekt, deltager);
+    // GitHub-prosjekter: arbeidsflaten får en per-flate-hemmelighet og
+    // henter ferske repo-scopede tokens via /api/git-token ved hver
+    // push/pull (tokens lever 1 time — aldri fast i miljøet).
+    let mut git_env = vec![];
+    if vaktmester::parse_github_url(&repo).is_some() && !app.cfg.token_secret.is_empty() {
+        git_env.push(format!("WS_KORTNAVN={kortnavn}"));
+        git_env.push(format!(
+            "GIT_TOKEN_SECRET={}",
+            flate_hemmelighet(&app.cfg.token_secret, &kortnavn)
+        ));
+        git_env.push("GIT_TOKEN_URL=https://s15l-caddy:8100/api/git-token".to_string());
+    }
     let spec = WsSpec {
         kortnavn: kortnavn.clone(),
         program: b.program.clone(),
@@ -379,7 +533,10 @@ async fn ny_arbeidsflate(State(app): State<Arc<App>>, Json(b): Json<NyArbeidsfla
             format!("EDITOR_URL={}/w/{}/", app.cfg.public_base, kortnavn),
             "LLM_PROXY_BASE=http://s15l-litellm:4000/v1".to_string(),
             format!("LLM_PROXY_KEY={}", app.cfg.proxy_key),
-        ],
+        ]
+        .into_iter()
+        .chain(git_env)
+        .collect(),
     };
     if let Err(e) = app.driver.ensure_workspace(&spec).await {
         return feil(StatusCode::INTERNAL_SERVER_ERROR, &format!("docker: {e}"));
@@ -581,6 +738,7 @@ async fn main() -> anyhow::Result<()> {
         prosjektmal: env_or("PROSJEKTMAL", "/opt/prosjektmal"),
         repos_dir: env_or("REPOS_DIR", "/repos"),
         webdir: env_or("WEBDIR", "/opt/lobby/web"),
+        token_secret: env_or("S15L_TOKEN_SECRET", ""),
     };
     let driver = if env_or("WORKSPACE_DRIVER", "docker") == "mock" {
         Driver::new_mock()
@@ -593,6 +751,7 @@ async fn main() -> anyhow::Result<()> {
         register: Mutex::new(register),
         driver,
         activity: Mutex::new(HashMap::new()),
+        vaktmester: vaktmester::Vaktmester::fra_env(),
     });
 
     tokio::spawn(reaper(app.clone()));
@@ -608,6 +767,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/prosjekter", post(nytt_prosjekt))
         .route("/api/prosjekter/{program}/{prosjekt}", delete(slett_prosjekt))
         .route("/api/arbeidsflater", post(ny_arbeidsflate))
+        .route("/api/git-token", post(git_token))
         .route("/api/arbeidsflater/{kortnavn}/stopp", post(stopp_arbeidsflate))
         .route("/api/arbeidsflater/{kortnavn}/vekk", post(vekk_arbeidsflate))
         .route("/vekk/{*sti}", get(vekk_side))

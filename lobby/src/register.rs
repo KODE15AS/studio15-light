@@ -8,8 +8,9 @@ use serde::{Deserialize, Serialize};
 pub struct Prosjekt {
     pub slug: String,
     pub navn: String,
-    /// git-URL arbeidsflatene kloner fra. file:///repos/<slug>.git til
-    /// vaktmester-appen gir ekte GitHub-repoer.
+    /// git-URL arbeidsflatene kloner fra. Typen velges ved opprettelse:
+    /// https://github.com/<org>/<slug>.git (program med org, vaktmesteren)
+    /// eller file:///repos/<slug>.git (lokalt bare-repo).
     pub repo: String,
 }
 

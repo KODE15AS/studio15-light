@@ -159,9 +159,9 @@
               <li>Org-navn: bruk programnavnet med KODE15-prefiks, f.eks. <code>KODE15-&lt;program&gt;</code>.</li>
               <li>Eier: KODE15-kontoen. Ikke inviter medlemmer.</li>
               <li>
-                Installer vaktmester-appen på org-en når den finnes (se
-                <code>docs/vaktmester-klikkeliste.md</code>) — til da bruker
-                prosjektene lokale git-repoer på raven.
+                Installer vaktmester-appen på org-en (se
+                <code>docs/vaktmester-klikkeliste.md</code>) — da oppretter og
+                sletter lobbyen prosjektrepoene i org-en automatisk.
               </li>
             </ol>
             <p>
@@ -189,8 +189,9 @@
         <h2>{programmet.navn}</h2>
         {#if !programmet.github_org}
           <p class="hint">
-            GitHub-org mangler ennå — prosjektene bruker lokale git-repoer på
-            raven til vaktmester-appen er på plass.
+            Programmet har ingen GitHub-org — nye prosjekter får lokale
+            git-repoer på raven. (Repo-typen velges ved opprettelse; med org
+            lager vaktmesteren private GitHub-repoer automatisk.)
           </p>
         {/if}
 

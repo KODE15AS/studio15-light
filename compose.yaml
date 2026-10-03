@@ -32,7 +32,7 @@ services:
     env_file: .env
     environment:
       WORKSPACE_DRIVER: docker
-      WORKSPACE_IMAGE: studio15-light-arbeidsflate:v1
+      WORKSPACE_IMAGE: studio15-light-arbeidsflate:v2
       WORKSPACE_NETWORK: s15l-workspaces
       REPOS_VOLUME: s15l-repos
       PUBLIC_BASE: https://cadify104raven.tail14de1b.ts.net:8100
@@ -43,10 +43,15 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./register:/data/register
+      # Vaktmester-nøkkelen (GITHUB_APP_KEY_FILE) — kun lest, aldri i git
+      - ./certs:/certs:ro
       - s15l-repos:/repos
       - s15l-logs:/logs:ro
     networks:
       - front
+      # Egress til api.github.com/github.com for vaktmesteren — s15l-ut har
+      # ingen andre tjenester, så arbeidsflatene når fortsatt ikke lobbyen.
+      - ut
 
   litellm:
     image: ghcr.io/berriai/litellm:v1.103.2
@@ -64,6 +69,10 @@ networks:
   front:
     name: s15l-front
     internal: true
+  # Egress-nett KUN for lobbyen (vaktmesterens GitHub-kall). Ingen
+  # arbeidsflater her — nettskillet fra testfunn 22 står urørt.
+  ut:
+    name: s15l-ut
   # Arbeidsflate-nettet: caddy, litellm og arbeidsflatene. Fast subnett
   # slik at caddy-vakten kan blokkere på kilde-IP.
   workspaces:

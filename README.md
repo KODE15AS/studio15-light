@@ -51,11 +51,16 @@ samme origin (forberedt for se/peke-laget i V2).
   arbeidsflatene ikke kan rute til, og caddy avviser all trafikk fra
   arbeidsflate-subnettet. Arbeidsflater får aldri docker-socket, host-nett
   eller GPU.
-- **Prosjektrepoer**: til vaktmester-appen (GitHub App, se
-  `docs/vaktmester-klikkeliste.md`) er på plass, bor prosjektenes git-repoer
-  som bare-repoer på volumet `s15l-repos` (`file:///repos/<slug>.git`).
+- **Prosjektrepoer** — typen velges ved opprettelse og kan ikke endres:
+  har programmet GitHub-org, oppretter vaktmesteren (GitHub App, se
+  `docs/vaktmester-klikkeliste.md`) et privat repo i org-en; uten org bor
+  repoet som bare-repo på volumet `s15l-repos` (`file:///repos/<slug>.git`).
   Begge arbeidsflater kloner fra og pusher til samme repo; autosave
-  committer og pusher hvert 2. minutt.
+  committer og pusher hvert 2. minutt. GitHub-push autentiseres med FERSKE
+  repo-scopede installasjonstokens (1 times levetid) som arbeidsflaten
+  henter via `POST /api/git-token` — det ene, dokumenterte unntaket i
+  caddy-vakten (autentisert med per-arbeidsflate-hemmelighet; utsteder kun
+  token til flatens eget repo).
 
 ## Kjøring
 
@@ -63,7 +68,7 @@ samme origin (forberedt for se/peke-laget i V2).
 # Forutsetninger (én gang): .env fra .env.example (chmod 600) og sertifikat:
 skript/hent-sertifikat.sh
 
-docker build -t studio15-light-arbeidsflate:v1 arbeidsflate/
+docker build -t studio15-light-arbeidsflate:v2 arbeidsflate/
 docker compose up -d --build
 ```
 

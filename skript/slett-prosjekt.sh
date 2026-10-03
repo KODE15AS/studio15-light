@@ -26,6 +26,6 @@ curl -fsS -X DELETE "$BASE/api/prosjekter/$PROGRAM/$PROSJEKT" \
   -H "Content-Type: application/json" \
   -d "{\"bekreft\": \"$PROSJEKT\"}"
 echo
-echo "Manuelt gjenstår (til vaktmester-appen finnes): slett eventuelt"
-echo "GitHub-repo, og GitHub-org-en hvis hele programmet legges ned"
+echo "GitHub-repoet (hvis prosjektet hadde et) er slettet av vaktmesteren."
+echo "Manuelt gjenstår kun GitHub-org-en hvis hele programmet legges ned"
 echo "(org-sletting er GitHubs ene manuelle unntak)."

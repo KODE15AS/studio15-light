@@ -27,6 +27,33 @@ git config --global init.defaultBranch main
 # system, så git sin eierskapssjekk («dubious ownership») er bare i veien.
 git config --global --add safe.directory '*'
 
+# GitHub-prosjekter: credential helper som henter FERSKT repo-scopet
+# installasjonstoken fra lobbyen ved hver push/pull (Studio 15-mønsteret —
+# tokens lever 1 time og ligger aldri fast i miljøet). Autentisering:
+# per-arbeidsflate-hemmelighet (GIT_TOKEN_SECRET) satt av lobbyen ved
+# opprettelse. Kallet går gjennom caddys ENE vakt-unntak (/api/git-token);
+# -k fordi sertifikatet er utstedt for tailnett-navnet, ikke containernavnet
+# (lukket docker-nett).
+case "${PROJECT_REPO:-}" in
+  https://github.com/*)
+    mkdir -p /home/coder/.local/bin
+    cat > /home/coder/.local/bin/git-credential-s15l <<'HELPER'
+#!/bin/sh
+[ "$1" = "get" ] || exit 0
+svar=$(curl -fsSk -m 15 -X POST "$GIT_TOKEN_URL" \
+  -H "Content-Type: application/json" \
+  -d "{\"kortnavn\":\"$WS_KORTNAVN\",\"hemmelighet\":\"$GIT_TOKEN_SECRET\"}") || {
+  echo "git-credential-s15l: fikk ikke token fra lobbyen" >&2; exit 1; }
+token=$(printf '%s' "$svar" | sed -n 's/.*"token" *: *"\([^"]*\)".*/\1/p')
+[ -n "$token" ] || { echo "git-credential-s15l: tomt token i svaret" >&2; exit 1; }
+echo "username=x-access-token"
+echo "password=$token"
+HELPER
+    chmod 700 /home/coder/.local/bin/git-credential-s15l
+    git config --global credential.helper /home/coder/.local/bin/git-credential-s15l
+    ;;
+esac
+
 if [ -n "${PROJECT_REPO:-}" ] && [ -z "$(ls -A "$PROJECT_DIR")" ]; then
   git clone "$PROJECT_REPO" "$PROJECT_DIR"
 fi

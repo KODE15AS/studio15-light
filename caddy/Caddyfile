@@ -25,6 +25,19 @@
 		format json
 	}
 
+	# DET ENE unntaket fra vakten under: arbeidsflater må kunne hente
+	# ferske git-tokens (repo-scopet, 1 times levetid) for push/pull mot
+	# GitHub. Endepunktet autentiserer med per-arbeidsflate-hemmelighet
+	# og utsteder KUN token til flatens eget repo. Hold unntaket minimalt:
+	# kun POST, kun denne ene stien.
+	@gittoken {
+		path /api/git-token
+		method POST
+	}
+	handle @gittoken {
+		reverse_proxy s15l-lobby:8200
+	}
+
 	# Vakt fra testfunn 22: arbeidsflate-containere (med terminal) skal
 	# aldri nå styrende tjenester. De deler docker-nett med caddy (for at
 	# caddy skal nå dem), så alt som KOMMER FRA arbeidsflate-subnettet

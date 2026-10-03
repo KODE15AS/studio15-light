@@ -113,6 +113,84 @@ docker volume ls --format '{{.Name}}' | grep -q "^$CONTAINER$" && feil "volumet 
 api DELETE "/api/programmer/$PROGRAM" "{\"bekreft\": \"$PROGRAM\"}" >/dev/null
 gronn "  ✓ sletting fjernet container, volum, repo og testprogrammet"
 
+# ===== GitHub-varianten (vaktmester-integrasjonen) =====
+# Eget testrepo i program-org-en — opprettes, pushes til og slettes sporløst.
+# Hopp over med KONFETTI_GITHUB=0 (f.eks. der vaktmesteren ikke er satt opp).
+if [ "${KONFETTI_GITHUB:-1}" = "1" ]; then
+  GPROGRAM="maskintest-github"
+  GORG="${KONFETTI_ORG:-KODE15-saturday-test-2}"
+  GPROSJEKT="konfetti-gh"
+  GKORT="$GPROGRAM-$GPROSJEKT-$DELTAGER"
+  GCONTAINER="s15l-ws-$GKORT"
+
+  echo
+  echo "== GitHub-varianten (org: $GORG) =="
+
+  rydd_gh() {
+    api DELETE "/api/prosjekter/$GPROGRAM/$GPROSJEKT" "{\"bekreft\": \"$GPROSJEKT\"}" >/dev/null 2>&1 || true
+    api DELETE "/api/programmer/$GPROGRAM" "{\"bekreft\": \"$GPROGRAM\"}" >/dev/null 2>&1 || true
+  }
+  rydd_gh
+
+  # 8) Program med org + prosjekt → repo opprettes og seedes på GitHub
+  api POST /api/programmer "{\"navn\": \"Maskintest GitHub\", \"github_org\": \"$GORG\"}" >/dev/null 2>&1 || true
+  api POST /api/prosjekter "{\"program\": \"$GPROGRAM\", \"navn\": \"Konfetti GH\"}" >/dev/null
+  REPO=$(api GET /api/tilstand | python3 -c '
+import json, sys
+data = json.load(sys.stdin)
+for p in data["programmer"]:
+    if p["slug"] == "maskintest-github":
+        for pr in p["prosjekter"]:
+            if pr["slug"] == "konfetti-gh":
+                print(pr["repo"])
+')
+  [ "$REPO" = "https://github.com/$GORG/konfetti-gh.git" ] \
+    || feil "uventet repo-URL i registeret: $REPO"
+  gronn "  ✓ GitHub-repo opprettet og seedet i $GORG"
+
+  # 9) Arbeidsflaten kloner det PRIVATE repoet via git-token-stien
+  api POST /api/arbeidsflater \
+    "{\"program\": \"$GPROGRAM\", \"prosjekt\": \"$GPROSJEKT\", \"deltager\": \"$DELTAGER\"}" >/dev/null
+  vent_paa "code-server (/w/$GKORT/healthz)" 90 curl -fsS "$BASE/w/$GKORT/healthz"
+  sjekk_gh_webside() {
+    curl -fsS "$BASE/web/$GKORT/" | grep -q "Konfetti GH"
+  }
+  vent_paa "websiden fra GitHub-klonen" 300 sjekk_gh_webside
+  gronn "  ✓ privat GitHub-repo klonet i arbeidsflaten (credential helper)"
+
+  # 10) Push fra arbeidsflaten med ferskt repo-scopet token
+  docker exec -u coder "$GCONTAINER" sh -c '
+    cd /home/coder/project &&
+    echo "push-test $(date +%s)" > PUSHTEST.md &&
+    git add PUSHTEST.md &&
+    git commit -q -m "maskintest: push via git-token" &&
+    git push -q origin HEAD:main
+  ' || feil "push fra arbeidsflaten feilet (git-token-stien)"
+  LOKAL=$(docker exec -u coder "$GCONTAINER" sh -c 'cd /home/coder/project && git rev-parse HEAD')
+  FJERN=$(docker exec -u coder "$GCONTAINER" sh -c 'cd /home/coder/project && git ls-remote origin main | cut -f1')
+  [ "$LOKAL" = "$FJERN" ] || feil "push nådde ikke GitHub (lokal $LOKAL ≠ fjern $FJERN)"
+  gronn "  ✓ push fra arbeidsflaten landet på GitHub (ferskt token per push)"
+
+  # 11) Token-vakten: feil hemmelighet avvises; GET når aldri endepunktet
+  if docker exec "$GCONTAINER" sh -c 'curl -fsSk -m 5 -X POST "$GIT_TOKEN_URL" \
+      -H "Content-Type: application/json" \
+      -d "{\"kortnavn\":\"'"$GKORT"'\",\"hemmelighet\":\"feil-hemmelighet\"}"' >/dev/null 2>&1; then
+    feil "git-token-endepunktet godtok feil hemmelighet!"
+  fi
+  if docker exec "$GCONTAINER" sh -c 'curl -fsSk -m 5 "$GIT_TOKEN_URL"' >/dev/null 2>&1; then
+    feil "GET mot /api/git-token slapp forbi caddy-vakten!"
+  fi
+  gronn "  ✓ token-vakten: feil hemmelighet → 403, GET → blokkert"
+
+  # 12) Sletting fjerner også GitHub-repoet
+  SLETTSVAR=$(api DELETE "/api/prosjekter/$GPROGRAM/$GPROSJEKT" "{\"bekreft\": \"$GPROSJEKT\"}")
+  echo "$SLETTSVAR" | grep -q '"github_repo_slettet":true' \
+    || feil "GitHub-repoet ble ikke slettet: $SLETTSVAR"
+  docker ps -a --format '{{.Names}}' | grep -q "^$GCONTAINER$" && feil "containeren finnes fortsatt"
+  api DELETE "/api/programmer/$GPROGRAM" "{\"bekreft\": \"$GPROGRAM\"}" >/dev/null
+  gronn "  ✓ sletting fjernet container, volum, GitHub-repo og testprogrammet"
+fi
+
 echo
 gronn "KONFETTI-TESTEN (maskinell del) ER GRØNN 🎉"
 echo "Gjenstår i nettleser: Zoo Code-kjeden (modus → proxy fra chatten) —"
