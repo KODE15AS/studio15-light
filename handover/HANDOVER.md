@@ -176,7 +176,8 @@ alt under levert av chat 1, 03.10):
       gjennom HTTPS-proxyen → proxy → Fable 5-svar (temperature droppet)
       → filredigering synlig live (HMR verifisert i nettleser) →
       nettvakter → sletting. Zoo-chat-leddet kan ikke fjernstyres maskinelt
-      (webview-iframe) — det er første punkt i mennesketesten.
+      (webview-iframe) — BESTÅTT av Jørn i mennesketest 03.10 (sete 1,
+      wifi/Tailscale): prompt i Zoo-chatten → endring levende på websiden.
 - [ ] Begge deltagere verifisert fra wifi med Tailscale. Demo-prosjektet
       («Demo» → «Konfetti») står klart i lobbyen; testresept levert i
       chat 1. Sete 1 (Jørns PC) har alt vist lobby/editor/webside over
