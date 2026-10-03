@@ -7,16 +7,21 @@
 // (ensure/start/stop/remove). Frontend kan aldri sende containerparametre.
 
 mod driver;
+mod presence;
 mod register;
 mod vaktmester;
 
 use axum::{
-    extract::{Path, State},
+    extract::{
+        ws::{Message, WebSocket, WebSocketUpgrade},
+        Path, Query, State,
+    },
     http::StatusCode,
     response::{Html, IntoResponse, Response},
     routing::{delete, get, post},
     Json, Router,
 };
+use futures_util::{SinkExt, StreamExt};
 use serde::Deserialize;
 use serde_json::json;
 use std::{collections::HashMap, sync::Arc, time::{SystemTime, UNIX_EPOCH}};
@@ -50,6 +55,8 @@ pub struct App {
     pub activity: Mutex<HashMap<String, f64>>,
     /// GitHub App-klienten — None når appen ikke er konfigurert.
     pub vaktmester: Option<vaktmester::Vaktmester>,
+    /// Presence-huben (se/peke/ta over, V2) — ett rom per prosjekt.
+    pub presence: presence::Presence,
 }
 
 /// Per-arbeidsflate-hemmelighet for /api/git-token: HMAC(token_secret,
@@ -567,6 +574,152 @@ async fn vekk_arbeidsflate(State(app): State<Arc<App>>, Path(kortnavn): Path<Str
     }
 }
 
+// ---------- Presence (se/peke/ta over, V2) ----------
+
+#[derive(Deserialize)]
+struct PresenceParams {
+    watch: Option<String>,
+}
+
+async fn presence_ws(
+    State(app): State<Arc<App>>,
+    Path((program, prosjekt)): Path<(String, String)>,
+    Query(q): Query<PresenceParams>,
+    ws: WebSocketUpgrade,
+) -> Response {
+    // Veggens watch-modus: joiner aldri, kan aldri påvirke økten.
+    let watch = q.watch.as_deref() == Some("1");
+    ws.on_upgrade(move |socket| presence_socket(app, program, prosjekt, watch, socket))
+}
+
+async fn presence_socket(
+    app: Arc<App>,
+    program: String,
+    prosjekt: String,
+    watch: bool,
+    socket: WebSocket,
+) {
+    let rom = app.presence.rom(&program, &prosjekt);
+    // Abonner på broadcast FØR join — ellers race der ny tilkobling mister
+    // roster-oppdateringer (Skjermsamling-lærdom C).
+    let mut rx = rom.tx.subscribe();
+    let (mut ut, mut inn) = socket.split();
+
+    // Watch-tilkoblinger får roster-snapshot med en gang.
+    if watch {
+        let _ = ut.send(Message::Text(rom.roster_json().into())).await;
+    }
+
+    let mut meg: Option<uuid::Uuid> = None;
+    loop {
+        tokio::select! {
+            b = rx.recv() => {
+                match b {
+                    Ok(m) => {
+                        if ut.send(Message::Text(m.into())).await.is_err() {
+                            break;
+                        }
+                    }
+                    Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => {
+                        // Hengt etter: send ferskt roster i stedet for å dø.
+                        let _ = ut.send(Message::Text(rom.roster_json().into())).await;
+                    }
+                    Err(_) => break,
+                }
+            }
+            m = inn.next() => {
+                let Some(Ok(m)) = m else { break };
+                let Message::Text(tekst) = m else { continue };
+                let Ok(melding) = serde_json::from_str::<presence::KlientMelding>(&tekst) else {
+                    continue;
+                };
+                if watch {
+                    continue; // read-only: alle meldinger ignoreres
+                }
+                use presence::KlientMelding::*;
+                match melding {
+                    Join { navn, session } => {
+                        let navn = navn.trim().to_string();
+                        let slug = slugify(&navn);
+                        if slug.is_empty() {
+                            let feil = serde_json::to_string(&presence::ServerMelding::Feil {
+                                melding: "navnet gir ingen gyldig deltager".into(),
+                            }).unwrap();
+                            let _ = ut.send(Message::Text(feil.into())).await;
+                            continue;
+                        }
+                        let (id, _tok, welcome) = rom.join(navn, slug, session);
+                        meg = Some(id);
+                        // Welcome + roster-snapshot DIREKTE til ny socket,
+                        // deretter roster til alle.
+                        let _ = ut.send(Message::Text(welcome.into())).await;
+                        let _ = ut.send(Message::Text(rom.roster_json().into())).await;
+                        rom.broadcast_roster();
+                    }
+                    Cursor { tile, x, y } => {
+                        if let Some(id) = meg {
+                            rom.broadcast_cursor(id, &tile, x, y);
+                        }
+                    }
+                    Ta { flate } => {
+                        let Some(id) = meg else { continue };
+                        // Flaten må finnes i DETTE prosjektet; eier-sluggen
+                        // avgjør om det er ens egen flate.
+                        let eier = app
+                            .driver
+                            .list()
+                            .await
+                            .ok()
+                            .and_then(|f| {
+                                f.into_iter().find(|w| {
+                                    w.kortnavn == flate
+                                        && w.program == program
+                                        && w.prosjekt == prosjekt
+                                })
+                            })
+                            .map(|w| w.deltager);
+                        let resultat = match eier {
+                            Some(eier_slug) => rom.ta(id, &flate, &eier_slug),
+                            None => Err("ukjent arbeidsflate i dette prosjektet".into()),
+                        };
+                        if let Err(e) = resultat {
+                            let feil = serde_json::to_string(&presence::ServerMelding::Feil {
+                                melding: e,
+                            }).unwrap();
+                            let _ = ut.send(Message::Text(feil.into())).await;
+                        }
+                    }
+                    Slipp => {
+                        if let Some(id) = meg {
+                            rom.slipp(id);
+                        }
+                    }
+                    Forlat => {
+                        if let Some(id) = meg.take() {
+                            rom.fjern(id);
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    // Frakobling: behold identiteten en stund (reconnect-vinduet), rydd så
+    // opp — generasjonstelleren avbryter utdaterte timeout-tasks.
+    if let Some(id) = meg {
+        if let Some(gen) = rom.marker_frakoblet(id) {
+            let secs = app.presence.timeout_secs;
+            tokio::spawn(async move {
+                tokio::time::sleep(std::time::Duration::from_secs(secs)).await;
+                if rom.fortsatt_frakoblet(id, gen) {
+                    rom.fjern(id);
+                }
+            });
+        }
+    }
+}
+
 // ---------- Vekkesiden (dvale/vekke-mønsteret) ----------
 
 /// Caddy ruter hit ved upstream-feil: svarer 503 med en side som laster
@@ -575,7 +728,14 @@ async fn vekk_arbeidsflate(State(app): State<Arc<App>>, Path(kortnavn): Path<Str
 ///   - kjørende, men ikke klar ennå → første oppstart («gjør seg klar»)
 ///   - stoppet → dvale: vekkes automatisk, oppe på ~10 s
 ///   - ukjent → 404 med vei tilbake til lobbyen
-async fn vekk_side(State(app): State<Arc<App>>, Path(sti): Path<String>) -> Response {
+async fn vekk_side(
+    State(app): State<Arc<App>>,
+    Path(sti): Path<String>,
+    Query(q): Query<PresenceParams>,
+) -> Response {
+    // Veggen (watch-modus) skal ALDRI vekke sovende flater — ellers holder
+    // en vegg som står på hele natten alle flatene kunstig våkne.
+    let watch = q.watch.as_deref() == Some("1");
     // sti er originalstien uten ledende skråstrek, f.eks. "w/demo-x-jorn/..."
     let deler: Vec<&str> = sti.splitn(3, '/').collect();
     let kortnavn = match deler.as_slice() {
@@ -603,7 +763,13 @@ async fn vekk_side(State(app): State<Arc<App>>, Path(sti): Path<String>) -> Resp
         )
             .into_response();
     };
-    let orig = format!("/{sti}");
+    // Behold watch-parameteren i reload-adressen — ellers mister veggens
+    // iframe watch-modusen etter første vekking og begynner å vekke selv.
+    let orig = if watch {
+        format!("/{sti}?watch=1")
+    } else {
+        format!("/{sti}")
+    };
     let (tittel, melding, vekk) = if flate.running {
         (
             "Arbeidsflaten gjør seg klar …",
@@ -611,6 +777,13 @@ async fn vekk_side(State(app): State<Arc<App>>, Path(sti): Path<String>) -> Resp
              mens pakkene installeres. Siden laster automatisk på nytt når \
              alt er klart.",
             None, // kjører allerede — ingenting å vekke
+        )
+    } else if watch {
+        (
+            "Arbeidsflaten sover",
+            "Flaten er i dvale etter inaktivitet. Veggen vekker den ikke — \
+             den våkner når eieren åpner den, og dukker da opp her av seg selv.",
+            None, // watch vekker aldri, men poller til flaten er oppe
         )
     } else {
         (
@@ -752,6 +925,7 @@ async fn main() -> anyhow::Result<()> {
         driver,
         activity: Mutex::new(HashMap::new()),
         vaktmester: vaktmester::Vaktmester::fra_env(),
+        presence: presence::Presence::ny(),
     });
 
     tokio::spawn(reaper(app.clone()));
@@ -768,6 +942,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/prosjekter/{program}/{prosjekt}", delete(slett_prosjekt))
         .route("/api/arbeidsflater", post(ny_arbeidsflate))
         .route("/api/git-token", post(git_token))
+        .route("/api/presence/{program}/{prosjekt}/ws", get(presence_ws))
         .route("/api/arbeidsflater/{kortnavn}/stopp", post(stopp_arbeidsflate))
         .route("/api/arbeidsflater/{kortnavn}/vekk", post(vekk_arbeidsflate))
         .route("/vekk/{*sti}", get(vekk_side))

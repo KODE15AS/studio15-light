@@ -40,6 +40,9 @@ services:
       ACCESS_LOG: /logs/access.log
       # Overstyres kun i test av dvale/vekke (IDLE_MINUTES=1 ved oppstart)
       IDLE_MINUTES: "${IDLE_MINUTES:-45}"
+      # Reconnect-vindu for presence før identiteten ryddes bort.
+      # Overstyres kun i presence-smoketesten (PRESENCE_TIMEOUT_SECS=2).
+      PRESENCE_TIMEOUT_SECS: "${PRESENCE_TIMEOUT_SECS:-120}"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./register:/data/register

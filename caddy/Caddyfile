@@ -65,9 +65,11 @@
 	}
 
 	# Dvale/vekke: en stoppet arbeidsflate gir opstream-feil her — da
-	# serverer lobbyen vekkesiden (503 + auto-vekking + reload).
+	# serverer lobbyen vekkesiden (503 + auto-vekking + reload). Hele
+	# orig_uri (med query) sendes med slik at ?watch=1 fra veggen når
+	# vekkesiden — veggen skal aldri vekke sovende flater.
 	handle_errors {
-		rewrite * /vekk{http.request.orig_uri.path}
+		rewrite * /vekk{http.request.orig_uri}
 		reverse_proxy s15l-lobby:8200
 	}
 }
