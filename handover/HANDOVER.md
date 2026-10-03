@@ -141,11 +141,15 @@ alt under levert av chat 1, 03.10):
       master-nøkkel, `standard` (Fable 5) med fallback til `reserve`
       (Opus 5), `drop_params: true`, `num_retries: 2`. Nøkkel kun i
       proxyen; arbeidsflatene får bare master-nøkkelen mot proxyen.
-- [ ] Vaktmester-appen: GitHub App for repo-automatikk i program-orgene.
-      Klikkelisten til Jørn er KLAR (`docs/vaktmester-klikkeliste.md`) —
-      venter på app-oppretting/installasjon. Til da bruker prosjektene
-      bare-repoer på volumet `s15l-repos` (`file:///repos/<slug>.git`),
-      som begge arbeidsflater kloner fra og pusher til.
+- [x] Vaktmester-appen OPPRETTET og VERIFISERT (Jørn + chat 1, 03.10):
+      GitHub App `studio15-light-vaktmester` (App ID 5176150) under
+      @KODE15AS (som er en personlig konto, ikke org — klikkelisten
+      rettet), installert i `KODE15-saturday-test-2`. E2E-verifisert:
+      JWT → installasjonstoken → repo opprettet i org → repo slettet.
+      Nøkkel i `certs/vaktmester.pem` + Bitwarden. GJENSTÅR neste trinn:
+      lobby-integrasjonen (prosjektrepo i org i stedet for bare-repo på
+      raven, push-tokens til arbeidsflater, repo-sletting i sletteregimet).
+      Til da bruker prosjektene bare-repoer på volumet `s15l-repos`.
 - [x] Lobby (webprofil-kode15, Rust/axum + Svelte 5): programregister
       (YAML i dette repoet), guidet org-opprettingsflyt med manuelle
       GitHub-steg, prosjektoppretting fra mal (Svelte 5 + Vite, pinnet),

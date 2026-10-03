@@ -46,7 +46,10 @@ Developer settings:
 
 For **hver** program-org (f.eks. `KODE15-saturday-test-2`):
 
-1. Appens side → **Install App** (venstremeny).
+1. Gå til appens **innstillingsside** (ikke org-siden):
+   `https://github.com/settings/apps/studio15-light-vaktmester/installations`
+   (eller github.com → Settings → Developer settings → GitHub Apps →
+   **Edit** på appen → **Install App** i venstremenyen).
 2. Velg org-en → **Install**.
 3. **Repository access:** **All repositories** (prosjektrepoer opprettes og
    slettes løpende — appen må se dem alle).
@@ -66,6 +69,14 @@ Nytt program = ny GitHub-org (manuelt, GitHub har ikke API for dette):
 - **Appen opprettet 03.10.2026** av @KODE15AS:
   App ID `5176150`, Client ID `Iv23li5vz4B0hGa6xjiw`
   (ikke hemmeligheter — kun privatnøkkelen/.pem er hemmelig).
+- **Installert i `KODE15-saturday-test-2`** (installasjon `167545478`) og
+  **verifisert E2E 03.10**: JWT → installasjonstoken → repo opprettet i
+  org-en → repo slettet. Privatnøkkelen ligger på raven i
+  `certs/vaktmester.pem` (gitignorert); `GITHUB_APP_ID` og
+  `GITHUB_APP_KEY_FILE` står i `.env`.
+- Gjenstår (neste byggetrinn): lobby-integrasjonen — prosjektrepo i org-en
+  i stedet for bare-repo på raven, push-tokens til arbeidsflatene, og
+  repo-sletting i sletteregimet.
 
 ## 5. Sletteregimets ene manuelle unntak
 
