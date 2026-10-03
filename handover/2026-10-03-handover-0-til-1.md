@@ -29,17 +29,29 @@ Chat 0 («Handover 0») etablerte repoet og hele beslutningsgrunnlaget.
 - V1 = tynn E2E-skive; vegg + se/peke/ta over er V2.
 - Web-design: `webprofil-kode15`. Norm «tbd»: rett på `main`.
 
-## Chat 1 starter her
+## Chat 1 starter her — oppdrag: bygg V1 og test den
+
+Døp chatten «Handover 1» (prosjektet navngir chattene slik). Oppdraget fra
+Jørn (03.10): **start byggingen av V1 og test den ut.** Ikke vent på flere
+avklaringer — alle beslutninger er tatt (se HANDOVER.md).
 
 1. **Zoo Code-verifiseringen** (HANDOVER.md «Åpne punkter») — alt annet
    avhenger av den: utvidelses-ID, distribusjon (Open VSX? nedlastings-URL
    til Dockerfile), `.roomodes`-format, announcement-hack, ripgrep-fellen,
    og bekreft ren webapp (ingen GUI-streaming).
-2. Deretter workspace-image → proxy → lobby, etter V1-listen i HANDOVER.md.
-   Hvert trinn E2E-verifiseres maskinelt før mennesketest; idempotente
-   operasjoner; engangsskript holdes utenfor git.
-3. Vaktmester-appen krever manuelle GitHub-steg fra Jørn — forbered
-   nøyaktig klikkeliste før han involveres.
+2. Bygg deretter etter V1-listen i HANDOVER.md: arbeidsflate-image →
+   LiteLLM-proxy → lobby. Hvert trinn E2E-verifiseres maskinelt før
+   mennesketest; idempotente operasjoner; engangsskript utenfor git.
+3. Test: konfetti-testen (modus → proxy → modell → filredigering → synlig
+   på levende webside) er V1s akseptansetest — kjør den maskinelt, og meld
+   fra til Jørn når den er grønn og begge sete-URL-ene er klare for
+   mennesketest fra wifi/Tailscale.
+4. Vaktmester-appen krever manuelle GitHub-steg fra Jørn — forbered
+   nøyaktig klikkeliste før han involveres. Begynn med det som ikke
+   trenger ham.
+5. Merk begrepene i HANDOVER.md («Begreper»): program / prosjekt /
+   arbeidsflate — to personer kan dele ett prosjekt, også med én felles
+   arbeidsflate (flere tilkoblinger til samme code-server).
 
 ## Feller å huske (betalt én gang)
 

@@ -26,10 +26,13 @@ flatene 50/50. Ingen innlogging, ingen database, ingen offentlig eksponering.
 - **Prosjekt** = container/repo-settet: GitHub-repoet pluss containerne som
   kjører det som bygges (f.eks. Vite-serveren). Persistent, gjenopptakbart,
   slettes som helhet.
-- **Arbeidsflate** (kode: workspace) = én deltagers editor-container
-  (code-server + Zoo Code) koblet til et prosjekt. Eies av personen, ikke
-  prosjektet; opprettes per deltager ved behov. To deltagere i samme
-  prosjekt = ett prosjekt, to arbeidsflater mot samme repo.
+- **Arbeidsflate** (kode: workspace) = en editor-container (code-server +
+  Zoo Code) koblet til et prosjekt. Opprettes ved behov.
+- **To personer kan dele ett prosjekt** på to måter: hver med sin egen
+  arbeidsflate mot samme repo (normalen), eller med én **felles
+  arbeidsflate** — code-server tillater flere samtidige tilkoblinger til
+  samme instans, så begge åpner samme URL og jobber i samme flate. Denne
+  egenskapen er også grunnlaget for «ta over» i V2.
 
 I synlig tekst (UI, docs) brukes «arbeidsflate» (norm «språk»);
 «workspace» kun i kode og tekniske identifikatorer.
