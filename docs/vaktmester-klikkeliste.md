@@ -61,6 +61,12 @@ Nytt program = ny GitHub-org (manuelt, GitHub har ikke API for dette):
 3. Installer vaktmester-appen i den nye org-en (punkt 3 over).
 4. Legg org-navnet inn i `register/programmer.yaml` (`github_org:`).
 
+## Status
+
+- **Appen opprettet 03.10.2026** av @KODE15AS:
+  App ID `5176150`, Client ID `Iv23li5vz4B0hGa6xjiw`
+  (ikke hemmeligheter — kun privatnøkkelen/.pem er hemmelig).
+
 ## 5. Sletteregimets ene manuelle unntak
 
 Repoer sletter vaktmesteren. **Org-sletting** finnes ikke i GitHubs API og
