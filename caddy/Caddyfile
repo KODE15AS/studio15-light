@@ -1,0 +1,60 @@
+# Intern reverse proxy for Studio 15 LIGHT — IKKE offentlig ingress.
+# Én inngang på tailnettet (port 8100, HTTPS via tailscale-sertifikat):
+#
+#   /                  → lobbyen (programmer, prosjekter, arbeidsflater)
+#   /w/<flate>/...     → code-server i arbeidsflate-containeren (prefiks strippes)
+#   /web/<flate>/...   → Vite-websiden i samme container (prefiks beholdes,
+#                        Vite kjører med base=/web/<flate>/)
+#
+# Alt serveres fra samme origin — det er også grunnlaget for se/peke-laget
+# i V2 (ghost-cursors over iframes krever same-origin).
+
+{
+	admin off
+	auto_https off
+}
+
+:8100 {
+	tls /certs/raven.crt /certs/raven.key
+
+	log {
+		output file /logs/access.log {
+			roll_size 20MiB
+			roll_keep 3
+		}
+		format json
+	}
+
+	# Vakt fra testfunn 22: arbeidsflate-containere (med terminal) skal
+	# aldri nå styrende tjenester. De deler docker-nett med caddy (for at
+	# caddy skal nå dem), så alt som KOMMER FRA arbeidsflate-subnettet
+	# avvises — DNAT bevarer kilde-IP, derfor blokkeres subnett-naboer,
+	# ikke «alle utenom gatewayen». Zoo Code når proxyen direkte på
+	# docker-nettet og trenger aldri caddy.
+	@fra_arbeidsflatenettet client_ip 172.31.15.0/24
+	handle @fra_arbeidsflatenettet {
+		respond "Styrende tjenester er ikke tilgjengelige fra arbeidsflatene." 403
+	}
+
+	@arbeidsflate path_regexp ws ^/w/([a-z0-9-]+)(/.*)?$
+	handle @arbeidsflate {
+		uri strip_prefix /w/{re.ws.1}
+		reverse_proxy s15l-ws-{re.ws.1}:8080
+	}
+
+	@webside path_regexp web ^/web/([a-z0-9-]+)(/.*)?$
+	handle @webside {
+		reverse_proxy s15l-ws-{re.web.1}:5173
+	}
+
+	handle {
+		reverse_proxy s15l-lobby:8200
+	}
+
+	# Dvale/vekke: en stoppet arbeidsflate gir opstream-feil her — da
+	# serverer lobbyen vekkesiden (503 + auto-vekking + reload).
+	handle_errors {
+		rewrite * /vekk{http.request.orig_uri.path}
+		reverse_proxy s15l-lobby:8200
+	}
+}

@@ -1,0 +1,12 @@
+{
+  "name": "s15l-oppstart",
+  "displayName": "Studio 15 LIGHT",
+  "description": "Åpner Zoo Code-chatten automatisk ved oppstart, slik at deltageren lander rett i assistenten.",
+  "publisher": "kode15",
+  "version": "1.0.0",
+  "license": "MIT",
+  "repository": { "type": "git", "url": "https://github.com/KODE15AS/studio15-light" },
+  "engines": { "vscode": "^1.100.0" },
+  "main": "./extension.js",
+  "activationEvents": ["onStartupFinished"]
+}

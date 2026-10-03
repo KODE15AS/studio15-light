@@ -98,14 +98,21 @@ Hovedstruktur (Handover 0-grillingen, 03.10):
 
 ## Åpne punkter (agentarbeid, første byggetrinn)
 
-- [ ] Zoo Code-verifisering: utvidelses-ID, distribusjon (Open VSX?),
-      `.roomodes`-format, announcement-hack, ripgrep-fellen. Bekreft at
-      arbeidsflaten er ren webapp (code-server) → ingen GUI-streaming.
-- [ ] Se/peke-laget over iframes: flatene må trolig serveres same-origin
-      via en intern reverse proxy i stacken (ikke offentlig ingress) for at
-      ghost-cursors skal kunne fanges i kollegaens flate. Undersøk også om
-      «ta over» kan realiseres med code-servers flerbruker-tilkobling i
-      stedet for input-streaming — før streaming-veien eventuelt velges.
+- [x] Zoo Code-verifisering (chat 1, 03.10 — vsix-en inspisert direkte):
+      ID `ZooCodeOrganization.zoo-code`, alle nøkler/kommandoer har prefiks
+      `zoo-code` (ikke `roo-cline`); distribusjon Open VSX (verifisert
+      utgiver, pinnet 3.87.100557); `.roomodes`-formatet og import-skjemaet
+      (providerProfiles/modeApiConfigs) uendret fra Roo; announcement-hacken
+      trengs fortsatt (ID `oct-2026-v3.86.0-models-aborts-tool-streaming`);
+      ripgrep-fellen er FIKSET oppstrøms (Zoo leter selv i
+      ripgrep-universal) — symlinken beholdt som forsikring; ren webapp
+      bekreftet → ingen GUI-streaming. NYTT funn: Zoo viser en
+      telemetri-dialog ved første oppstart — kveles med
+      `telemetrySetting: "disabled"` i settings-malen.
+- [ ] Se/peke-laget over iframes (V2): same-origin-grunnlaget er alt på
+      plass — caddy serverer lobby, editorer og websider fra samme origin.
+      Gjenstår: undersøke om «ta over» kan realiseres med code-servers
+      flerbruker-tilkobling i stedet for input-streaming.
 
 ## Leveranser
 
@@ -117,30 +124,59 @@ Gjort:
       http://100.65.19.39:8100 (kun Tailscale).
 - [x] Alle avklaringer tatt med Jørn (se Beslutninger over).
 
-V1 — tynn E2E-skive (trinnvis, hvert trinn E2E-verifiseres maskinelt):
+V1 — tynn E2E-skive (trinnvis, hvert trinn E2E-verifisert maskinelt;
+alt under levert av chat 1, 03.10):
 
-- [ ] Zoo Code-verifisering (se Åpne punkter) — først, alt annet avhenger
+- [x] Zoo Code-verifisering (se Åpne punkter) — først, alt annet avhenger
       av den.
-- [ ] Arbeidsflate-image: code-server (pinnet versjon) + Node LTS + Vite +
-      Zoo Code, med alle image-fiksene fra Studio 15 (chown på volum,
-      Copilot fjernet, trust/velkomst av, ripgrep-symlink, autolagring).
-- [ ] LiteLLM-proxy i enkleste form: master-nøkkel, Fable 5 primær med
-      fallback til Opus 5, `drop_params: true`. Nøkkel kun i proxyen.
+- [x] Arbeidsflate-image (`arbeidsflate/`): code-server 4.140.0-debian
+      (pinnet) + Node 22 + Vite + Zoo Code 3.87.100557, med alle
+      image-fiksene fra Studio 15 (chown på volum, Copilot fjernet med
+      byggvakt, trust/velkomst av, ripgrep-symlink, autolagring,
+      announcement-hack, telemetri av). Oppstart-utvidelse åpner
+      Zoo-chatten automatisk. NY felle betalt: bare-repoer seedet av
+      lobbyen (root) må chownes til uid 1000 + `safe.directory` i
+      entrypoint, ellers nekter git («dubious ownership»).
+- [x] LiteLLM-proxy (`proxy/`, pinnet v1.103.2, UTEN database):
+      master-nøkkel, `standard` (Fable 5) med fallback til `reserve`
+      (Opus 5), `drop_params: true`, `num_retries: 2`. Nøkkel kun i
+      proxyen; arbeidsflatene får bare master-nøkkelen mot proxyen.
 - [ ] Vaktmester-appen: GitHub App for repo-automatikk i program-orgene.
-      Krever manuelle GitHub-steg fra Jørn (app-oppretting/installasjon).
-- [ ] Lobby (webprofil-kode15): programregister (YAML i dette repoet),
-      guidet org-opprettingsflyt med manuelle GitHub-steg, prosjektvelger
-      som starter/gjenopptar prosjekt, arbeidsflate per deltager ved behov.
-      Mock-driver (`WORKSPACE_DRIVER=mock`) for utvikling uten Docker.
-- [ ] Docker-nett: arbeidsflate-containere deler aldri nett med styrende
-      tjenester (`internal: true`-mønsteret).
-- [ ] HTTPS via `tailscale cert` for alle URL-er.
-- [ ] Dvale/vekke: idle-reaper + 503-vekkeside (lobbyen er vekkesiden).
-- [ ] Sletteskript: prosjektets containere (inkl. arbeidsflater) + volumer + GitHub-repo i én operasjon etter
-      eksplisitt bekreftelse; org-sletting som dokumentert manuelt steg.
-- [ ] Konfetti-testen: modus → proxy → modell → filredigering → synlig på
-      levende webside.
-- [ ] Begge deltagere verifisert fra wifi med Tailscale.
+      Klikkelisten til Jørn er KLAR (`docs/vaktmester-klikkeliste.md`) —
+      venter på app-oppretting/installasjon. Til da bruker prosjektene
+      bare-repoer på volumet `s15l-repos` (`file:///repos/<slug>.git`),
+      som begge arbeidsflater kloner fra og pusher til.
+- [x] Lobby (webprofil-kode15, Rust/axum + Svelte 5): programregister
+      (YAML i dette repoet), guidet org-opprettingsflyt med manuelle
+      GitHub-steg, prosjektoppretting fra mal (Svelte 5 + Vite, pinnet),
+      prosjektvelger, arbeidsflate per deltager ved behov, sletting med
+      bekreftelse. Mock-driver (`WORKSPACE_DRIVER=mock`) for utvikling
+      uten Docker. Controller-mønsteret: lobbyen er eneste komponent som
+      styrer containere, kun faste operasjoner.
+- [x] Docker-nett: lobbyen på internt nett (`s15l-front`, internal: true)
+      som arbeidsflatene ikke kan rute til; caddy avviser trafikk fra
+      arbeidsflate-subnettet (client_ip-vakt, DNAT-lærdommen). Begge
+      vaktene verifiseres i konfetti-testen.
+- [x] HTTPS via `tailscale cert` for alle URL-er — én inngang
+      (caddy :8100), alt samme origin (V2-forberedelse for se/peke).
+      `skript/hent-sertifikat.sh` henter/fornyer.
+- [x] Dvale/vekke: idle-reaper i lobbyen (45 min, fra caddys tilgangslogg)
+      + 503-vekkeside med autovekking og reload. Verifisert maskinelt med
+      1-minutts grense.
+- [x] Sletteskript (`skript/slett-prosjekt.sh` + lobby-UI): containere +
+      volumer + prosjektrepo + registeroppføring i én operasjon etter
+      eksplisitt bekreftelse; GitHub-repo/org som dokumentert manuelt steg
+      til vaktmesteren finnes.
+- [x] Konfetti-testen (`skript/konfetti-test.sh`), maskinell del GRØNN
+      03.10: lobby → repo-seed → arbeidsflate → code-server og Vite
+      gjennom HTTPS-proxyen → proxy → Fable 5-svar (temperature droppet)
+      → filredigering synlig live (HMR verifisert i nettleser) →
+      nettvakter → sletting. Zoo-chat-leddet kan ikke fjernstyres maskinelt
+      (webview-iframe) — det er første punkt i mennesketesten.
+- [ ] Begge deltagere verifisert fra wifi med Tailscale. Demo-prosjektet
+      («Demo» → «Konfetti») står klart i lobbyen; testresept levert i
+      chat 1. Sete 1 (Jørns PC) har alt vist lobby/editor/webside over
+      Tailscale med gyldig HTTPS under nettlesertesten.
 
 V2 — samarbeidslaget:
 

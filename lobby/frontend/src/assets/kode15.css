@@ -1,0 +1,286 @@
+/*
+ * KODE15 designtokens og basiskomponenter for web.
+ * Fasit: KODE15AS/raven-platform → web-profil/kode15.css
+ * Kilde: popina.no (Sydney-temaets globale farger) + Kode 15 logo rev 4.
+ * Gjelder KODE15 generelt (ikke Cadify).
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500&display=swap');
+
+:root {
+  /* Farger — identiske med logoens ruter + nøytraler */
+  --k15-skifer:        #233038; /* mørk tekst, footer-bunn */
+  --k15-blaagraa-mork: #525D65; /* overskrifter, sekundærknapp-outline */
+  --k15-blaagraa-lys:  #77838C; /* bunnlinjer, sekundærflater */
+  --k15-noytralgraa:   #959593; /* brødtekst */
+  --k15-beige:         #BBAD9A; /* primæraksent: knapper, footer */
+  --k15-bg:            #F7F4EF; /* sidebakgrunn (varm off-white) */
+  --k15-flate:         #F4F5F7; /* alternative flater, tabellstriper */
+  --k15-linje:         #DBDBDB; /* rammer og delelinjer */
+  --k15-hvit:          #FFFFFF; /* kort */
+  --k15-tekst:         var(--k15-skifer); /* mørk brødtekst i tette innholdsflater (paneler) */
+
+  /* Typografi */
+  --k15-font-heading: 'Montserrat', 'Segoe UI', system-ui, sans-serif;
+  --k15-font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  /* Form */
+  --k15-radius-kort: 14px;
+  --k15-radius-knapp: 999px;
+}
+
+/* --- Basis --- */
+
+.k15-page {
+  background: var(--k15-bg);
+  color: var(--k15-noytralgraa);
+  font-family: var(--k15-font-body);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.k15-page h1, .k15-page h2, .k15-page h3 {
+  font-family: var(--k15-font-heading);
+  font-weight: 400;
+  color: var(--k15-blaagraa-mork);
+  line-height: 1.2;
+}
+
+.k15-page h3 { font-weight: 500; }
+
+/* Kicker: liten uppercase-etikett over titler */
+.k15-kicker {
+  font-family: var(--k15-font-heading);
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--k15-noytralgraa);
+}
+
+/* --- Topplinje --- */
+
+.k15-header {
+  background: var(--k15-hvit);
+  color: var(--k15-skifer);
+  border-bottom: 1px solid var(--k15-linje);
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.k15-header .k15-logo { height: 40px; width: auto; display: block; }
+
+/* --- Kort --- */
+
+.k15-card {
+  background: var(--k15-hvit);
+  border: 1px solid var(--k15-linje);
+  border-radius: var(--k15-radius-kort);
+  padding: 20px 24px;
+}
+
+/* Nummerert etikett i kort (01, 02, …) */
+.k15-card .k15-nummer {
+  font-family: var(--k15-font-heading);
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: var(--k15-noytralgraa);
+}
+
+/* --- Nummererte ruter: lenkekort i grid (mønster fra popina.no) --- */
+
+.k15-ruter {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 20px;
+}
+
+.k15-rute {
+  display: block;
+  background: var(--k15-hvit);
+  border: 1px solid var(--k15-linje);
+  border-radius: var(--k15-radius-kort);
+  padding: 20px 24px;
+  text-decoration: none;
+  color: inherit;
+  transition: 0.25s;
+}
+
+.k15-rute .k15-nummer {
+  display: block;
+  font-family: var(--k15-font-heading);
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: var(--k15-noytralgraa);
+  margin-bottom: 14px;
+  transition: color 0.25s;
+}
+
+.k15-rute h3 { margin: 0 0 8px; transition: color 0.25s; }
+.k15-rute p { margin: 0; transition: color 0.25s; }
+
+/* Ved hover fylles ruten med logofargen blågrå mørk, all tekst blir
+   hvit, og ruten løftes 4px — som på popina.no. */
+.k15-rute:hover {
+  transform: translateY(-4px);
+  background: var(--k15-blaagraa-mork);
+  border-color: var(--k15-blaagraa-mork);
+  box-shadow: 0 10px 30px rgba(78, 71, 64, 0.12);
+}
+
+.k15-rute:hover h3,
+.k15-rute:hover p,
+.k15-rute:hover .k15-nummer {
+  color: var(--k15-hvit);
+}
+
+/* --- Knapper --- */
+
+.k15-btn {
+  display: inline-block;
+  border-radius: var(--k15-radius-knapp);
+  padding: 10px 22px;
+  font-family: var(--k15-font-heading);
+  font-size: 12px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  border: none;
+}
+
+.k15-btn-primary {
+  background: var(--k15-beige);
+  color: var(--k15-hvit);
+}
+.k15-btn-primary:hover { filter: brightness(0.95); }
+
+.k15-btn-secondary {
+  background: transparent;
+  color: var(--k15-blaagraa-mork);
+  border: 0.8px solid var(--k15-blaagraa-mork);
+}
+.k15-btn-secondary:hover { background: var(--k15-flate); }
+
+.k15-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* --- Footer --- */
+
+.k15-footer {
+  background: var(--k15-beige);
+  color: var(--k15-hvit);
+  padding: 28px 24px;
+}
+
+.k15-footer-bottom {
+  background: var(--k15-blaagraa-lys);
+  color: var(--k15-hvit);
+  padding: 8px 24px;
+  font-size: 12px;
+}
+
+/* --- Fane-seksjon: tabs med innholdspanel (mønster fra popina.no) ---
+   Krever kode15-tabs.js for bytte. Ingen globale ID-er nødvendig. */
+
+.k15-tab-buttons {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 6px;
+}
+
+.k15-tab-btn {
+  font-family: var(--k15-font-heading);
+  text-align: left;
+  background: var(--k15-blaagraa-lys);
+  color: var(--k15-hvit);
+  border: 1px solid var(--k15-linje);
+  border-bottom: none;
+  border-radius: var(--k15-radius-kort) var(--k15-radius-kort) 0 0;
+  padding: 20px 18px 18px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.k15-tab-btn .k15-tab-title {
+  display: block;
+  font-size: 15px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  line-height: 1.2;
+  margin-bottom: 4px;
+}
+
+.k15-tab-btn .k15-tab-sub {
+  display: block;
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+/* Aktiv tab: hvit, smelter sammen med panelet (–1px overlapp skjuler sømmen) */
+.k15-tab-btn.active {
+  background: var(--k15-hvit);
+  color: var(--k15-skifer);
+  margin-bottom: -1px;
+  position: relative;
+  z-index: 1;
+}
+
+.k15-tab-btn:focus-visible {
+  outline: 2px solid var(--k15-blaagraa-mork);
+  outline-offset: 2px;
+}
+
+.k15-tab-panel {
+  display: none;
+  background: var(--k15-hvit);
+  border: 1px solid var(--k15-linje);
+  border-top: none;               /* fanene «lukker» toppen – ingen søm-strek */
+  border-radius: 0 0 var(--k15-radius-kort) var(--k15-radius-kort);
+  padding: 32px;
+}
+
+.k15-tab-panel.active {
+  display: grid;
+  grid-template-columns: 1fr 1.1fr;
+  gap: 32px;
+  align-items: center;
+}
+
+.k15-tab-panel img {
+  width: 100%;
+  height: 320px;
+  object-fit: cover;
+  border-radius: 8px;
+  display: block;
+}
+
+.k15-tab-panel h3 { margin: 0 0 12px; font-size: 24px; }
+.k15-tab-panel p { margin: 0 0 12px; color: var(--k15-tekst); }
+.k15-tab-panel .k15-btn { margin-top: 12px; }
+
+/* Mobil (F14): tabs stables, kompakt høyde, innholdet følger under */
+@media (max-width: 600px) {
+  .k15-tab-buttons { grid-auto-flow: row; gap: 4px; }
+
+  .k15-tab-btn {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    border: 1px solid var(--k15-linje);
+    border-radius: 10px;
+    padding: 10px 14px;
+  }
+  .k15-tab-btn .k15-tab-title { margin-bottom: 0; }
+  .k15-tab-btn.active {
+    margin-bottom: 0;
+    border-left: 4px solid var(--k15-beige);
+  }
+
+  .k15-tab-panels { margin-top: 10px; }
+  .k15-tab-panel { border-top: 1px solid var(--k15-linje); border-radius: 12px; padding: 22px 18px; }
+  .k15-tab-panel.active { display: block; }
+  .k15-tab-panel img { height: auto; margin-bottom: 20px; }
+}

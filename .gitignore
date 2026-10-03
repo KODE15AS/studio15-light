@@ -1,0 +1,8 @@
+# Secrets og sertifikater — aldri i git (norm «kontoer»)
+.env
+certs/
+
+# Bygg og avhengigheter
+node_modules/
+dist/
+target/

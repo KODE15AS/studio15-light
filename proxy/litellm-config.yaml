@@ -1,0 +1,31 @@
+# LLM-proxy for Studio 15 LIGHT — enkleste form (beslutning 03.10):
+# felles master-nøkkel, ingen database, ingen virtuelle nøkler/budsjetter.
+# Fable 5 som primær med automatisk fallback til Opus 5, slik at en
+# pågående økt aldri stopper ved modelltrøbbel.
+#
+# Modell-ID-ene claude-fable-5 / claude-opus-5 er verifisert mot API-et
+# (Studio 15, 27.08.2026).
+
+model_list:
+  # Fable 5 tenker alltid og godtar kun temperature=1. drop_params under
+  # gjør at proxyen dropper slike klient-parametere i stedet for å svare
+  # 400 (Zoo Code sender temperature=0 som agent-standard — testfunn 7).
+  - model_name: standard
+    litellm_params:
+      model: anthropic/claude-fable-5
+      api_key: os.environ/ANTHROPIC_API_KEY
+  - model_name: reserve
+    litellm_params:
+      model: anthropic/claude-opus-5
+      api_key: os.environ/ANTHROPIC_API_KEY
+
+litellm_settings:
+  drop_params: true
+  num_retries: 2
+  fallbacks:
+    - standard: ["reserve"]
+
+general_settings:
+  # To kjente personer på lukket tailnett: master-nøkkel alene holder.
+  # Kostnadsinnsyn per person kan senere løses med to virtuelle nøkler.
+  master_key: os.environ/LITELLM_MASTER_KEY

@@ -1,9 +1,83 @@
+# Studio 15 LIGHT — hele stacken (norm «container»: ett repo, én stack).
+# Arbeidsflate-containerne opprettes dynamisk av lobbyen og er ikke
+# compose-tjenester; de kobles til nettet s15l-workspaces.
+#
+# Nettverksskillet (testfunn 22): lobbyen (docker-socket = styrende) ligger
+# KUN på det interne nettet s15l-front som arbeidsflatene aldri når.
+# Caddy står i begge nett og avviser all trafikk fra arbeidsflate-subnettet
+# (se caddy/Caddyfile).
+
 services:
-  studio15-light:
-    build: .
-    image: studio15-light:latest
-    container_name: studio15-light
+  caddy:
+    image: caddy:2.11.6-alpine
+    container_name: s15l-caddy
     restart: unless-stopped
     ports:
       # Kun Tailscale — ingen offentlig eksponering.
       - "100.65.19.39:8100:8100"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./certs:/certs:ro
+      - s15l-caddy-data:/data
+      - s15l-logs:/logs
+    networks:
+      - front
+      - workspaces
+
+  lobby:
+    build: ./lobby
+    image: studio15-light-lobby:v1
+    container_name: s15l-lobby
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      WORKSPACE_DRIVER: docker
+      WORKSPACE_IMAGE: studio15-light-arbeidsflate:v1
+      WORKSPACE_NETWORK: s15l-workspaces
+      REPOS_VOLUME: s15l-repos
+      PUBLIC_BASE: https://cadify104raven.tail14de1b.ts.net:8100
+      REGISTER_PATH: /data/register/programmer.yaml
+      ACCESS_LOG: /logs/access.log
+      # Overstyres kun i test av dvale/vekke (IDLE_MINUTES=1 ved oppstart)
+      IDLE_MINUTES: "${IDLE_MINUTES:-45}"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./register:/data/register
+      - s15l-repos:/repos
+      - s15l-logs:/logs:ro
+    networks:
+      - front
+
+  litellm:
+    image: ghcr.io/berriai/litellm:v1.103.2
+    container_name: s15l-litellm
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ./proxy/litellm-config.yaml:/app/config.yaml:ro
+    command: ["--config", "/app/config.yaml", "--port", "4000"]
+    networks:
+      - workspaces
+
+networks:
+  # Styrende nett: kun caddy ↔ lobby. internal gir ingen rute ut.
+  front:
+    name: s15l-front
+    internal: true
+  # Arbeidsflate-nettet: caddy, litellm og arbeidsflatene. Fast subnett
+  # slik at caddy-vakten kan blokkere på kilde-IP.
+  workspaces:
+    name: s15l-workspaces
+    ipam:
+      config:
+        - subnet: 172.31.15.0/24
+
+volumes:
+  # Prosjektenes git-repoer (bare repos) — stand-in til vaktmester-appen
+  # gir ekte GitHub-repoer. Deles mellom lobby og arbeidsflater.
+  s15l-repos:
+    name: s15l-repos
+  s15l-logs:
+    name: s15l-logs
+  s15l-caddy-data:
+    name: s15l-caddy-data

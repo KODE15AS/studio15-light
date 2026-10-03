@@ -1,0 +1,42 @@
+{
+  "providerProfiles": {
+    "currentApiConfigName": "default",
+    "apiConfigs": {
+      "default": {
+        "apiProvider": "openai",
+        "openAiBaseUrl": "__PROXY_BASE__",
+        "openAiApiKey": "__PROXY_KEY__",
+        "openAiModelId": "standard",
+        "openAiCustomModelInfo": {
+          "maxTokens": 16384,
+          "contextWindow": 200000,
+          "supportsImages": true,
+          "supportsPromptCache": false,
+          "inputPrice": 0,
+          "outputPrice": 0
+        },
+        "diffEnabled": true,
+        "consecutiveMistakeLimit": 3,
+        "id": "s15l-default"
+      }
+    },
+    "modeApiConfigs": {
+      "code": "s15l-default",
+      "architect": "s15l-default",
+      "ask": "s15l-default",
+      "debug": "s15l-default",
+      "orchestrator": "s15l-default"
+    }
+  },
+  "globalSettings": {
+    "mode": "code",
+    "telemetrySetting": "disabled",
+    "lastShownAnnouncementId": "oct-2026-v3.86.0-models-aborts-tool-streaming",
+    "autoApprovalEnabled": true,
+    "alwaysAllowReadOnly": true,
+    "alwaysAllowWrite": true,
+    "alwaysAllowExecute": false,
+    "alwaysAllowBrowser": false,
+    "alwaysAllowMcp": false
+  }
+}
