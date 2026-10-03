@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Studio 15 LIGHT vegg-kiosk
+Comment=Viser Studio 15 LIGHT-veggen på 70"-skjermen (helse-gatet, read-only)
+Exec=/home/cadify/dev/studio15-light/vegg/vegg-kiosk.sh
+X-GNOME-Autostart-enabled=true
+NoDisplay=true
