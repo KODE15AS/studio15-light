@@ -19,10 +19,20 @@ VS Code i nettleseren (code-server) + Zoo Code koblet mot LiteLLM-proxy +
 Vite-dev-server som viser websiden levende. Ravens 70"-skjerm viser begge
 flatene 50/50. Ingen innlogging, ingen database, ingen offentlig eksponering.
 
-Strukturen over flatene: et **program** (= GitHub-org) dekker et antall
-**prosjekter** (= eget container/repo-sett, persistent). Lobbyen lar en
-opprette program og prosjekter og starte/gjenoppta dem; workspaces opprettes
-per deltager ved behov.
+## Begreper (avklart 03.10 — brukes konsekvent)
+
+- **Program** = GitHub-org. Overbygningen som dekker et antall prosjekter
+  (erstatter Studio 15s «klasse»).
+- **Prosjekt** = container/repo-settet: GitHub-repoet pluss containerne som
+  kjører det som bygges (f.eks. Vite-serveren). Persistent, gjenopptakbart,
+  slettes som helhet.
+- **Arbeidsflate** (kode: workspace) = én deltagers editor-container
+  (code-server + Zoo Code) koblet til et prosjekt. Eies av personen, ikke
+  prosjektet; opprettes per deltager ved behov. To deltagere i samme
+  prosjekt = ett prosjekt, to arbeidsflater mot samme repo.
+
+I synlig tekst (UI, docs) brukes «arbeidsflate» (norm «språk»);
+«workspace» kun i kode og tekniske identifikatorer.
 
 ## Beslutninger (Jørn, 2026-10-03)
 
@@ -77,9 +87,9 @@ Hovedstruktur (Handover 0-grillingen, 03.10):
   repoet, prosjektkode i prosjektrepoene, secrets i `.env` utenfor git,
   kjøretilstand leses fra Docker. Kun temp-filer på raven, slik at en
   container alltid kan gjenoppbygges fra repo.
-- **Workspaces opprettes per deltager ved behov** — solo-prosjekter støttes;
+- **Arbeidsflater opprettes per deltager ved behov** — solo-prosjekter støttes;
   ikke fast to seter.
-- **V1 = tynn E2E-skive**: lobby (program + prosjekt) → workspace med
+- **V1 = tynn E2E-skive**: lobby (program + prosjekt) → arbeidsflate med
   Zoo Code → proxy → konfetti-test. Vegg + se/peke/ta over er v2.
 - Web-design: `webprofil-kode15` (norm «web-profil») — bekreftet på nytt.
 
@@ -108,7 +118,7 @@ V1 — tynn E2E-skive (trinnvis, hvert trinn E2E-verifiseres maskinelt):
 
 - [ ] Zoo Code-verifisering (se Åpne punkter) — først, alt annet avhenger
       av den.
-- [ ] Workspace-image: code-server (pinnet versjon) + Node LTS + Vite +
+- [ ] Arbeidsflate-image: code-server (pinnet versjon) + Node LTS + Vite +
       Zoo Code, med alle image-fiksene fra Studio 15 (chown på volum,
       Copilot fjernet, trust/velkomst av, ripgrep-symlink, autolagring).
 - [ ] LiteLLM-proxy i enkleste form: master-nøkkel, Fable 5 primær med
@@ -117,13 +127,13 @@ V1 — tynn E2E-skive (trinnvis, hvert trinn E2E-verifiseres maskinelt):
       Krever manuelle GitHub-steg fra Jørn (app-oppretting/installasjon).
 - [ ] Lobby (webprofil-kode15): programregister (YAML i dette repoet),
       guidet org-opprettingsflyt med manuelle GitHub-steg, prosjektvelger
-      som starter/gjenopptar prosjekt, workspace per deltager ved behov.
+      som starter/gjenopptar prosjekt, arbeidsflate per deltager ved behov.
       Mock-driver (`WORKSPACE_DRIVER=mock`) for utvikling uten Docker.
-- [ ] Docker-nett: workspace-containere deler aldri nett med styrende
+- [ ] Docker-nett: arbeidsflate-containere deler aldri nett med styrende
       tjenester (`internal: true`-mønsteret).
 - [ ] HTTPS via `tailscale cert` for alle URL-er.
 - [ ] Dvale/vekke: idle-reaper + 503-vekkeside (lobbyen er vekkesiden).
-- [ ] Sletteskript: workspaces + volumer + GitHub-repo i én operasjon etter
+- [ ] Sletteskript: prosjektets containere (inkl. arbeidsflater) + volumer + GitHub-repo i én operasjon etter
       eksplisitt bekreftelse; org-sletting som dokumentert manuelt steg.
 - [ ] Konfetti-testen: modus → proxy → modell → filredigering → synlig på
       levende webside.
