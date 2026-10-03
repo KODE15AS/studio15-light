@@ -1,7 +1,9 @@
 # HANDOVER — Studio 15 LIGHT
 
 Levende spesifikasjon (norm «handover»). Punktene krysses av etter hvert som
-de leveres. Chat 0 startet 2026-10-03.
+de leveres. Chat 0 startet 2026-10-03. Chat 1 leverte V1 samme dag — chat 2
+starter med `2026-10-03-handover-1-til-2.md` (byggeoppdrag: vaktmester-
+integrasjonen i lobbyen, deretter V2).
 
 ## Grunnlag — les disse først
 
@@ -80,9 +82,12 @@ Hovedstruktur (Handover 0-grillingen, 03.10):
 
 - **Program = ekte GitHub-org.** Et program er overbygningen som dekker et
   antall prosjekter (erstatter Studio 15s «klasse»). Valgt med åpne øyne:
-  GitHub har ikke API for org-oppretting eller org-sletting, så UI-et blir
-  en guidet flyt med manuelle GitHub-steg (som Studio 15 løste det), og
-  sletteregimet får et manuelt org-steg til slutt — resten automatiseres.
+  GitHub har ikke API for org-oppretting eller org-sletting på gratisplanen,
+  så UI-et blir en guidet flyt med manuelle GitHub-steg (som Studio 15
+  løste det), og sletteregimet får et manuelt org-steg til slutt — resten
+  automatiseres. (Presisert 03.10: API-et finnes, men kun for
+  enterprise-kontoer — GitHub Enterprise Cloud, $21/bruker/mnd. Vurdert og
+  avvist som ikke verdt det nå; detaljer i handover 1→2.)
 - **Vaktmester-mønsteret gjenopplives**: GitHub App for repo-automatikk i
   program-orgene (lærdommene fra Studio 15 om deploy keys og app-tokens
   gjelder). Erstatter merknaden om ny PAT.
