@@ -19,6 +19,11 @@ VS Code i nettleseren (code-server) + Zoo Code koblet mot LiteLLM-proxy +
 Vite-dev-server som viser websiden levende. Ravens 70"-skjerm viser begge
 flatene 50/50. Ingen innlogging, ingen database, ingen offentlig eksponering.
 
+Strukturen over flatene: et **program** (= GitHub-org) dekker et antall
+**prosjekter** (= eget container/repo-sett, persistent). Lobbyen lar en
+opprette program og prosjekter og starte/gjenoppta dem; workspaces opprettes
+per deltager ved behov.
+
 ## Beslutninger (Jørn, 2026-10-03)
 
 Fra VeloStack-runden (notatet «README about Studio 15 Light med VeloStack»):
@@ -51,12 +56,32 @@ Fra skjermsamling-avklaringene (03.10):
   dvale/vekke-mønsteret.
 - **Sletting er sletting**: ett skript sletter containere, volumer OG
   GitHub-repoet (etter eksplisitt bekreftelse) — ingen dangling repos.
-  Merk: PAT-en på raven dekker ikke KODE15AS; sletting av KODE15AS-repoer
-  trenger egen tilgang (avklares når skriptet bygges).
+  GitHub-tilgangen løses av vaktmester-appen (se Hovedstruktur under);
+  org-sletting er GitHubs ene manuelle unntak.
 - Se/peke/ta over videreføres uendret fra Skjermsamling (eierfarge, ghost-
   cursors med navn, én ekstern controller, take/release broadcastes).
 - Designgrunnlag: `webprofil-kode15` (norm «web-profil»), med Skjermsamlings
   `app.css` som referanse. Arbeid rett på `main` (norm «tbd»), ikke PR-flyt.
+
+Hovedstruktur (Handover 0-grillingen, 03.10):
+
+- **Program = ekte GitHub-org.** Et program er overbygningen som dekker et
+  antall prosjekter (erstatter Studio 15s «klasse»). Valgt med åpne øyne:
+  GitHub har ikke API for org-oppretting eller org-sletting, så UI-et blir
+  en guidet flyt med manuelle GitHub-steg (som Studio 15 løste det), og
+  sletteregimet får et manuelt org-steg til slutt — resten automatiseres.
+- **Vaktmester-mønsteret gjenopplives**: GitHub App for repo-automatikk i
+  program-orgene (lærdommene fra Studio 15 om deploy keys og app-tokens
+  gjelder). Erstatter merknaden om ny PAT.
+- **Alt bor i git — ingen database.** Programregister som YAML i dette
+  repoet, prosjektkode i prosjektrepoene, secrets i `.env` utenfor git,
+  kjøretilstand leses fra Docker. Kun temp-filer på raven, slik at en
+  container alltid kan gjenoppbygges fra repo.
+- **Workspaces opprettes per deltager ved behov** — solo-prosjekter støttes;
+  ikke fast to seter.
+- **V1 = tynn E2E-skive**: lobby (program + prosjekt) → workspace med
+  Zoo Code → proxy → konfetti-test. Vegg + se/peke/ta over er v2.
+- Web-design: `webprofil-kode15` (norm «web-profil») — bekreftet på nytt.
 
 ## Åpne punkter (agentarbeid, første byggetrinn)
 
@@ -71,26 +96,41 @@ Fra skjermsamling-avklaringene (03.10):
 
 ## Leveranser
 
+Gjort:
+
 - [x] Repo opprettet på GitHub (KODE15AS/studio15-light) og klonet til
       `~/dev/studio15-light` på raven.
 - [x] Stack på plass: compose + plassholder-container på
       http://100.65.19.39:8100 (kun Tailscale).
-- [x] Åpne spørsmål fra erfaringsoverføringen kap. 10 avklart med Jørn
-      (se Beslutninger over).
-- [ ] HTTPS på plass via `tailscale cert` for arbeidsflate-URL-ene.
-- [ ] Dvale/vekke: idle-reaper + 503-vekkeside for de to setene.
+- [x] Alle avklaringer tatt med Jørn (se Beslutninger over).
+
+V1 — tynn E2E-skive (trinnvis, hvert trinn E2E-verifiseres maskinelt):
+
+- [ ] Zoo Code-verifisering (se Åpne punkter) — først, alt annet avhenger
+      av den.
 - [ ] Workspace-image: code-server (pinnet versjon) + Node LTS + Vite +
       Zoo Code, med alle image-fiksene fra Studio 15 (chown på volum,
       Copilot fjernet, trust/velkomst av, ripgrep-symlink, autolagring).
 - [ ] LiteLLM-proxy i enkleste form: master-nøkkel, Fable 5 primær med
       fallback til Opus 5, `drop_params: true`. Nøkkel kun i proxyen.
+- [ ] Vaktmester-appen: GitHub App for repo-automatikk i program-orgene.
+      Krever manuelle GitHub-steg fra Jørn (app-oppretting/installasjon).
+- [ ] Lobby (webprofil-kode15): programregister (YAML i dette repoet),
+      guidet org-opprettingsflyt med manuelle GitHub-steg, prosjektvelger
+      som starter/gjenopptar prosjekt, workspace per deltager ved behov.
+      Mock-driver (`WORKSPACE_DRIVER=mock`) for utvikling uten Docker.
 - [ ] Docker-nett: workspace-containere deler aldri nett med styrende
       tjenester (`internal: true`-mønsteret).
+- [ ] HTTPS via `tailscale cert` for alle URL-er.
+- [ ] Dvale/vekke: idle-reaper + 503-vekkeside (lobbyen er vekkesiden).
+- [ ] Sletteskript: workspaces + volumer + GitHub-repo i én operasjon etter
+      eksplisitt bekreftelse; org-sletting som dokumentert manuelt steg.
 - [ ] Konfetti-testen: modus → proxy → modell → filredigering → synlig på
       levende webside.
-- [ ] To seter verifisert fra wifi med Tailscale.
-- [ ] Lobby med prosjektvelger (= vekkeside): starte/gjenoppta prosjekt,
-      mock-driver for utvikling uten Docker (`WORKSPACE_DRIVER=mock`).
+- [ ] Begge deltagere verifisert fra wifi med Tailscale.
+
+V2 — samarbeidslaget:
+
 - [ ] Presence-laget: roster-snapshot etter welcome, reconnect med
       session-token + generasjonsteller, tile-relative cursor-koordinater,
       se/peke/ta over.
@@ -98,5 +138,3 @@ Fra skjermsamling-avklaringene (03.10):
       begge halvdeler med arbeidsflate + levende webside
       (kiosk-fellene fra `wall/`-skriptene: wmctrl på PID, DISPLAY-vakt,
       autostart-mappe, fast skjerm).
-- [ ] Sletteskript: containere + volumer + GitHub-repo i én operasjon,
-      etter eksplisitt bekreftelse.
