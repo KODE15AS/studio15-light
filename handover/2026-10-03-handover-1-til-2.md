@@ -1,6 +1,6 @@
 # Handover 1 → 2 (2026-10-03)
 
-Chat 1 («Handover 1») bygget og testet hele V1. `HANDOVER.md` er målbildet —
+Chat 1 bygget og testet hele V1. `HANDOVER.md` er målbildet —
 denne fila er tilstanden ved overgangen og byggeoppdraget til chat 2.
 
 ## Tilstand: V1 er levert og testet
@@ -34,7 +34,8 @@ et tomt «Demo»-program.
 
 ## Chat 2 starter her — oppdrag: bygg og test alt gjenstående autonomt
 
-Døp chatten «Handover 2». Oppdraget fra Jørn (03.10): **bygg og maskintest
+Chatten heter «Chat 2» (Jørn oppretter og navngir den). Oppdraget fra
+Jørn (03.10): **bygg og maskintest
 alt gjenstående i én autonom prosess**; når alt er grønt kjøres omfattende
 mennesketester. Rekkefølge:
 
