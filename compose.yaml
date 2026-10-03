@@ -1,0 +1,9 @@
+services:
+  studio15-light:
+    build: .
+    image: studio15-light:latest
+    container_name: studio15-light
+    restart: unless-stopped
+    ports:
+      # Kun Tailscale — ingen offentlig eksponering.
+      - "100.65.19.39:8100:8100"
