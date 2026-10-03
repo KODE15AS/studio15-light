@@ -11,10 +11,15 @@ automatiseres i repoet etterpå.
 
 ## 1. Opprett appen (én gang)
 
-1. Logg inn på github.com med KODE15-kontoen.
-2. Gå til **organisasjonen KODE15AS → Settings** (org-innstillingene, ikke
-   dine egne): `https://github.com/organizations/KODE15AS/settings/apps`
-3. Venstremeny: **Developer settings → GitHub Apps → New GitHub App**.
+Merk: `KODE15AS` er en **personlig GitHub-konto** (den eier program-org-ene,
+men er ikke selv en org). Appen opprettes derfor under kontoens egne
+Developer settings:
+
+1. Logg inn på github.com med KODE15AS-kontoen.
+2. Profilikonet øverst til høyre → **Settings** → helt nederst i
+   venstremenyen: **Developer settings**.
+3. **GitHub Apps → New GitHub App**
+   (direkte: `https://github.com/settings/apps/new`).
 4. Fyll ut:
    - **GitHub App name:** `studio15-light-vaktmester`
    - **Homepage URL:** `https://github.com/KODE15AS/studio15-light`
@@ -39,7 +44,7 @@ automatiseres i repoet etterpå.
 
 ## 3. Installer appen i org-ene
 
-For **hver** program-org (og gjerne KODE15AS selv):
+For **hver** program-org (f.eks. `KODE15-saturday-test-2`):
 
 1. Appens side → **Install App** (venstremeny).
 2. Velg org-en → **Install**.
