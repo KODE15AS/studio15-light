@@ -163,6 +163,10 @@ start_kiosk() {
     --start-fullscreen
     --noerrdialogs
     --disable-session-crashed-bubble
+    # Aldri «første gangs oppstart»-skjermen (ToS-siden) — den seedede
+    # profilen mangler First Run-merket, så uten dette flagget dekket
+    # den hele veggen (funn 04.10). Merkefila skrives også under.
+    --no-first-run
     # Ingen «oversett siden?»-boble over veggen (funn 04.10). Snap-
     # innpakningen legger på sitt eget --disable-features-flagg, og bare
     # ett av dem vinner — derfor nevner vårt begge funksjonene, OG
@@ -192,6 +196,7 @@ start_kiosk() {
   mkdir -p "$PROFIL/Default"
   printf '%s' '{"translate":{"enabled":false},"translate_blocked_languages":["no","nb","nn"],"intl":{"accept_languages":"en-US,en"}}' \
     > "$PROFIL/Default/Preferences"
+  : > "$PROFIL/First Run" # merkefil: førstegangsoppsettet er «gjort»
   log "70\"-skjerm oppdaget (match: $MATCH) — starter kiosk: $NETTLESER"
   nohup "$NETTLESER" "${args[@]}" >/dev/null 2>&1 &
   vent_paa_kiosk
