@@ -122,17 +122,22 @@
 
 /* Ved hover fylles ruten med logofargen blågrå mørk, all tekst blir
    hvit, og ruten løftes 4px — som på popina.no. */
-.k15-rute:hover {
-  transform: translateY(-4px);
-  background: var(--k15-blaagraa-mork);
-  border-color: var(--k15-blaagraa-mork);
-  box-shadow: 0 10px 30px rgba(78, 71, 64, 0.12);
-}
+/* Kun på enheter med ekte pekere: på touch (nettbrett) gjorde hover-
+   emuleringen at første trykk bare «hovret» og kortet krevde to trykk
+   (funn 04.10, Lenovo). Meldes oppstrøms til web-profilen (raven-platform). */
+@media (hover: hover) {
+  .k15-rute:hover {
+    transform: translateY(-4px);
+    background: var(--k15-blaagraa-mork);
+    border-color: var(--k15-blaagraa-mork);
+    box-shadow: 0 10px 30px rgba(78, 71, 64, 0.12);
+  }
 
-.k15-rute:hover h3,
-.k15-rute:hover p,
-.k15-rute:hover .k15-nummer {
-  color: var(--k15-hvit);
+  .k15-rute:hover h3,
+  .k15-rute:hover p,
+  .k15-rute:hover .k15-nummer {
+    color: var(--k15-hvit);
+  }
 }
 
 /* --- Knapper --- */
