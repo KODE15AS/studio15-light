@@ -26,6 +26,15 @@
 }
 
 (ruting) {
+	# SPA-HTML må ALDRI caches: etter en utrulling pekte bufret index.html
+	# på utgåtte asset-hasher og ga «tom lobby» (funn 04.10). Assets har
+	# hash i navnet og caches trygt av nettleseren som før.
+	@spahtml path / /index.html /samling/* /vegg /vegg/*
+	header @spahtml {
+		Cache-Control "no-cache"
+		defer
+	}
+
 	# Begge innganger logger til samme fil — reaperen (dvale) leser denne,
 	# så LAN-aktivitet må telle på lik linje med tailnett-aktivitet.
 	log {

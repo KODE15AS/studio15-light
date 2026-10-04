@@ -101,7 +101,21 @@
 
 <div class="k15-page side">
   <header class="k15-header">
-    <img class="k15-logo" src="/kode15-logo.png" alt="KODE15" />
+    <!-- Logoen er alltid veien hjem; på lobbyen virker den som forenklet
+         F5 (nettbrett mangler lett tilgjengelig reload — Jørn 04.10). -->
+    <a
+      class="logolenke"
+      href="/"
+      title="Oppdater lobbyen"
+      onclick={(e) => {
+        if (location.pathname === '/') {
+          e.preventDefault()
+          location.reload()
+        }
+      }}
+    >
+      <img class="k15-logo" src="/kode15-logo.png" alt="KODE15 — til lobbyen" />
+    </a>
     <div>
       <span class="k15-kicker">Studio 15 LIGHT</span>
       <h1 class="tittel">Lobby</h1>

@@ -67,7 +67,10 @@
 
 <div class="stage">
   <header>
-    <a class="hjem" href="/">← Lobby</a>
+    <!-- Logoen er alltid veien hjem (Jørn 04.10) -->
+    <a class="hjem" href="/" title="Til lobbyen">
+      <img src="/kode15-logo.png" alt="KODE15 — til lobbyen" />
+    </a>
     <span class="kicker">Samling</span>
     <strong class="prosjekt">{prosjektNavn}</strong>
 
@@ -165,9 +168,17 @@
     flex: none;
     flex-wrap: wrap;
   }
+  /* Logoen har mørk tekst — hvit brikke gjør den lesbar på mørk header. */
   .hjem {
-    color: #8a949c;
-    text-decoration: none;
+    display: flex;
+    align-items: center;
+    background: #fff;
+    border-radius: 6px;
+    padding: 3px 7px;
+  }
+  .hjem img {
+    height: 20px;
+    display: block;
   }
   .kicker {
     font-size: 11px;
