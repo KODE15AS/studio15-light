@@ -26,6 +26,10 @@ services:
       # https://lobby.studio15.cloud — ingen port å huske.
       - "10.10.0.22:443:8102"
       - "10.10.0.22:80:8103"
+      # Selvhelbredende legacy-adresse: 8100 levde kort på wifi-IP-en
+      # (04.10) og sitter i nettlesernes autofullføring/bokmerker —
+      # redirect i stedet for død port.
+      - "10.10.0.22:8100:8103"
     volumes:
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - ./certs:/certs:ro
