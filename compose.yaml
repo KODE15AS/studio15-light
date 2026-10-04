@@ -52,7 +52,7 @@ services:
       REPOS_VOLUME: s15l-repos
       # Brukes i absolutte adresser som gis VIDERE (Zoo-regelfilen i
       # arbeidsflatene). Studio-setene er på wifi-en → wifi-inngangen.
-      PUBLIC_BASE: https://lobby.studio15.cloud
+      PUBLIC_BASE: https://startside.studio15.cloud
       REGISTER_PATH: /data/register/programmer.yaml
       ACCESS_LOG: /logs/access.log
       # Overstyres kun i test av dvale/vekke (IDLE_MINUTES=1 ved oppstart)

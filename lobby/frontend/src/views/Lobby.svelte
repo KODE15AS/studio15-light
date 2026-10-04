@@ -1,40 +1,55 @@
 <script lang="ts">
-  // Lobbyen: programmer (GitHub-orger) → prosjekter → arbeidsflater.
-  // Design: webprofil-kode15 (norm «web-profil»).
+  // Startsiden (tidl. «Lobby» — begrepet utgikk 04.10, Jørn):
+  // prosjektgrupper (GitHub-orger) → prosjekter → deltagerskjermer.
+  // Design: webprofil-kode15 (norm «web-profil»), brødsmuler i GitHub-stil.
+  // To «sider» i samme komponent, skilt på URL:
+  //   /                 startsiden (velg prosjektgruppe + deltagervelger)
+  //   /gruppe/<slug>/   prosjektsiden for én gruppe
+  import Smuler from '../lib/Smuler.svelte'
+  import Deltagervelger from '../lib/Deltagervelger.svelte'
 
   type Arbeidsflate = {
     deltager: string
+    farge: string | null
     kortnavn: string
     kjorer: boolean
     editor_url: string
     web_url: string
   }
   type Prosjekt = { slug: string; navn: string; repo: string; arbeidsflater: Arbeidsflate[] }
-  type Program = { slug: string; navn: string; github_org: string | null; prosjekter: Prosjekt[] }
+  type Gruppe = { slug: string; navn: string; github_org: string | null; prosjekter: Prosjekt[] }
+  type Deltager = { slug: string; navn: string; farge: string; registrert: string }
 
-  let programmer: Program[] = $state([])
-  let valgtProgram: string | null = $state(null)
+  let { gruppe = null }: { gruppe?: string | null } = $props()
+
+  let grupper: Gruppe[] = $state([])
+  let deltagere: Deltager[] = $state([])
+  let valgtDeltager: Deltager | null = $state(null)
   let feilmelding = $state('')
   let opptatt = $state(false)
+  let lastet = $state(false)
 
   // Skjemafelter
-  let nyttProgramNavn = $state('')
+  let nyGruppeNavn = $state('')
   let visOrgFlyt = $state(false)
   let nyttProsjektNavn = $state('')
-  let deltagerNavn: Record<string, string> = $state({})
+  let visNyttProsjekt = $state(false)
   let slettBekreft: Record<string, string> = $state({})
 
-  const programmet = $derived(programmer.find((p) => p.slug === valgtProgram) ?? null)
+  const gruppen = $derived(grupper.find((g) => g.slug === gruppe) ?? null)
 
   async function hent() {
     try {
       const r = await fetch('/api/tilstand')
       if (!r.ok) throw new Error(await r.text())
       const data = await r.json()
-      programmer = data.programmer
+      grupper = data.programmer
+      deltagere = data.deltagere ?? []
       feilmelding = ''
     } catch (e) {
-      feilmelding = 'Får ikke kontakt med lobbyen — last siden på nytt for å prøve igjen.'
+      feilmelding = 'Får ikke kontakt med startsiden — last siden på nytt for å prøve igjen.'
+    } finally {
+      lastet = true
     }
   }
 
@@ -59,37 +74,37 @@
     }
   }
 
-  async function lagProgram() {
-    if (!nyttProgramNavn.trim()) return
-    await kall('POST', '/api/programmer', { navn: nyttProgramNavn })
-    nyttProgramNavn = ''
+  async function lagGruppe() {
+    if (!nyGruppeNavn.trim()) return
+    await kall('POST', '/api/programmer', { navn: nyGruppeNavn })
+    nyGruppeNavn = ''
     visOrgFlyt = false
   }
 
   async function lagProsjekt() {
-    if (!programmet || !nyttProsjektNavn.trim()) return
-    await kall('POST', '/api/prosjekter', { program: programmet.slug, navn: nyttProsjektNavn })
+    if (!gruppen || !nyttProsjektNavn.trim()) return
+    await kall('POST', '/api/prosjekter', { program: gruppen.slug, navn: nyttProsjektNavn })
     nyttProsjektNavn = ''
+    visNyttProsjekt = false
   }
 
-  async function aapneArbeidsflate(prosjekt: Prosjekt) {
-    const navn = (deltagerNavn[prosjekt.slug] ?? '').trim()
-    if (!programmet || !navn) return
+  async function aapneSkjerm(prosjekt: Prosjekt) {
+    if (!gruppen || !valgtDeltager) return
     await kall('POST', '/api/arbeidsflater', {
-      program: programmet.slug,
+      program: gruppen.slug,
       prosjekt: prosjekt.slug,
-      deltager: navn,
+      deltager: valgtDeltager.navn,
     })
     // Samlingsvisningen (V2): editor + webside + se/peke/ta over.
     window.open(
-      `/samling/${programmet.slug}/${prosjekt.slug}/?deltager=${encodeURIComponent(navn)}`,
+      `/samling/${gruppen.slug}/${prosjekt.slug}/?deltager=${encodeURIComponent(valgtDeltager.navn)}`,
       '_blank'
     )
   }
 
   async function slettProsjekt(prosjekt: Prosjekt) {
-    if (!programmet) return
-    await kall('DELETE', `/api/prosjekter/${programmet.slug}/${prosjekt.slug}`, {
+    if (!gruppen) return
+    await kall('DELETE', `/api/prosjekter/${gruppen.slug}/${prosjekt.slug}`, {
       bekreft: slettBekreft[prosjekt.slug] ?? '',
     })
     slettBekreft[prosjekt.slug] = ''
@@ -101,12 +116,12 @@
 
 <div class="k15-page side">
   <header class="k15-header">
-    <!-- Logoen er alltid veien hjem; på lobbyen virker den som forenklet
+    <!-- Logoen er alltid veien hjem; på startsiden virker den som forenklet
          F5 (nettbrett mangler lett tilgjengelig reload — Jørn 04.10). -->
     <a
       class="logolenke"
       href="/"
-      title="Oppdater lobbyen"
+      title="Oppdater startsiden"
       onclick={(e) => {
         if (location.pathname === '/') {
           e.preventDefault()
@@ -114,107 +129,141 @@
         }
       }}
     >
-      <img class="k15-logo" src="/kode15-logo.png" alt="KODE15 — til lobbyen" />
+      <img class="k15-logo" src="/kode15-logo.png" alt="KODE15 — til startsiden" />
     </a>
     <div>
       <span class="k15-kicker">Studio 15 LIGHT</span>
-      <h1 class="tittel">Lobby</h1>
+      <h1 class="tittel">{gruppe ? 'Prosjekter' : 'Startside'}</h1>
     </div>
+    <!-- Deltagervelgeren (04.10): identitetsvalg for hele økten — åpen
+         tabell, ingen innlogging. -->
+    <Deltagervelger {deltagere} bind:valgt={valgtDeltager} />
   </header>
 
   <main class="innhold">
+    <Smuler
+      deler={gruppen
+        ? [{ navn: 'Startside', href: '/' }, { navn: gruppen.navn }]
+        : [{ navn: 'Startside' }]}
+    />
+
     {#if feilmelding}
       <div class="k15-card varsel">{feilmelding}</div>
     {/if}
 
-    {#if !programmet}
+    {#if !gruppe}
       <section>
-        <span class="k15-kicker">Programmer</span>
-        <h2>Velg program</h2>
-        <p>
-          Et program er overbygningen for en samling prosjekter — en egen
-          GitHub-organisasjon. Prosjektene under et program deles av begge
-          deltagerne.
-        </p>
-        <div class="k15-ruter">
-          {#each programmer as p, i}
-            <a
-              class="k15-rute"
-              href="#{p.slug}"
-              onclick={(e) => {
-                e.preventDefault()
-                valgtProgram = p.slug
-              }}
-            >
-              <span class="k15-nummer">{String(i + 1).padStart(2, '0')}</span>
-              <h3>{p.navn}</h3>
-              <p>
-                {p.prosjekter.length} prosjekt{p.prosjekter.length === 1 ? '' : 'er'}
-                {#if !p.github_org}· GitHub-org mangler{/if}
-              </p>
-            </a>
-          {/each}
-          <button class="k15-rute ny" onclick={() => (visOrgFlyt = !visOrgFlyt)}>
-            <span class="k15-nummer">+</span>
-            <h3>Nytt program</h3>
-            <p>Guidet oppretting med manuelle GitHub-steg</p>
+        <span class="k15-kicker">Prosjektgrupper</span>
+        <div class="topplinje">
+          <h2>Velg prosjektgruppe</h2>
+          <button class="k15-btn k15-btn-primary" onclick={() => (visOrgFlyt = !visOrgFlyt)}>
+            Lag ny prosjektgruppe
           </button>
         </div>
+        <p>
+          En prosjektgruppe samler prosjekter som naturlig hører sammen, og
+          opprettes på GitHub som en «organisasjon». Prosjektgruppenavnet bør
+          være beskrivende for alle prosjektene i gruppen.
+        </p>
 
         {#if visOrgFlyt}
           <div class="k15-card orgflyt">
             <span class="k15-kicker">Guidet flyt</span>
-            <h3>Nytt program (GitHub-org)</h3>
+            <h3>Ny prosjektgruppe (GitHub-organisasjon)</h3>
             <p>
               GitHub har ikke API for å opprette organisasjoner, så selve
-              org-en lages manuelt — resten håndterer lobbyen:
+              org-en lages manuelt — resten håndterer startsiden:
             </p>
             <ol>
               <li>
                 Gå til <strong>github.com → ikonet øverst til høyre →
                 Settings → Organizations → New organization</strong> (Free).
               </li>
-              <li>Org-navn: bruk programnavnet med KODE15-prefiks, f.eks. <code>KODE15-&lt;program&gt;</code>.</li>
+              <li>Org-navn: bruk gruppenavnet med KODE15-prefiks, f.eks. <code>KODE15-&lt;gruppe&gt;</code>.</li>
               <li>Eier: KODE15-kontoen. Ikke inviter medlemmer.</li>
               <li>
                 Installer vaktmester-appen på org-en (se
                 <code>docs/vaktmester-klikkeliste.md</code>) — da oppretter og
-                sletter lobbyen prosjektrepoene i org-en automatisk.
+                sletter lobbytjenesten prosjektrepoene i org-en automatisk.
               </li>
             </ol>
             <p>
-              Registrer programmet her — org-navnet kan legges til i
+              Registrer prosjektgruppen her — org-navnet kan legges til i
               <code>register/programmer.yaml</code> når org-en er laget:
             </p>
             <form
               onsubmit={(e) => {
                 e.preventDefault()
-                lagProgram()
+                lagGruppe()
               }}
             >
-              <input placeholder="Programnavn" bind:value={nyttProgramNavn} />
-              <button class="k15-btn k15-btn-primary" disabled={opptatt}>Registrer program</button>
+              <input placeholder="Navn på prosjektgruppen" bind:value={nyGruppeNavn} />
+              <button class="k15-btn k15-btn-primary" disabled={opptatt}>Registrer</button>
             </form>
           </div>
         {/if}
+
+        <div class="k15-ruter">
+          {#each grupper as g, i}
+            <a class="k15-rute" href="/gruppe/{g.slug}/">
+              <span class="k15-nummer">{String(i + 1).padStart(2, '0')}</span>
+              <h3>{g.navn}</h3>
+              {#if g.prosjekter.length > 0}
+                <!-- Prosjektnavnene direkte på flisen (04.10): inntil 4
+                     synlige, skroller ved flere. Kun visning — veien inn
+                     går via prosjektsiden. -->
+                <ul class="prosjektliste" class:skroller={g.prosjekter.length > 4}>
+                  {#each g.prosjekter as pr}
+                    <li>{pr.navn}</li>
+                  {/each}
+                </ul>
+              {:else}
+                <p>Ingen prosjekter ennå</p>
+              {/if}
+              {#if !g.github_org}
+                <p class="mangel">GitHub-org mangler</p>
+              {/if}
+            </a>
+          {/each}
+        </div>
       </section>
-    {:else}
+    {:else if gruppen}
       <section>
-        <button class="k15-btn k15-btn-secondary tilbake" onclick={() => (valgtProgram = null)}>
-          ← Alle programmer
-        </button>
-        <span class="k15-kicker">Program</span>
-        <h2>{programmet.navn}</h2>
-        {#if !programmet.github_org}
+        <span class="k15-kicker">Prosjektgruppe</span>
+        <div class="topplinje">
+          <h2>Prosjektgruppe: {gruppen.navn}</h2>
+          <button class="k15-btn k15-btn-primary" onclick={() => (visNyttProsjekt = !visNyttProsjekt)}>
+            Lag nytt prosjekt
+          </button>
+        </div>
+        {#if !gruppen.github_org}
           <p class="hint">
-            Programmet har ingen GitHub-org — nye prosjekter får lokale
+            Prosjektgruppen har ingen GitHub-org — nye prosjekter får lokale
             git-repoer på raven. (Repo-typen velges ved opprettelse; med org
             lager vaktmesteren private GitHub-repoer automatisk.)
           </p>
         {/if}
 
+        {#if visNyttProsjekt}
+          <div class="k15-card orgflyt">
+            <span class="k15-kicker">Nytt prosjekt</span>
+            <h3>Lag nytt prosjekt</h3>
+            <p>Starter fra malen: Svelte + Vite med levende webside og Zoo Code.</p>
+            <form
+              class="rad"
+              onsubmit={(e) => {
+                e.preventDefault()
+                lagProsjekt()
+              }}
+            >
+              <input placeholder="Prosjektnavn" bind:value={nyttProsjektNavn} />
+              <button class="k15-btn k15-btn-primary" disabled={opptatt}>Opprett</button>
+            </form>
+          </div>
+        {/if}
+
         <div class="prosjekter">
-          {#each programmet.prosjekter as prosjekt}
+          {#each gruppen.prosjekter as prosjekt}
             <div class="k15-card prosjekt">
               <span class="k15-nummer">PROSJEKT</span>
               <h3>{prosjekt.navn}</h3>
@@ -223,11 +272,15 @@
                 <ul class="flater">
                   {#each prosjekt.arbeidsflater as flate}
                     <li>
-                      <span class="status" class:paa={flate.kjorer}></span>
+                      <span
+                        class="status"
+                        class:paa={flate.kjorer}
+                        style={flate.farge && flate.kjorer ? `background: ${flate.farge}` : ''}
+                      ></span>
                       <strong>{flate.deltager}</strong>
                       {#if flate.kjorer}
                         <a
-                          href="/samling/{programmet.slug}/{prosjekt.slug}/?deltager={encodeURIComponent(
+                          href="/samling/{gruppen.slug}/{prosjekt.slug}/?deltager={encodeURIComponent(
                             flate.deltager
                           )}"
                           target="_blank">Samling</a
@@ -252,27 +305,26 @@
                 </ul>
               {/if}
 
-              <form
-                class="rad"
-                onsubmit={(e) => {
-                  e.preventDefault()
-                  aapneArbeidsflate(prosjekt)
-                }}
-              >
-                <input placeholder="Deltagernavn" bind:value={deltagerNavn[prosjekt.slug]} />
-                <button class="k15-btn k15-btn-primary" disabled={opptatt}>
-                  Åpne min arbeidsflate
+              {#if valgtDeltager}
+                <button
+                  class="k15-btn k15-btn-primary"
+                  disabled={opptatt}
+                  onclick={() => aapneSkjerm(prosjekt)}
+                >
+                  Åpne min skjerm ({valgtDeltager.navn})
                 </button>
-              </form>
+              {:else}
+                <p class="hint">Velg deltager øverst til høyre for å åpne din skjerm.</p>
+              {/if}
               <p class="hint">
-                To deltagere kan dele prosjektet med hver sin arbeidsflate —
-                eller jobbe i samme flate ved å åpne samme adresse.
+                To deltagere kan dele prosjektet med hver sin skjerm — eller
+                jobbe på samme skjerm ved å åpne samme adresse.
               </p>
 
               <details class="slett">
                 <summary>Slett prosjektet</summary>
                 <p>
-                  Sletter arbeidsflatene, volumene og prosjektrepoet i én
+                  Sletter skjermene, volumene og prosjektrepoet i én
                   operasjon. Skriv prosjektets slug
                   (<code>{prosjekt.slug}</code>) for å bekrefte:
                 </p>
@@ -294,29 +346,18 @@
               </details>
             </div>
           {/each}
-
-          <div class="k15-card prosjekt nytt">
-            <span class="k15-nummer">+</span>
-            <h3>Nytt prosjekt</h3>
-            <p>Starter fra malen: Svelte + Vite med levende webside og Zoo Code.</p>
-            <form
-              class="rad"
-              onsubmit={(e) => {
-                e.preventDefault()
-                lagProsjekt()
-              }}
-            >
-              <input placeholder="Prosjektnavn" bind:value={nyttProsjektNavn} />
-              <button class="k15-btn k15-btn-primary" disabled={opptatt}>Opprett</button>
-            </form>
-          </div>
         </div>
       </section>
+    {:else if lastet}
+      <div class="k15-card varsel">
+        Fant ingen prosjektgruppe med adressen «{gruppe}» —
+        <a href="/">tilbake til startsiden</a>.
+      </div>
     {/if}
   </main>
 
   <footer class="k15-footer-bottom">
-    Studio 15 LIGHT · KODE15 · kun Tailscale · <a class="vegglenke" href="/vegg">Veggen</a>
+    Studio 15 LIGHT · KODE15 · <a class="tavlelenke" href="/tavle">Tavla</a>
   </footer>
 </div>
 
@@ -334,20 +375,54 @@
     flex: 1;
     width: min(1040px, 92vw);
     margin: 0 auto;
-    padding: 32px 0 48px;
+    padding: 24px 0 48px;
+  }
+  .innhold :global(.k15-smuler) {
+    margin-bottom: 18px;
   }
   .varsel {
     border-color: #bbad9a;
     margin-bottom: 20px;
   }
-  .k15-rute.ny {
-    text-align: left;
-    font: inherit;
-    cursor: pointer;
-    border-style: dashed;
+  .topplinje {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .topplinje h2 {
+    margin: 0;
+  }
+  .prosjektliste {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font-size: 13.5px;
+  }
+  .prosjektliste li {
+    padding: 2px 0;
+    transition: color 0.25s;
+  }
+  /* Flere enn 4 prosjekter: fast høyde på 4 rader + skroller (04.10). */
+  .prosjektliste.skroller {
+    max-height: 96px;
+    overflow-y: auto;
+    padding-right: 6px;
+  }
+  /* Flisens hover gjør bakgrunnen mørk — prosjektlisten må følge med.
+     (hover: hover): aldri hover-styling på berøringsskjermer, funn 04.10. */
+  @media (hover: hover) {
+    .k15-rute:hover .prosjektliste li {
+      color: var(--k15-hvit);
+    }
+  }
+  .mangel {
+    font-size: 12px;
+    margin: 8px 0 0;
   }
   .orgflyt {
-    margin-top: 24px;
+    margin: 18px 0 6px;
   }
   .orgflyt form,
   .rad {
@@ -366,17 +441,11 @@
     background: var(--k15-hvit);
     color: var(--k15-tekst);
   }
-  .tilbake {
-    margin-bottom: 18px;
-  }
   .prosjekter {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
     gap: 20px;
     margin-top: 18px;
-  }
-  .prosjekt.nytt {
-    border-style: dashed;
   }
   .flater {
     list-style: none;
@@ -427,7 +496,7 @@
     cursor: pointer;
     color: var(--k15-blaagraa-lys);
   }
-  .vegglenke {
+  .tavlelenke {
     color: inherit;
   }
 </style>

@@ -3,13 +3,16 @@
 #
 #   :8100  HTTPS via tailscale-sertifikat — tailnettet (PC-er med Tailscale,
 #          veggen på raven).
-#   :8102  HTTPS via Let's Encrypt for lobby.studio15.cloud — studio-wifien.
-#          compose binder denne KUN til ravens wifi-IP (10.10.0.22:443),
-#          aldri offentlig (DNS-navnet peker på privat IP). Nettbrett og
-#          PC-er på wifi-en slipper dermed Tailscale-oppsett, og secure
-#          context (Zoo-webviews, clipboard) er intakt. Sertifikat:
-#          skript/lobby-sertifikat.sh (DNS-01 via deploi-dns, cron månedlig).
-#   :8103  HTTP-redirect til https://lobby.studio15.cloud (10.10.0.22:80).
+#   :8102  HTTPS via Let's Encrypt for startside.studio15.cloud —
+#          studio-wifien. compose binder denne KUN til ravens wifi-IP
+#          (10.10.0.22:443), aldri offentlig (DNS-navnet peker på privat
+#          IP). Nettbrett og PC-er på wifi-en slipper dermed Tailscale-
+#          oppsett, og secure context (Zoo-webviews, clipboard) er intakt.
+#          Sertifikatet dekker også lobby.studio15.cloud (gammelt navn,
+#          04.10: «lobby» utgikk — evig redirect til startside).
+#          Sertifikat: skript/lobby-sertifikat.sh (DNS-01 via deploi-dns,
+#          cron månedlig).
+#   :8103  HTTP-redirect til https://startside.studio15.cloud (10.10.0.22:80).
 #
 #   /                  → lobbyen (programmer, prosjekter, arbeidsflater)
 #   /w/<flate>/...     → code-server i arbeidsflate-containeren (prefiks strippes)
@@ -29,7 +32,7 @@
 	# SPA-HTML må ALDRI caches: etter en utrulling pekte bufret index.html
 	# på utgåtte asset-hasher og ga «tom lobby» (funn 04.10). Assets har
 	# hash i navnet og caches trygt av nettleseren som før.
-	@spahtml path / /index.html /samling/* /vegg /vegg/*
+    @spahtml path / /index.html /gruppe/* /samling/* /tavle /tavle/* /vegg /vegg/*
 	header @spahtml {
 		Cache-Control "no-cache"
 		defer
@@ -103,12 +106,15 @@
 # Wifi-inngangen (HTTPS, Let's Encrypt). Ren http (:8101-forsøket 04.10)
 # fungerte IKKE: Zoo-chatten er en webview som krever secure context —
 # panelet ble blankt. Derfor ekte sertifikat via DNS-navn på privat IP.
+# Sertifikatet dekker startside + lobby; gammelt navn redirectes.
 :8102 {
-	tls /certs/lobby.studio15.cloud.crt /certs/lobby.studio15.cloud.key
+	tls /certs/startside.studio15.cloud.crt /certs/startside.studio15.cloud.key
+	@gammeltnavn host lobby.studio15.cloud
+	redir @gammeltnavn https://startside.studio15.cloud{uri} 308
 	import ruting
 }
 
-# Oppsamling for http://lobby.studio15.cloud (og http://10.10.0.22)
+# Oppsamling for http://startside.studio15.cloud (og http://10.10.0.22)
 :8103 {
-	redir https://lobby.studio15.cloud{uri} 308
+	redir https://startside.studio15.cloud{uri} 308
 }

@@ -24,7 +24,7 @@ use uuid::Uuid;
 
 /// Eierfargene fra webprofil-kode15/Skjermsamling: faste, lesbare på mørk
 /// stage. Stabil per navn innenfor rommets levetid (fargeminne).
-const FARGER: &[&str] = &[
+pub const FARGER: &[&str] = &[
     "#E8A33D", // rav
     "#5FA8D3", // lyseblå
     "#9BC53D", // grønn
@@ -61,6 +61,9 @@ pub enum KlientMelding {
         navn: String,
         /// Session-token fra tidligere besøk — reconnect uten ny identitet.
         session: Option<Uuid>,
+        /// Fast farge fra deltagerregisteret (04.10) — registrerte
+        /// deltagere har samme farge overalt, for alltid.
+        farge: Option<String>,
     },
     Cursor {
         /// Tile-id, f.eks. "<kortnavn>:editor" — opak for serveren.
@@ -164,7 +167,15 @@ impl Rom {
     }
 
     /// Join eller reconnect. Returnerer (id, session-token, welcome-json).
-    pub fn join(&self, navn: String, slug: String, session: Option<Uuid>) -> (Uuid, Uuid, String) {
+    /// `onsket_farge`: fast farge fra deltagerregisteret — går foran
+    /// fargeminnet og ledig-palett-logikken.
+    pub fn join(
+        &self,
+        navn: String,
+        slug: String,
+        session: Option<Uuid>,
+        onsket_farge: Option<String>,
+    ) -> (Uuid, Uuid, String) {
         let mut inner = self.inner.lock().unwrap();
 
         // Reconnect: kjent session-token → samme identitet, avbrutt opprydding.
@@ -183,13 +194,18 @@ impl Rom {
             }
         }
 
-        // Ny deltager: stabil farge per navn, ellers første ledige.
+        // Ny deltager: registrert fast farge hvis oppgitt, ellers stabil
+        // farge per navn, ellers første ledige.
         let i_bruk: Vec<String> = inner.deltagere.values().map(|d| d.farge.clone()).collect();
-        let farge = inner
-            .fargeminne
-            .get(&navn)
-            .cloned()
-            .filter(|f| !i_bruk.contains(f))
+        let farge = onsket_farge
+            .filter(|f| f.starts_with('#') && f.len() <= 9)
+            .or_else(|| {
+                inner
+                    .fargeminne
+                    .get(&navn)
+                    .cloned()
+                    .filter(|f| !i_bruk.contains(f))
+            })
             .or_else(|| {
                 FARGER
                     .iter()

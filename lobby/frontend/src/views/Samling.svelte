@@ -31,9 +31,12 @@
     } catch {}
   }
 
-  // Eierfarge per flate: deltager-sluggen kobler flate ↔ presence-deltager.
+  // Eierfarge per skjerm: presence først, ellers registerfargen fra
+  // /api/tilstand (04.10) — konsistent farge også når eieren er frakoblet.
   const farge = (flate) =>
-    presence.deltagere.find((d) => d.slug === flate.deltager)?.farge ?? '#77838C'
+    presence.deltagere.find((d) => d.slug === flate.deltager)?.farge ??
+    flate.farge ??
+    '#77838C'
 
   const minFlate = $derived(flater.find((f) => presence.deg && f.deltager === presence.deg.slug))
   const visteFlate = $derived(flater.find((f) => f.kortnavn === valgt) ?? minFlate ?? flater[0])
@@ -58,16 +61,38 @@
     if (e.key === 'Escape' && kontrollerer) slipp()
   }
 
-  // Fjern-restart av veggen (Jørn 04.10): setter tidsstempelet som
-  // kiosk-vakta på raven poller — virker også når veggsiden er frossen.
-  let veggStartes = $state(false)
-  async function restartVegg() {
+  // Fjern-restart av tavla (Jørn 04.10): setter tidsstempelet som
+  // kiosk-vakta på raven poller — virker også når tavlesiden er frossen.
+  let tavleStartes = $state(false)
+  async function restartTavle() {
     try {
       await fetch('/api/vegg/restart', { method: 'POST' })
-      veggStartes = true
-      setTimeout(() => (veggStartes = false), 6000)
+      tavleStartes = true
+      setTimeout(() => (tavleStartes = false), 6000)
     } catch {}
   }
+
+  // Andres editor-flis er en EGEN code-server-tilkobling uten åpne faner
+  // (velkomstskjermen, 04.10) — be den åpne prosjektets hovedfil, så
+  // se/ta over faktisk viser koden. Egen flis røres ikke (egen økt).
+  const PAYLOAD = encodeURIComponent(
+    '[["openFile","vscode-remote:///home/coder/project/src/App.svelte"]]'
+  )
+  // Samme slugify som lobbyen (statisk — ellers reloader iframen når
+  // presence kobler til og «min flate» avklares).
+  const slugifyNavn = (s) =>
+    s
+      .toLowerCase()
+      .replaceAll('æ', 'ae')
+      .replaceAll('ø', 'oe')
+      .replaceAll('å', 'aa')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+  const minSlug = deltagerNavn ? slugifyNavn(deltagerNavn) : ''
+  const editorUrl = (flate) =>
+    flate.deltager === minSlug
+      ? flate.editor_url
+      : `${flate.editor_url}?folder=/home/coder/project&payload=${PAYLOAD}`
 
   if (deltagerNavn) join(program, prosjekt, deltagerNavn)
   hent()
@@ -79,8 +104,8 @@
 <div class="stage">
   <header>
     <!-- Logoen er alltid veien hjem (Jørn 04.10) -->
-    <a class="hjem" href="/" title="Til lobbyen">
-      <img src="/kode15-logo.png" alt="KODE15 — til lobbyen" />
+    <a class="hjem" href="/" title="Til startsiden">
+      <img src="/kode15-logo.png" alt="KODE15 — til startsiden" />
     </a>
     <span class="kicker">Samling</span>
     <strong class="prosjekt">{prosjektNavn}</strong>
@@ -93,7 +118,7 @@
           onclick={() => velg(f.kortnavn)}
         >
           <span class="prikk"></span>
-          {presence.deg && f.deltager === presence.deg.slug ? 'Min flate' : f.deltager}
+          {presence.deg && f.deltager === presence.deg.slug ? 'Min skjerm' : f.deltager}
           {#if presence.kontroll[f.kortnavn]}
             <span class="mini-badge" style="background: {presence.kontroll[f.kortnavn].farge}"
               >{presence.kontroll[f.kortnavn].navn}</span
@@ -122,11 +147,11 @@
 
     <button
       class="veggknapp"
-      title="Start 70-tommeren på nytt (hvis veggen henger)"
-      disabled={veggStartes}
-      onclick={restartVegg}
+      title="Start tavla (70-tommeren) på nytt hvis den henger"
+      disabled={tavleStartes}
+      onclick={restartTavle}
     >
-      {veggStartes ? 'Veggen startes …' : '↻ Vegg'}
+      {tavleStartes ? 'Tavla startes …' : '↻ Tavle'}
     </button>
   </header>
 
@@ -136,18 +161,18 @@
 
   {#if !deltagerNavn}
     <div class="melding">
-      Mangler deltagernavn — gå til <a href="/">lobbyen</a> og åpne arbeidsflaten derfra.
+      Mangler deltagernavn — gå til <a href="/">startsiden</a> og åpne skjermen derfra.
     </div>
   {:else if !visteFlate}
     <div class="melding">
-      Ingen arbeidsflater i prosjektet ennå — opprett en i <a href="/">lobbyen</a>.
+      Ingen skjermer i prosjektet ennå — opprett en fra <a href="/">startsiden</a>.
     </div>
   {:else}
     {#key visteFlate.kortnavn}
       <main>
         <FlateTile
           tittel="Editor — {visteFlate.deltager}"
-          url={visteFlate.editor_url}
+          url={editorUrl(visteFlate)}
           tileId="{visteFlate.kortnavn}:editor"
           {modus}
           eierFarge={farge(visteFlate)}

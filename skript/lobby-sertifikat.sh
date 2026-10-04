@@ -1,14 +1,17 @@
 #!/usr/bin/env bash
-# Henter/fornyer Let's Encrypt-sertifikatet for lobby.studio15.cloud
-# (wifi-inngangen) via DNS-01 og GitOps-hooken deploi-dns01-hook.sh.
-# Kjøres månedlig fra cron (fornyer kun når < 30 dager gjenstår) — og
-# manuelt første gang. Kopierer inn i certs/ og restarter caddy ved endring.
+# Henter/fornyer Let's Encrypt-sertifikatet for startside.studio15.cloud
+# med lobby.studio15.cloud som alternativt navn (gammel adresse, evig
+# redirect — Jørn 04.10: begrepet «lobby» utgår). DNS-01 via GitOps-hooken
+# deploi-dns01-hook.sh. Kjøres månedlig fra cron (fornyer kun når < 30
+# dager gjenstår) — og manuelt første gang. Kopierer inn i certs/ og
+# restarter caddy ved endring.
 set -euo pipefail
 
 ROT="$(cd "$(dirname "$0")/.." && pwd)"
 LEGO="${LEGO:-$HOME/.local/bin/lego}"
 EPOST="37360334+Watvedt@users.noreply.github.com"
-DOMENE="lobby.studio15.cloud"
+DOMENE="startside.studio15.cloud"
+EKSTRA="lobby.studio15.cloud"
 LEGO_PATH="$ROT/certs/lego"
 
 export EXEC_PATH="$ROT/skript/deploi-dns01-hook.sh"
@@ -16,8 +19,9 @@ export EXEC_PROPAGATION_TIMEOUT=600
 export EXEC_POLLING_INTERVAL=10
 
 # lego v5: flaggene hører til subkommandoen — env-variantene virker for begge.
+# LEGO_DOMAINS tar kommaseparert liste; første navn = hovednavn = filnavn.
 export LEGO_ACCEPT_TOS=true LEGO_EMAIL="$EPOST" LEGO_DNS=exec \
-       LEGO_DOMAINS="$DOMENE" LEGO_PATH="$LEGO_PATH"
+       LEGO_DOMAINS="$DOMENE,$EKSTRA" LEGO_PATH="$LEGO_PATH"
 # netims navnetjenere er anycast: propageringssjekken kan passere mot én node
 # mens LE treffer en annen (NXDOMAIN 04.10). Fast ventetid i stedet for sjekk.
 export LEGO_DNS_PROPAGATION_WAIT=300s

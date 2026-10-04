@@ -62,9 +62,20 @@
     } catch {}
   }
 
-  // Veggens iframes sover ikke flatene våkne: ?watch=1 på flate-URL-ene får
+  // Tavlas iframes sover ikke skjermene våkne: ?watch=1 på URL-ene får
   // vekkesiden til å vise dvale uten å vekke (se vekk_side i lobbyen).
   const veggUrl = (url) => url + (url.includes('?') ? '&' : '?') + 'watch=1'
+
+  // Editor-flisen på tavla er en EGEN code-server-tilkobling: åpne faner
+  // bor per nettleser, så uten dette viste tavla bare velkomstskjermen
+  // mens deltageren jobbet (Jørns funn 04.10). Payload-en ber code-server
+  // åpne prosjektets hovedfil — den oppdateres ved hver lagring
+  // (filvokteren), så tavla følger koden. Websiden er uansett levende.
+  const PAYLOAD = encodeURIComponent(
+    '[["openFile","vscode-remote:///home/coder/project/src/App.svelte"]]'
+  )
+  const editorUrl = (url) =>
+    veggUrl(`${url}?folder=/home/coder/project&payload=${PAYLOAD}`)
 
   hent()
   setInterval(hent, 5000)
@@ -75,11 +86,11 @@
     <div class="venter">
       <span class="kicker">Studio 15 LIGHT</span>
       <h1>Ingen aktive prosjekter</h1>
-      <p>Veggen våkner når noen åpner en arbeidsflate fra lobbyen.</p>
+      <p>Tavla våkner når noen åpner en skjerm fra startsiden.</p>
     </div>
   {:else}
     <header>
-      <span class="kicker">Studio 15 LIGHT · vegg</span>
+      <span class="kicker">Studio 15 LIGHT · tavle</span>
       <strong>{rom.navn}</strong>
       <div class="roster">
         {#each presence.deltagere as d (d.id)}
@@ -93,14 +104,15 @@
          halvdel, den andre halvdelen står tom til neste flate kommer. -->
     <main style="--kolonner: {Math.max(flater.length, 2)}">
       {#each flater as f (f.kortnavn)}
-        {@const eier = presence.deltagere.find((d) => d.slug === f.deltager)}
+        {@const eierFarge =
+          presence.deltagere.find((d) => d.slug === f.deltager)?.farge ?? f.farge ?? '#77838C'}
         <section>
           <FlateTile
             tittel="Editor — {f.deltager}"
-            url={veggUrl(f.editor_url)}
+            url={editorUrl(f.editor_url)}
             tileId="{f.kortnavn}:editor"
             modus="vegg"
-            eierFarge={eier?.farge ?? '#77838C'}
+            {eierFarge}
             kontroll={presence.kontroll[f.kortnavn] ?? null}
           />
           <FlateTile
@@ -108,7 +120,7 @@
             url={veggUrl(f.web_url)}
             tileId="{f.kortnavn}:web"
             modus="vegg"
-            eierFarge={eier?.farge ?? '#77838C'}
+            {eierFarge}
             kontroll={presence.kontroll[f.kortnavn] ?? null}
           />
         </section>

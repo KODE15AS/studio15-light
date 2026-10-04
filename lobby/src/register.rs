@@ -56,3 +56,47 @@ impl Register {
         Ok(())
     }
 }
+
+// ---------- Deltagere ----------
+
+/// Registrert deltager (Jørn 04.10): en enkel, helt åpen tabell i repoet —
+/// ingen credentials, hvem som helst kan velge hvilken som helst deltager.
+/// Bevisst unntak fra grunnlagsdokumentene («ingen innlogging»): dette er
+/// identitetsVALG, ikke autentisering. Fargen tildeles ved registrering og
+/// er fast for alltid (samme palett som presence-laget).
+#[derive(Serialize, Deserialize, Clone)]
+pub struct Deltager {
+    pub slug: String,
+    pub navn: String,
+    pub farge: String,
+    pub registrert: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, Default)]
+pub struct Deltagere {
+    #[serde(default)]
+    pub deltagere: Vec<Deltager>,
+}
+
+const DELTAGER_HODE: &str = "\
+# Deltagerregister for Studio 15 LIGHT (Jørn 04.10): åpen tabell i git —
+# ingen database, ingen credentials. Identitetsvalg, ikke innlogging
+# (bevisst unntak fra grunnlagsdokumentene, se handover 04.10).
+# Fargen tildeles ved registrering og er fast.
+";
+
+impl Deltagere {
+    pub fn load(path: &str) -> anyhow::Result<Deltagere> {
+        match std::fs::read_to_string(path) {
+            Ok(tekst) => Ok(serde_yaml::from_str(&tekst)?),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(Deltagere::default()),
+            Err(e) => Err(e.into()),
+        }
+    }
+
+    pub fn save(&self, path: &str) -> anyhow::Result<()> {
+        let yaml = serde_yaml::to_string(self)?;
+        std::fs::write(path, format!("{DELTAGER_HODE}{yaml}"))?;
+        Ok(())
+    }
+}

@@ -18,6 +18,7 @@ let ws = null
 let reconnectTimer = null
 let watchModus = false
 let joinNavn = null
+let joinFarge = null // fast farge fra deltagerregisteret (04.10)
 let rommet = null // { program, prosjekt }
 
 const sessionKey = () => `s15l.presence.${rommet.program}/${rommet.prosjekt}.session`
@@ -65,7 +66,9 @@ function aapne() {
     presence.tilkoblet = true
     if (!watchModus && joinNavn) {
       const session = localStorage.getItem(sessionKey()) || undefined
-      ws.send(JSON.stringify({ type: 'join', navn: joinNavn, session }))
+      ws.send(
+        JSON.stringify({ type: 'join', navn: joinNavn, session, farge: joinFarge ?? undefined })
+      )
     }
   }
   ws.onmessage = haandterMelding
@@ -77,11 +80,12 @@ function aapne() {
   ws.onerror = () => ws && ws.close()
 }
 
-/** Koble til som deltager og join med navn. */
-export function join(program, prosjekt, navn) {
+/** Koble til som deltager og join med navn (+ ev. fast registerfarge). */
+export function join(program, prosjekt, navn, farge = null) {
   rommet = { program, prosjekt }
   watchModus = false
   joinNavn = navn
+  joinFarge = farge
   aapne()
 }
 

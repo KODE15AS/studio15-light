@@ -43,6 +43,8 @@ pub struct Cfg {
     pub prosjektmal: String,
     pub repos_dir: String,
     pub webdir: String,
+    /// Deltagerregisteret (04.10): åpen tabell, samme katalog som programmer.
+    pub deltager_path: String,
     /// Hemmelighet for utledning av per-arbeidsflate-tokens (git-token-stien).
     pub token_secret: String,
 }
@@ -57,6 +59,9 @@ pub struct App {
     pub vaktmester: Option<vaktmester::Vaktmester>,
     /// Presence-huben (se/peke/ta over, V2) — ett rom per prosjekt.
     pub presence: presence::Presence,
+    /// Deltagerregisteret (04.10): åpen tabell — identitetsvalg, ikke
+    /// innlogging. Fast farge tildeles ved registrering.
+    pub deltagere: Mutex<register::Deltagere>,
     /// Fjern-restart av veggen (Jørn 04.10): unix-tidsstempel for siste
     /// forespørsel. Kiosk-vakta på raven poller og restarter Chromium
     /// friskt når stempelet er nyere enn det den har sett — virker også
@@ -139,10 +144,61 @@ fn feil(status: StatusCode, melding: &str) -> Response {
     (status, Json(json!({ "feil": melding }))).into_response()
 }
 
+// ---------- Deltagere ----------
+
+#[derive(Deserialize)]
+struct NyDeltager {
+    navn: String,
+}
+
+async fn deltagere_liste(State(app): State<Arc<App>>) -> Response {
+    let d = app.deltagere.lock().await.clone();
+    Json(json!({ "deltagere": d.deltagere })).into_response()
+}
+
+async fn deltager_registrer(State(app): State<Arc<App>>, Json(b): Json<NyDeltager>) -> Response {
+    let navn = b.navn.trim().to_string();
+    let slug = slugify(&navn);
+    if slug.is_empty() {
+        return feil(StatusCode::BAD_REQUEST, "navnet gir ingen gyldig deltager");
+    }
+    let mut tabell = app.deltagere.lock().await;
+    if tabell.deltagere.iter().any(|d| d.slug == slug) {
+        return feil(StatusCode::CONFLICT, "deltageren er allerede registrert — velg den i listen");
+    }
+    // Fast farge ved registrering (Jørn 04.10): første ledige fra paletten;
+    // ved flere deltagere enn farger gjenbrukes paletten rundt.
+    let i_bruk: Vec<&str> = tabell.deltagere.iter().map(|d| d.farge.as_str()).collect();
+    let farge = presence::FARGER
+        .iter()
+        .find(|f| !i_bruk.contains(*f))
+        .copied()
+        .unwrap_or(presence::FARGER[tabell.deltagere.len() % presence::FARGER.len()])
+        .to_string();
+    let deltager = register::Deltager {
+        slug,
+        navn,
+        farge,
+        registrert: chrono::Utc::now().format("%Y-%m-%d").to_string(),
+    };
+    tabell.deltagere.push(deltager.clone());
+    if let Err(e) = tabell.save(&app.cfg.deltager_path) {
+        return feil(StatusCode::INTERNAL_SERVER_ERROR, &format!("lagring: {e}"));
+    }
+    Json(json!({ "deltager": deltager })).into_response()
+}
+
 // ---------- Tilstand ----------
 
 async fn tilstand(State(app): State<Arc<App>>) -> Response {
     let reg = app.register.lock().await.clone();
+    let deltagerliste = app.deltagere.lock().await.clone().deltagere;
+    let farge_for = |slug: &str| {
+        deltagerliste
+            .iter()
+            .find(|d| d.slug == slug)
+            .map(|d| d.farge.clone())
+    };
     let flater = match app.driver.list().await {
         Ok(f) => f,
         Err(e) => return feil(StatusCode::INTERNAL_SERVER_ERROR, &format!("docker: {e}")),
@@ -161,6 +217,9 @@ async fn tilstand(State(app): State<Arc<App>>) -> Response {
                         .map(|w| {
                             json!({
                                 "deltager": w.deltager,
+                                // Registerfargen (04.10): konsistent eierfarge
+                                // også når deltageren ikke er tilkoblet presence.
+                                "farge": farge_for(&w.deltager),
                                 "kortnavn": w.kortnavn,
                                 "kjorer": w.running,
                                 // Relative lenker: fungerer både via ts.net-inngangen og
@@ -182,7 +241,12 @@ async fn tilstand(State(app): State<Arc<App>>) -> Response {
             })
         })
         .collect();
-    Json(json!({ "programmer": programmer, "base": app.cfg.public_base })).into_response()
+    Json(json!({
+        "programmer": programmer,
+        "deltagere": deltagerliste,
+        "base": app.cfg.public_base,
+    }))
+    .into_response()
 }
 
 // ---------- Programmer ----------
@@ -683,7 +747,7 @@ async fn presence_socket(
                 }
                 use presence::KlientMelding::*;
                 match melding {
-                    Join { navn, session } => {
+                    Join { navn, session, farge } => {
                         let navn = navn.trim().to_string();
                         let slug = slugify(&navn);
                         if slug.is_empty() {
@@ -693,7 +757,18 @@ async fn presence_socket(
                             let _ = ut.send(Message::Text(feil.into())).await;
                             continue;
                         }
-                        let (id, _tok, welcome) = rom.join(navn, slug, session);
+                        // Registrert deltager → alltid registerfargen,
+                        // uansett hva klienten oppga.
+                        let registrert_farge = app
+                            .deltagere
+                            .lock()
+                            .await
+                            .deltagere
+                            .iter()
+                            .find(|d| d.slug == slug)
+                            .map(|d| d.farge.clone());
+                        let (id, _tok, welcome) =
+                            rom.join(navn, slug, session, registrert_farge.or(farge));
                         meg = Some(id);
                         // Welcome + roster-snapshot DIREKTE til ny socket,
                         // deretter roster til alle.
@@ -800,9 +875,9 @@ async fn vekk_side(
         return (
             StatusCode::NOT_FOUND,
             Html(vekk_html(
-                "Ukjent arbeidsflate",
-                "Denne adressen peker ikke på noen kjent arbeidsflate. \
-                 Gå til lobbyen og start prosjektet derfra.",
+                "Ukjent skjerm",
+                "Denne adressen peker ikke på noen kjent deltagerskjerm. \
+                 Gå til startsiden og start prosjektet derfra.",
                 None,
             )),
         )
@@ -817,7 +892,7 @@ async fn vekk_side(
     };
     let (tittel, melding, vekk) = if flate.running {
         (
-            "Arbeidsflaten gjør seg klar …",
+            "Skjermen gjør seg klar …",
             "Prosjektet starter opp — første gang tar det gjerne et minutt \
              mens pakkene installeres. Siden laster automatisk på nytt når \
              alt er klart.",
@@ -825,15 +900,15 @@ async fn vekk_side(
         )
     } else if watch {
         (
-            "Arbeidsflaten sover",
-            "Flaten er i dvale etter inaktivitet. Veggen vekker den ikke — \
+            "Skjermen sover",
+            "Skjermen er i dvale etter inaktivitet. Tavla vekker den ikke — \
              den våkner når eieren åpner den, og dukker da opp her av seg selv.",
             None, // watch vekker aldri, men poller til flaten er oppe
         )
     } else {
         (
-            "Arbeidsflaten vekkes …",
-            "Arbeidsflaten har sovet (dvale etter inaktivitet) og startes nå. \
+            "Skjermen vekkes …",
+            "Skjermen har sovet (dvale etter inaktivitet) og startes nå. \
              Siden laster automatisk på nytt — det tar normalt rundt 10 sekunder.",
             Some(kortnavn.as_str()),
         )
@@ -883,7 +958,7 @@ setInterval(async () => {{
   a {{ color: #525D65; }}
 </style></head><body>
 <div class="kort"><div class="puls"></div><h1>{tittel}</h1><p>{melding}</p>
-<p><a href="/">Til lobbyen</a></p></div>
+<p><a href="/">Til startsiden</a></p></div>
 {script}
 </body></html>"#
     )
@@ -963,6 +1038,7 @@ async fn main() -> anyhow::Result<()> {
         prosjektmal: env_or("PROSJEKTMAL", "/opt/prosjektmal"),
         repos_dir: env_or("REPOS_DIR", "/repos"),
         webdir: env_or("WEBDIR", "/opt/lobby/web"),
+        deltager_path: env_or("DELTAGER_PATH", "/data/register/deltagere.yaml"),
         token_secret: env_or("S15L_TOKEN_SECRET", ""),
     };
     let driver = if env_or("WORKSPACE_DRIVER", "docker") == "mock" {
@@ -971,9 +1047,11 @@ async fn main() -> anyhow::Result<()> {
         Driver::new_docker()?
     };
     let register = Register::load(&cfg.register_path)?;
+    let deltagere = register::Deltagere::load(&cfg.deltager_path)?;
     let app = Arc::new(App {
         cfg,
         register: Mutex::new(register),
+        deltagere: Mutex::new(deltagere),
         driver,
         activity: Mutex::new(HashMap::new()),
         vaktmester: vaktmester::Vaktmester::fra_env(),
@@ -994,6 +1072,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/prosjekter", post(nytt_prosjekt))
         .route("/api/prosjekter/{program}/{prosjekt}", delete(slett_prosjekt))
         .route("/api/arbeidsflater", post(ny_arbeidsflate))
+        .route("/api/deltagere", get(deltagere_liste).post(deltager_registrer))
         .route("/api/git-token", post(git_token))
         .route("/api/presence/{program}/{prosjekt}/ws", get(presence_ws))
         .route("/api/arbeidsflater/{kortnavn}/stopp", post(stopp_arbeidsflate))

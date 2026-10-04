@@ -27,7 +27,7 @@ set -u
 
 BASE="${S15L_BASE:-https://cadify104raven.tail14de1b.ts.net:8100}"
 MATCH="${VEGG_MATCH:-SAMSUNG}"
-URL="${VEGG_URL:-$BASE/vegg}"
+URL="${VEGG_URL:-$BASE/tavle}" # 04.10: «vegg» heter nå «tavle» utad
 HEALTH_URL="${VEGG_HEALTH_URL:-$BASE/healthz}"
 POLL="${VEGG_POLL_SECS:-3}"
 POSISJON="${VEGG_POSISJON:-}"

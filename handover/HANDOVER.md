@@ -4,7 +4,10 @@ Levende spesifikasjon (norm «handover»). Punktene krysses av etter hvert som
 de leveres. Chat 0 startet 2026-10-03. Chat 1 leverte V1 samme dag. Chat 2
 (samme dag) fullførte V1 (vaktmester-integrasjonen) og bygget V2 maskintestet
 grønt — gjenstår kun mennesketestene, resept i
-`2026-10-03-mennesketest-v2.md`.
+`2026-10-03-mennesketest-v2.md`. Natt til 05.10 leverte chat 2 endringene
+fra Jørns testrapport — se `2026-10-04-nattarbeid-testrapport.md`
+(navneskifter, startside.studio15.cloud, deltagerregister, brødsmuler,
+sync-fiksen på tavla).
 
 ## Grunnlag — les disse først
 
@@ -39,6 +42,11 @@ flatene 50/50. Ingen innlogging, ingen database, ingen offentlig eksponering.
 
 I synlig tekst (UI, docs) brukes «arbeidsflate» (norm «språk»);
 «workspace» kun i kode og tekniske identifikatorer.
+
+OMDØPT UTAD 04.10 (testrapporten; interne navn i kode/API beholdt —
+scope avklart med Jørn): «program» → **prosjektgruppe**, «lobby» →
+**startside**, «vegg» → **tavle**, «arbeidsflate» → **skjerm /
+deltagerskjerm». Detaljer i `2026-10-04-nattarbeid-testrapport.md`.
 
 ## Beslutninger (Jørn, 2026-10-03)
 
@@ -81,7 +89,9 @@ Fra skjermsamling-avklaringene (03.10):
 
 Beslutninger (Jørn, 2026-10-04, under mennesketesten):
 
-- **Wifi-inngang uten Tailscale** (`https://lobby.studio15.cloud`):
+- **Wifi-inngang uten Tailscale** (den gang `https://lobby.studio15.cloud`,
+  fra 04.10-natten `https://startside.studio15.cloud` — gammelt navn
+  redirecter for alltid):
   Tailscale-oppsett per enhet var for tungt for sete 2 (Android-nettbrett).
   Caddy fikk en egen inngang for studio-wifien; lobbyen returnerer relative
   flate-lenker så alle innganger beholder sin origin. Fortsatt ingen
@@ -300,6 +310,18 @@ V2 — samarbeidslaget (bygget og maskintestet av chat 2, 03.10):
       GRØNN (16/16) og konfetti-testen med GitHub-variant GRØNN — relative
       flate-lenker, caddy-snippeten, cache-regelen og ny PUBLIC_BASE
       verifisert maskinelt mot ts.net-inngangen.
+- [x] Testrapport-endringene (natt til 05.10, hele pakken i
+      `2026-10-04-nattarbeid-testrapport.md`): startside.studio15.cloud
+      med evig lobby-redirect; navneskiftene i all synlig tekst
+      (prosjektgruppe/startside/tavle/skjerm, `/tavle`-rute); brødsmuler i
+      GitHub-stil på startside + prosjektside (og inn i web-profilen);
+      `/gruppe/<slug>/`-URL-er; «Lag ny prosjektgruppe»/«Lag nytt
+      prosjekt» ut av rutenettet; gruppefliser med inntil 4 prosjektnavn +
+      skroller; deltagerregister (åpen tabell i repoet, fast farge, velger
+      på startsiden — bevisst unntak fra «ingen innlogging», avklart);
+      sync-granskningen besvart + fiks (tavlas/samlingens fremmede
+      editor-fliser åpner prosjektets hovedfil og følger lagringer).
+      Verifisert i nettleser + begge regresjonstestene GRØNNE på nytt.
 - [ ] Omfattende mennesketest med Jørn — full resept i
       `2026-10-03-mennesketest-v2.md` (inkl. sete 2 som gjenstår fra V1).
       Status 04.10: sete 2 (nettbrett) er inne via wifi-inngangen; punkt 1
