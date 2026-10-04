@@ -57,6 +57,22 @@ pub struct App {
     pub vaktmester: Option<vaktmester::Vaktmester>,
     /// Presence-huben (se/peke/ta over, V2) — ett rom per prosjekt.
     pub presence: presence::Presence,
+    /// Fjern-restart av veggen (Jørn 04.10): unix-tidsstempel for siste
+    /// forespørsel. Kiosk-vakta på raven poller og restarter Chromium
+    /// friskt når stempelet er nyere enn det den har sett — virker også
+    /// når selve veggsiden er frossen eller krasjet.
+    pub vegg_restart: Mutex<u64>,
+}
+
+async fn vegg_restart_sett(State(app): State<Arc<App>>) -> Response {
+    let naa = now_unix() as u64;
+    *app.vegg_restart.lock().await = naa;
+    Json(json!({ "restart": naa })).into_response()
+}
+
+async fn vegg_restart_les(State(app): State<Arc<App>>) -> Response {
+    let sist = *app.vegg_restart.lock().await;
+    Json(json!({ "sist": sist })).into_response()
 }
 
 /// Per-arbeidsflate-hemmelighet for /api/git-token: HMAC(token_secret,
@@ -962,6 +978,7 @@ async fn main() -> anyhow::Result<()> {
         activity: Mutex::new(HashMap::new()),
         vaktmester: vaktmester::Vaktmester::fra_env(),
         presence: presence::Presence::ny(),
+        vegg_restart: Mutex::new(0),
     });
 
     tokio::spawn(reaper(app.clone()));
@@ -981,6 +998,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/presence/{program}/{prosjekt}/ws", get(presence_ws))
         .route("/api/arbeidsflater/{kortnavn}/stopp", post(stopp_arbeidsflate))
         .route("/api/arbeidsflater/{kortnavn}/vekk", post(vekk_arbeidsflate))
+        .route("/api/vegg/restart", post(vegg_restart_sett).get(vegg_restart_les))
         .route("/vekk/{*sti}", get(vekk_side))
         .fallback_service(statisk)
         .with_state(app);

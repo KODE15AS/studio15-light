@@ -58,6 +58,17 @@
     if (e.key === 'Escape' && kontrollerer) slipp()
   }
 
+  // Fjern-restart av veggen (Jørn 04.10): setter tidsstempelet som
+  // kiosk-vakta på raven poller — virker også når veggsiden er frossen.
+  let veggStartes = $state(false)
+  async function restartVegg() {
+    try {
+      await fetch('/api/vegg/restart', { method: 'POST' })
+      veggStartes = true
+      setTimeout(() => (veggStartes = false), 6000)
+    } catch {}
+  }
+
   if (deltagerNavn) join(program, prosjekt, deltagerNavn)
   hent()
   setInterval(hent, 5000)
@@ -108,6 +119,15 @@
     {:else if kontrollerer}
       <button class="handling slipp" onclick={() => slipp()}>Slipp (Esc)</button>
     {/if}
+
+    <button
+      class="veggknapp"
+      title="Start 70-tommeren på nytt (hvis veggen henger)"
+      disabled={veggStartes}
+      onclick={restartVegg}
+    >
+      {veggStartes ? 'Veggen startes …' : '↻ Vegg'}
+    </button>
   </header>
 
   {#if presence.feil}
@@ -255,6 +275,22 @@
   .handling.slipp {
     background: #e55381;
     color: #fff;
+  }
+  /* Diskret nødknapp ytterst til høyre (roster har margin-left:auto). */
+  .veggknapp {
+    background: none;
+    border: 1px solid #3a4652;
+    color: #8a949c;
+    font: inherit;
+    font-size: 12px;
+    border-radius: 999px;
+    padding: 4px 12px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .veggknapp:disabled {
+    opacity: 0.6;
+    cursor: default;
   }
   .feil {
     background: #3a1d26;

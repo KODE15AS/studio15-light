@@ -21,15 +21,19 @@
     let beste = null
     for (const p of data.programmer) {
       for (const pr of p.prosjekter) {
+        // Kun KJØRENDE flater på veggen (04.10): sovende testflater ga en
+        // skog av smale «sover»-kolonner. Vekkesideteksten lover allerede
+        // at en flate «dukker opp her av seg selv» når den våkner — og det
+        // gjør den, via 5-sekunders-pollingen.
+        const kjorende = pr.arbeidsflater.filter((f) => f.kjorer)
         if (fastProgram && fastProsjekt) {
           if (p.slug === fastProgram && pr.slug === fastProsjekt) {
-            return { program: p.slug, prosjekt: pr.slug, navn: pr.navn, flater: pr.arbeidsflater }
+            return { program: p.slug, prosjekt: pr.slug, navn: pr.navn, flater: kjorende }
           }
           continue
         }
-        const kjorende = pr.arbeidsflater.filter((f) => f.kjorer).length
-        if (kjorende > 0 && (!beste || kjorende > beste.kjorende)) {
-          beste = { program: p.slug, prosjekt: pr.slug, navn: pr.navn, flater: pr.arbeidsflater, kjorende }
+        if (kjorende.length > 0 && (!beste || kjorende.length > beste.kjorende)) {
+          beste = { program: p.slug, prosjekt: pr.slug, navn: pr.navn, flater: kjorende, kjorende: kjorende.length }
         }
       }
     }

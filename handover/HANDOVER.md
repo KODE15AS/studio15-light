@@ -271,6 +271,23 @@ V2 — samarbeidslaget (bygget og maskintestet av chat 2, 03.10):
       FROSSEN side — veggsiden overlevde dagens caddy-restarter i fryst
       tilstand og måtte skytes manuelt (pkill på profil-stien; vakta
       starter friskt). Vurder watchdog på /api/tilstand-polling senere.
+- [x] Fjern-restart av veggen fra setene (04.10, Jørns ønske): «↻ Vegg»-
+      knappen ytterst til høyre i samlingens header → POST /api/vegg/restart
+      (tidsstempel i lobbyen) → kiosk-vakta poller og starter Chromium
+      friskt. Virker også når veggsiden er frossen/krasjet. E2E-verifisert
+      (knappetrykk → ny kiosk på 5 s).
+- [x] ROTÅRSAK garble/krasj på 70"-en funnet (04.10): vakta sporet kiosken
+      med pgrep -f på profilstien, men snap-Chromium bytter argv underveis
+      i oppstarten og forker (launcher-PID dør) → falsk «død» → DOBBELT-
+      start, og start nr. 2 slettet profilen under den kjørende. Fiks:
+      vakta venter nå til wmctrl ser kiosk-VINDUET og sporer eier-PID-en
+      (`kill -0`). Vakta må dessuten startes med sesjonens faktiske miljø —
+      på raven er det DISPLAY=:1 og XAUTHORITY=/run/user/1000/gdm/
+      Xauthority (hent fra gnome-shells /proc/PID/environ, anta aldri :0).
+- [x] Veggen viser kun KJØRENDE flater (04.10): sovende testflater ga en
+      skog av smale «sover»-kolonner; de dukker opp av seg selv når de
+      våkner (5 s-polling). GNOME-varsler dempet på raven (veggmaskin):
+      update-notifier + alle banner-varsler av via gsettings.
 - [x] Regresjonskjøring etter dagens endringer (04.10): presence-testen
       GRØNN (16/16) og konfetti-testen med GitHub-variant GRØNN — relative
       flate-lenker, caddy-snippeten, cache-regelen og ny PUBLIC_BASE

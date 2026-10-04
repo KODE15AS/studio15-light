@@ -67,6 +67,28 @@ tjeneste_oppe() {
   curl -fsS --max-time 2 -o /dev/null "$HEALTH_URL" 2>/dev/null
 }
 
+# Fjern-restart fra setene (Jørn 04.10): lobbyen holder et tidsstempel som
+# settes av «↻ Vegg»-knappen i samlingen. Nyere stempel enn sist sett →
+# kiosken skytes og vakta starter den friskt. Dette er eneste vei når
+# veggsiden er frossen eller renderprosessen har krasjet (vakta ser ellers
+# bare om PROSESSEN lever). Initialiseres ved oppstart så gamle trykk
+# ikke gir restart ved boot.
+RESTART_URL="${VEGG_RESTART_URL:-$BASE/api/vegg/restart}"
+restart_stempel() {
+  curl -fsS --max-time 2 "$RESTART_URL" 2>/dev/null \
+    | sed -n 's/.*"sist":\([0-9]*\).*/\1/p'
+}
+RESTART_SETT="$(restart_stempel)"
+RESTART_SETT="${RESTART_SETT:-0}"
+
+restart_forespurt() {
+  local naa
+  naa="$(restart_stempel)"
+  [ -n "$naa" ] && [ "$naa" -gt "$RESTART_SETT" ] || return 1
+  RESTART_SETT="$naa"
+  return 0
+}
+
 # 70"-skjermen gjenkjennes på EDID-innholdet (produsentnavn som ASCII).
 vegg_skjerm_tilkoblet() {
   local st dir
@@ -81,36 +103,39 @@ vegg_skjerm_tilkoblet() {
   return 1
 }
 
+# Kiosken spores via PID-en til prosessen som EIER KIOSK-VINDUET (wmctrl).
+# Ingenting annet er til å stole på: snap-kjeden forker underveis (så $!
+# fra launcheren dør), og argv skifter under oppstart (så pgrep -f på
+# profilstien flagrer falsk negativt). Begge deler fikk vakta til å
+# dobbeltstarte kiosken, som igjen slettet profilen under den kjørende —
+# garble/krasj på 70-tommeren (funn 04.10).
+KIOSK_PID=""
 kiosk_kjorer() {
-  pgrep -f -- "user-data-dir=$PROFIL" >/dev/null 2>&1
+  [ -n "$KIOSK_PID" ] && kill -0 "$KIOSK_PID" 2>/dev/null
 }
 
-# Fullskjerm tvinges på vindusbehandler-nivå: match vinduet på PID (aldri
-# tittel/klasse — da risikerer man andres vinduer).
-tving_fullskjerm() {
+# Vent til kiosk-vinduet finnes (match på PID med vår profil — aldri
+# tittel/klasse), noter eier-PID-en og tving fullskjerm. Blokkerer vakta
+# til vinduet er der; det er poenget — før vinduet finnes VET vi ikke at
+# kiosken lever, og da skal det heller ikke startes flere.
+vent_paa_kiosk() {
   local i pid wid
-  for i in $(seq 1 30); do
+  if ! command -v wmctrl >/dev/null 2>&1; then
+    log "MERK: wmctrl mangler — installer: sudo apt install -y wmctrl"
+    return 1
+  fi
+  for i in $(seq 1 40); do
     sleep 1
-    pid="$(pgrep -of -- "user-data-dir=$PROFIL" 2>/dev/null)"
-    [ -n "$pid" ] || continue
-    if command -v wmctrl >/dev/null 2>&1; then
+    for pid in $(pgrep -f -- "user-data-dir=$PROFIL" 2>/dev/null); do
       wid="$(wmctrl -lp 2>/dev/null | awk -v p="$pid" '$3==p {print $1; exit}')"
       [ -n "$wid" ] || continue
+      KIOSK_PID="$pid"
       wmctrl -i -r "$wid" -b add,fullscreen 2>/dev/null
-      log "Tvang kiosk-vinduet til fullskjerm (wmctrl)"
+      log "Kiosken er oppe (PID $pid, vindu $wid) — fullskjerm tvunget"
       return 0
-    elif command -v xdotool >/dev/null 2>&1; then
-      wid="$(xdotool search --pid "$pid" --onlyvisible 2>/dev/null | head -1)"
-      [ -n "$wid" ] || continue
-      xdotool key --window "$wid" F11 2>/dev/null
-      log "Tvang kiosk-vinduet til fullskjerm (xdotool)"
-      return 0
-    else
-      log "MERK: verken wmctrl eller xdotool finnes — installer: sudo apt install -y wmctrl"
-      return 1
-    fi
+    done
   done
-  log "MERK: fant aldri kiosk-vinduet — fullskjerm ble ikke tvunget"
+  log "MERK: fant aldri kiosk-vinduet etter start"
   return 1
 }
 
@@ -131,15 +156,20 @@ start_kiosk() {
     args+=(--window-position="$POSISJON")
   fi
   args+=("$URL")
+  # Rydd eventuelle foreldreløse kiosker (f.eks. etter vakt-restart) FØR
+  # profilen slettes — aldri rm under en kjørende instans.
+  pkill -f -- "user-data-dir=$PROFIL" 2>/dev/null && sleep 1
   rm -rf "$PROFIL" # frisk profil hver gang
   log "70\"-skjerm oppdaget (match: $MATCH) — starter kiosk: $NETTLESER"
   nohup "$NETTLESER" "${args[@]}" >/dev/null 2>&1 &
-  tving_fullskjerm &
+  vent_paa_kiosk
 }
 
 stopp_kiosk() {
-  log "Skjermen er koblet fra eller tjenesten er nede — lukker kiosken"
+  log "${1:-Skjermen er koblet fra eller tjenesten er nede} — lukker kiosken"
+  [ -n "$KIOSK_PID" ] && kill "$KIOSK_PID" 2>/dev/null
   pkill -f -- "user-data-dir=$PROFIL" 2>/dev/null
+  KIOSK_PID=""
 }
 
 log "Starter. Ser etter skjerm med EDID-match «$MATCH», intervall ${POLL}s."
@@ -147,6 +177,10 @@ log "Kiosken er helse-gatet mot $HEALTH_URL."
 
 while true; do
   if tjeneste_oppe && vegg_skjerm_tilkoblet; then
+    if kiosk_kjorer && restart_forespurt; then
+      stopp_kiosk "Fjern-restart forespurt fra et sete"
+      sleep 1
+    fi
     if ! kiosk_kjorer; then
       sleep 2 # gi desktopen et øyeblikk til å aktivere skjermen
       start_kiosk
