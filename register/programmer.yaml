@@ -9,7 +9,10 @@ programmer:
 - slug: demo
   navn: Demo
   github_org: null
-  prosjekter: []
+  prosjekter:
+  - slug: konfetti-2
+    navn: Konfetti 2
+    repo: file:///repos/demo-konfetti-2.git
 - slug: saturday-test-2
   navn: Saturday test 2
   github_org: KODE15-saturday-test-2

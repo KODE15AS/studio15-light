@@ -86,7 +86,11 @@ Beslutninger (Jørn, 2026-10-04, under mennesketesten):
   bundet kun til ravens lokale adresser — fortsatt ingen offentlig
   eksponering; lobbyen returnerer relative flate-lenker så alle innganger
   beholder sin origin. Kjent hull over http: clipboard-API (ingen secure
-  context). VIKTIG topologi-funn: studio-wifien KODE15 (10.10.0.0/24) og
+  context) og Zoo Code-chatten (webview trenger service worker → secure
+  context → BLANKT panel over http; omgås per enhet med Chrome-flagget
+  «Insecure origins treated as secure» for `http://10.10.0.22:8100` — se
+  mennesketest-resepten). VIKTIG topologi-funn: studio-wifien KODE15
+  (10.10.0.0/24) og
   ravens kablede nett (10.5.0.0/24) er TO SEPARATE nett med hver sin
   internettlinje (samme ruterboks, to nett, ingen ruting imellom) — derfor
   gikk sete 1 alltid via Tailscale-relé. Løst ved at raven ble koblet på

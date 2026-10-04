@@ -11,10 +11,17 @@ Base-URL (velg den som passer enheten):
 - Med Tailscale: https://cadify104raven.tail14de1b.ts.net:8100
 - Uten Tailscale, på studio-wifien KODE15 (lagt til 04.10 for
   sete 2-nettbrettet): http://10.10.0.22:8100 — skriv adressen i
-  nettleserens ADRESSEFELT (ikke søke-/AI-feltet). Kjent hull over http:
-  nettleserens clipboard-API (kopier/lim utenfra editoren kan kreve
-  Ctrl+C/V, ikke høyreklikkmeny). NB: wifi-en og ravens kablede nett er to
-  separate nett — raven står på wifi-en med eget wifi-kort (wlo1).
+  nettleserens ADRESSEFELT (ikke søke-/AI-feltet). NB: wifi-en og ravens
+  kablede nett er to separate nett — raven står på wifi-en med eget
+  wifi-kort (wlo1).
+
+  VIKTIG over http (funn 04.10): Zoo Code-chatten er en webview og krever
+  secure context — over http blir panelet BLANKT (verifisert). Engangsfiks
+  per enhet i Chrome: `chrome://flags` → «Insecure origins treated as
+  secure» → Enabled med verdien `http://10.10.0.22:8100` → Relaunch. Da
+  virker også clipboard-API-et. Varig løsning (https med gyldig sertifikat
+  på wifi-inngangen via DNS-navn) hører til neste etappe, sammen med
+  Funnel-vurderingen.
 
 ## 1. Konfetti fra begge seter (sete 2 gjenstår fra V1!)
 
