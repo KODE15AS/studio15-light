@@ -63,6 +63,16 @@ if [ -z "$NETTLESER" ]; then
   exit 1
 fi
 
+# Aldri mer enn ÉN vakt (funn 04.10): relogin starter autostarten på nytt
+# mens en eksisterende vakt kan leve videre — to vakter slåss om kiosken.
+# flock holder låsen så lenge vakta lever; nykommere avslutter stille.
+LAAS="${XDG_RUNTIME_DIR:-/tmp}/s15l-vegg-kiosk.laas"
+exec 9>"$LAAS"
+if ! flock -n 9; then
+  log "En annen vegg-kiosk-vakt kjører allerede — avslutter."
+  exit 0
+fi
+
 tjeneste_oppe() {
   curl -fsS --max-time 2 -o /dev/null "$HEALTH_URL" 2>/dev/null
 }
@@ -150,6 +160,14 @@ start_kiosk() {
     --disable-session-crashed-bubble
     # Ingen «oversett siden?»-bar over veggen (funn 04.10)
     --disable-features=Translate
+    # Programvare-rendering (funn 04.10): raven er hybrid Intel-iGPU
+    # (driver TV-en) + NVIDIA — GPU-kompositoren ga garble, hvite felter,
+    # gjenliggende spøkelsesrammer («lagvise instanser») og krasj ved
+    # klikk. Veggen er statisk visning; CPU-raster er stabilt og raskt nok.
+    --disable-gpu
+    # Engelsk nettleserlokale: ellers anbefaler code-server norsk språk-
+    # pakke med en varsling oppå hver editor-flis (funn 04.10).
+    --lang=en-US
     --user-data-dir="$PROFIL"
   )
   if [ -n "$POSISJON" ]; then

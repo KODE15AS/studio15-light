@@ -89,7 +89,9 @@
         {/each}
       </div>
     </header>
-    <main style="--kolonner: {Math.max(flater.length, 1)}">
+    <!-- Alltid minst to kolonner (Jørn 04.10): første flate tar én
+         halvdel, den andre halvdelen står tom til neste flate kommer. -->
+    <main style="--kolonner: {Math.max(flater.length, 2)}">
       {#each flater as f (f.kortnavn)}
         {@const eier = presence.deltagere.find((d) => d.slug === f.deltager)}
         <section>
@@ -177,6 +179,10 @@
     gap: 10px;
     padding: 10px;
     min-height: 0;
+    /* Veggen tar ALDRI input (Jørn 04.10): klikk med ravens mus nådde
+       iframene og fikk fliser til å krasje. Musepekeren skjules også. */
+    pointer-events: none;
+    cursor: none;
   }
   /* Hver halvdel: editor øverst (60 %), levende webside under (40 %). */
   section {

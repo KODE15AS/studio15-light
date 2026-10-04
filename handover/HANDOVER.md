@@ -288,6 +288,14 @@ V2 — samarbeidslaget (bygget og maskintestet av chat 2, 03.10):
       skog av smale «sover»-kolonner; de dukker opp av seg selv når de
       våkner (5 s-polling). GNOME-varsler dempet på raven (veggmaskin):
       update-notifier + alle banner-varsler av via gsettings.
+- [x] Vegg-herding etter Jørns kveldsrunde (04.10): kiosken kjører
+      --disable-gpu (raven er hybrid Intel-iGPU/NVIDIA — GPU-kompositoren
+      ga garble, hvite felter, spøkelsesrammer og krasj; NB: NVIDIA skal
+      ALDRI drive skjerm på raven, kun iGPU-en) og --lang=en-US (ellers
+      legger code-server norsk-språkpakke-varsel oppå editor-flisene).
+      Veggen tar aldri input (pointer-events: none + skjult peker), og
+      viser alltid minst to kolonner (én flate = én halvdel, resten tom).
+      Vakta har flock-lås — relogin/autostart kan aldri gi to vakter.
 - [x] Regresjonskjøring etter dagens endringer (04.10): presence-testen
       GRØNN (16/16) og konfetti-testen med GitHub-variant GRØNN — relative
       flate-lenker, caddy-snippeten, cache-regelen og ny PUBLIC_BASE
