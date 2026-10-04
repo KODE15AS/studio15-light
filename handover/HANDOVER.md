@@ -213,8 +213,12 @@ V2 — samarbeidslaget (bygget og maskintestet av chat 2, 03.10):
       verifisert maskinelt). Kiosk-skriptene i `vegg/` med alle fellene
       (wmctrl på PID, DISPLAY-vakt, autostart-MAPPE, helse-gate, frisk
       profil, VEGG_POSISJON).
-- [ ] Fysisk verifisering på 70"-en (krever menneske på Ravens desktop):
-      kjør `vegg/installer-vegg.sh` (flytter Skjermsamlings wall-watcher
-      til side) — del av mennesketesten.
+- [x] Fysisk verifisering på 70"-en (04.10): kiosken installert i autostart
+      (Skjermsamlings wall-watcher flyttet til side), fullskjerm via wmctrl,
+      live prosjekt vist på veggen. To nye feller betalt underveis: GNOME
+      krasjer ved skjerm-hotplug (kjent fra erfaringsoverføringen — fast
+      skjerm!), og kortnavn over DNS-grensen gjorde flater uoppnåelige
+      (lengdevakt lagt inn). Se/peke/ta over PÅ veggen testes i
+      mennesketesten.
 - [ ] Omfattende mennesketest med Jørn — full resept i
       `2026-10-03-mennesketest-v2.md` (inkl. sete 2 som gjenstår fra V1).
