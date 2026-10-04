@@ -31,7 +31,12 @@ URL="${VEGG_URL:-$BASE/vegg}"
 HEALTH_URL="${VEGG_HEALTH_URL:-$BASE/healthz}"
 POLL="${VEGG_POLL_SECS:-3}"
 POSISJON="${VEGG_POSISJON:-}"
-PROFIL="${XDG_RUNTIME_DIR:-/tmp}/s15l-vegg-profil"
+# Profilen bor i snap-Chromiums egen skrivesone (funn 04.10): AppArmor
+# nekter snapen symlinks/underkataloger i /run/user/<uid>/, og med
+# forhåndsseedet profil der ble SingletonLock-nektelsen fatal (ingen
+# vindu). I ~/snap/chromium/common/ har både snapen og seedingen fulle
+# rettigheter. Profilen viskes uansett frisk ved hver start.
+PROFIL="${VEGG_PROFIL:-$HOME/snap/chromium/common/s15l-vegg-profil}"
 
 log() { echo "[vegg-kiosk] $(date '+%H:%M:%S') $*"; }
 
@@ -158,8 +163,12 @@ start_kiosk() {
     --start-fullscreen
     --noerrdialogs
     --disable-session-crashed-bubble
-    # Ingen «oversett siden?»-bar over veggen (funn 04.10)
-    --disable-features=Translate
+    # Ingen «oversett siden?»-boble over veggen (funn 04.10). Snap-
+    # innpakningen legger på sitt eget --disable-features-flagg, og bare
+    # ett av dem vinner — derfor nevner vårt begge funksjonene, OG
+    # translate skrus av i profil-preferansene i start_kiosk (belte og
+    # bukseseler; profilen skrives frisk hver start).
+    --disable-features=Translate,TFLiteLanguageDetectionEnabled
     # Programvare-rendering (funn 04.10): raven er hybrid Intel-iGPU
     # (driver TV-en) + NVIDIA — GPU-kompositoren ga garble, hvite felter,
     # gjenliggende spøkelsesrammer («lagvise instanser») og krasj ved
@@ -178,6 +187,11 @@ start_kiosk() {
   # profilen slettes — aldri rm under en kjørende instans.
   pkill -f -- "user-data-dir=$PROFIL" 2>/dev/null && sleep 1
   rm -rf "$PROFIL" # frisk profil hver gang
+  # Forhåndsskriv preferanser: oversettelse av og engelsk accept-language,
+  # så boblen aldri kan dukke opp uansett hva flaggene ender som.
+  mkdir -p "$PROFIL/Default"
+  printf '%s' '{"translate":{"enabled":false},"translate_blocked_languages":["no","nb","nn"],"intl":{"accept_languages":"en-US,en"}}' \
+    > "$PROFIL/Default/Preferences"
   log "70\"-skjerm oppdaget (match: $MATCH) — starter kiosk: $NETTLESER"
   nohup "$NETTLESER" "${args[@]}" >/dev/null 2>&1 &
   vent_paa_kiosk
