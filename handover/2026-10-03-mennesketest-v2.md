@@ -8,20 +8,19 @@ studio-wifien. Raven med 70"-skjermen.
 
 Base-URL (velg den som passer enheten):
 
-- Med Tailscale: https://cadify104raven.tail14de1b.ts.net:8100
-- Uten Tailscale, på studio-wifien KODE15 (lagt til 04.10 for
-  sete 2-nettbrettet): http://10.10.0.22:8100 — skriv adressen i
-  nettleserens ADRESSEFELT (ikke søke-/AI-feltet). NB: wifi-en og ravens
-  kablede nett er to separate nett — raven står på wifi-en med eget
-  wifi-kort (wlo1).
+- På studio-wifien KODE15, uten Tailscale (normalen for setene):
+  **https://lobby.studio15.cloud** — skriv adressen i nettleserens
+  ADRESSEFELT (ikke søke-/AI-feltet). Gyldig sertifikat, ingen
+  enhets-oppsett. (DNS-navnet peker på ravens wifi-IP 10.10.0.22 —
+  virker KUN på studio-wifien, med vilje.)
+- Med Tailscale (hjemmefra/utenfor studio):
+  https://cadify104raven.tail14de1b.ts.net:8100
 
-  VIKTIG over http (funn 04.10): Zoo Code-chatten er en webview og krever
-  secure context — over http blir panelet BLANKT (verifisert). Engangsfiks
-  per enhet i Chrome: `chrome://flags` → «Insecure origins treated as
-  secure» → Enabled med verdien `http://10.10.0.22:8100` → Relaunch. Da
-  virker også clipboard-API-et. Varig løsning (https med gyldig sertifikat
-  på wifi-inngangen via DNS-navn) hører til neste etappe, sammen med
-  Funnel-vurderingen.
+Historikk 04.10: ren http på wifi-inngangen ble prøvd først, men Zoo-chatten
+er en webview som krever secure context — panelet ble blankt. Løst samme dag
+med lobby.studio15.cloud + Let's Encrypt (DNS-01 via deploi-dns); Chrome-
+flagg-omgåelsen som ble delt ut underveis trengs IKKE lenger og bør skrus av
+igjen der den ble satt (chrome://flags → tilbakestill flagget).
 
 ## 1. Konfetti fra begge seter (sete 2 gjenstår fra V1!)
 

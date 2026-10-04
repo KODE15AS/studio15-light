@@ -1,11 +1,15 @@
 # Intern reverse proxy for Studio 15 LIGHT — IKKE offentlig ingress.
-# To innganger med identisk ruting (snippeten «ruting» under):
+# Innganger med identisk ruting (snippeten «ruting» under):
 #
 #   :8100  HTTPS via tailscale-sertifikat — tailnettet (PC-er med Tailscale,
 #          veggen på raven).
-#   :8101  HTTP — studio-wifi (LAN). compose binder denne KUN til ravens
-#          statiske LAN-IP (10.5.0.22:8100), aldri offentlig. Nettbrett og
-#          PC-er på samme wifi slipper dermed Tailscale-oppsett.
+#   :8102  HTTPS via Let's Encrypt for lobby.studio15.cloud — studio-wifien.
+#          compose binder denne KUN til ravens wifi-IP (10.10.0.22:443),
+#          aldri offentlig (DNS-navnet peker på privat IP). Nettbrett og
+#          PC-er på wifi-en slipper dermed Tailscale-oppsett, og secure
+#          context (Zoo-webviews, clipboard) er intakt. Sertifikat:
+#          skript/lobby-sertifikat.sh (DNS-01 via deploi-dns, cron månedlig).
+#   :8103  HTTP-redirect til https://lobby.studio15.cloud (10.10.0.22:80).
 #
 #   /                  → lobbyen (programmer, prosjekter, arbeidsflater)
 #   /w/<flate>/...     → code-server i arbeidsflate-containeren (prefiks strippes)
@@ -87,10 +91,15 @@
 	import ruting
 }
 
-# LAN-inngangen (HTTP). TLS er bevisst utelatt: gyldig sertifikat for en
-# LAN-IP finnes ikke, og selvsignert gir verre brukeropplevelse (varsler på
-# hver enhet) uten reell gevinst på et lukket studio-nett. Kjente hull over
-# http: nettleserens clipboard-API (code-server viser kopier-fallback).
-:8101 {
+# Wifi-inngangen (HTTPS, Let's Encrypt). Ren http (:8101-forsøket 04.10)
+# fungerte IKKE: Zoo-chatten er en webview som krever secure context —
+# panelet ble blankt. Derfor ekte sertifikat via DNS-navn på privat IP.
+:8102 {
+	tls /certs/lobby.studio15.cloud.crt /certs/lobby.studio15.cloud.key
 	import ruting
+}
+
+# Oppsamling for http://lobby.studio15.cloud (og http://10.10.0.22)
+:8103 {
+	redir https://lobby.studio15.cloud{uri} 308
 }

@@ -18,12 +18,14 @@ services:
       # LAN-IP (nmcli: manual), slik at nettbrett/PC-er på studio-wifien
       # slipper Tailscale. Samme portnummer utad (8100) for begge.
       - "100.65.19.39:8100:8100"
-      - "10.5.0.22:8100:8101"
       # Wifi-en (KODE15) er et EGET nett med egen internettlinje — derfor
       # står raven også på wifi via wlo1 (nmcli-tilkobling «kode15-wifi»,
       # uten standardrute/DNS). Adressen er DHCP-tildelt; endrer den seg,
-      # må linjen under og mennesketest-resepten oppdateres.
-      - "10.10.0.22:8100:8101"
+      # må linjene under OG A-posten lobby.studio15.cloud i deploi-dns
+      # oppdateres. Standardporter (443/80) → adressen er bare
+      # https://lobby.studio15.cloud — ingen port å huske.
+      - "10.10.0.22:443:8102"
+      - "10.10.0.22:80:8103"
     volumes:
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - ./certs:/certs:ro
@@ -44,7 +46,9 @@ services:
       WORKSPACE_IMAGE: studio15-light-arbeidsflate:v2
       WORKSPACE_NETWORK: s15l-workspaces
       REPOS_VOLUME: s15l-repos
-      PUBLIC_BASE: https://cadify104raven.tail14de1b.ts.net:8100
+      # Brukes i absolutte adresser som gis VIDERE (Zoo-regelfilen i
+      # arbeidsflatene). Studio-setene er på wifi-en → wifi-inngangen.
+      PUBLIC_BASE: https://lobby.studio15.cloud
       REGISTER_PATH: /data/register/programmer.yaml
       ACCESS_LOG: /logs/access.log
       # Overstyres kun i test av dvale/vekke (IDLE_MINUTES=1 ved oppstart)
