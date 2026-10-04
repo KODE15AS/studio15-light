@@ -259,5 +259,23 @@ V2 — samarbeidslaget (bygget og maskintestet av chat 2, 03.10):
       skjerm!), og kortnavn over DNS-grensen gjorde flater uoppnåelige
       (lengdevakt lagt inn). Se/peke/ta over PÅ veggen testes i
       mennesketesten.
+- [x] UI-justeringer fra mennesketesten (Jørn, 04.10): KODE15-logoen er
+      hjem-knapp på alle sider (hvit brikke på samlingens mørke header);
+      på lobbyen virker den som forenklet F5 (location.reload — nettbrett
+      mangler lett tilgjengelig reload). Nettleser-verifisert begge veier.
+- [x] Deploy-cache-fellen tettet (04.10): SPA-HTML serveres nå med
+      Cache-Control no-cache i caddy — bufret index.html pekte på utgåtte
+      asset-hasher etter utrulling og ga «tom lobby» med kun
+      Nytt program-kortet. Assets (hash i navnet) caches som før.
+- [x] Vegg-lærdom (04.10): kiosk-vakta oppdager død prosess, men ikke
+      FROSSEN side — veggsiden overlevde dagens caddy-restarter i fryst
+      tilstand og måtte skytes manuelt (pkill på profil-stien; vakta
+      starter friskt). Vurder watchdog på /api/tilstand-polling senere.
+- [x] Regresjonskjøring etter dagens endringer (04.10): presence-testen
+      GRØNN (16/16) og konfetti-testen med GitHub-variant GRØNN — relative
+      flate-lenker, caddy-snippeten, cache-regelen og ny PUBLIC_BASE
+      verifisert maskinelt mot ts.net-inngangen.
 - [ ] Omfattende mennesketest med Jørn — full resept i
       `2026-10-03-mennesketest-v2.md` (inkl. sete 2 som gjenstår fra V1).
+      Status 04.10: sete 2 (nettbrett) er inne via wifi-inngangen; punkt 1
+      (konfetti fra sete 2) avbrutt av nettbrett-frys — gjenopptas.
