@@ -328,6 +328,19 @@ async fn nytt_prosjekt(State(app): State<Arc<App>>, Json(b): Json<NyttProsjekt>)
     if prog.prosjekter.iter().any(|p| p.slug == slug) {
         return feil(StatusCode::CONFLICT, "prosjektet finnes allerede");
     }
+    // Forhåndsvakt mot DNS-fella (se ny_arbeidsflate): det må være plass
+    // til minst et kort deltagernavn (8 tegn) innenfor 55-grensen.
+    if prog.slug.len() + 1 + slug.len() > 47 {
+        return feil(
+            StatusCode::BAD_REQUEST,
+            &format!(
+                "program- og prosjektnavnet blir for langt sammen ({} av maks \
+                 47 tegn) — da blir arbeidsflate-adressene ugyldige. \
+                 Velg et kortere prosjektnavn.",
+                prog.slug.len() + 1 + slug.len()
+            ),
+        );
+    }
     // Repo-typen velges ved opprettelse: GitHub-repo i program-org-en når
     // org finnes (vaktmesteren), ellers bare-repo på repos-volumet.
     let repo_slug = format!("{}-{}", prog.slug, slug);
@@ -512,6 +525,20 @@ async fn ny_arbeidsflate(State(app): State<Arc<App>>, Json(b): Json<NyArbeidsfla
         (pr.repo.clone(), pr.navn.clone())
     };
     let kortnavn = format!("{}-{}-{}", b.program, b.prosjekt, deltager);
+    // DNS-fella (betalt 04.10): containernavnet «s15l-ws-<kortnavn>» er
+    // også DNS-navnet caddy ruter på, og DNS-etiketter er maks 63 tegn.
+    // Lengre navn gjør flaten UOPPNÅELIG (dockers DNS svarer «Message too
+    // large») — derfor hard vakt her med tydelig melding.
+    if kortnavn.len() > 55 {
+        return feil(
+            StatusCode::BAD_REQUEST,
+            &format!(
+                "navnet blir for langt ({} av maks 55 tegn: program + prosjekt \
+                 + deltager). Bruk kortere prosjekt- eller deltagernavn.",
+                kortnavn.len()
+            ),
+        );
+    }
     // GitHub-prosjekter: arbeidsflaten får en per-flate-hemmelighet og
     // henter ferske repo-scopede tokens via /api/git-token ved hver
     // push/pull (tokens lever 1 time — aldri fast i miljøet).
@@ -870,6 +897,13 @@ async fn reaper(app: Arc<App>) {
                 ) else {
                     continue;
                 };
+                // Kun VELLYKKEDE oppslag teller som aktivitet. Vekkesiden
+                // (og veggen) poller hvert 2. sekund og treffer 503 — uten
+                // dette filteret holder en åpen fane/vegg flaten kunstig
+                // våken for alltid (funn 04.10).
+                if v.get("status").and_then(|s| s.as_u64()).unwrap_or(599) >= 500 {
+                    continue;
+                }
                 let mut deler = uri.trim_start_matches('/').splitn(3, '/');
                 if let (Some("w") | Some("web"), Some(navn)) = (deler.next(), deler.next()) {
                     let e = akt.entry(navn.to_string()).or_insert(0.0);

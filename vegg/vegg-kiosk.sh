@@ -123,6 +123,8 @@ start_kiosk() {
     --start-fullscreen
     --noerrdialogs
     --disable-session-crashed-bubble
+    # Ingen «oversett siden?»-bar over veggen (funn 04.10)
+    --disable-features=Translate
     --user-data-dir="$PROFIL"
   )
   if [ -n "$POSISJON" ]; then
