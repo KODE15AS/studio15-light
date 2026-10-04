@@ -79,6 +79,20 @@ Fra skjermsamling-avklaringene (03.10):
 - Designgrunnlag: `webprofil-kode15` (norm «web-profil»), med Skjermsamlings
   `app.css` som referanse. Arbeid rett på `main` (norm «tbd»), ikke PR-flyt.
 
+Beslutninger (Jørn, 2026-10-04, under mennesketesten):
+
+- **LAN-inngang uten Tailscale**: Tailscale-oppsett per enhet var for tungt
+  for sete 2 (Android-nettbrett). Caddy fikk en ekstra HTTP-lytter bundet
+  KUN til ravens statiske LAN-IP (`http://10.5.0.22:8100`) — alle på
+  studio-wifien når stacken direkte. Fortsatt ingen offentlig eksponering;
+  lobbyen returnerer relative flate-lenker så begge innganger beholder sin
+  origin. Kjent hull over http: clipboard-API (ingen secure context).
+- **Funnel vurderes i neste etappe**: Jørn ønsker å se på Tailscale Funnel
+  (offentlig eksponering) som alternativ inngang. IKKE avgjort — strider
+  mot grunnprinsippet «ingen offentlig eksponering», så det må være en
+  eksplisitt beslutning med egen risikovurdering. Merk: raven har allerede
+  Funnel på 443 for ANDRE prosjekter (kodelader, deploi-dns-hook) — urørt.
+
 Hovedstruktur (Handover 0-grillingen, 03.10):
 
 - **Program = ekte GitHub-org.** Et program er overbygningen som dekker et
@@ -178,6 +192,11 @@ alt under levert av chat 1, 03.10):
 - [x] HTTPS via `tailscale cert` for alle URL-er — én inngang
       (caddy :8100), alt samme origin (V2-forberedelse for se/peke).
       `skript/hent-sertifikat.sh` henter/fornyer.
+- [x] LAN-inngang uten Tailscale (04.10, se Beslutninger): caddy-snippeten
+      «ruting» deles av ts.net-inngangen (:8100 https) og LAN-inngangen
+      (:8101 http, bundet til 10.5.0.22:8100 i compose). Relative
+      flate-lenker fra lobbyen. Verifisert maskinelt: healthz, vekking,
+      editor og webside over http://10.5.0.22:8100.
 - [x] Dvale/vekke: idle-reaper i lobbyen (45 min, fra caddys tilgangslogg)
       + 503-vekkeside med autovekking og reload. Verifisert maskinelt med
       1-minutts grense.

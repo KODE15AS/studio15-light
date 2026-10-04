@@ -1,5 +1,11 @@
 # Intern reverse proxy for Studio 15 LIGHT — IKKE offentlig ingress.
-# Én inngang på tailnettet (port 8100, HTTPS via tailscale-sertifikat):
+# To innganger med identisk ruting (snippeten «ruting» under):
+#
+#   :8100  HTTPS via tailscale-sertifikat — tailnettet (PC-er med Tailscale,
+#          veggen på raven).
+#   :8101  HTTP — studio-wifi (LAN). compose binder denne KUN til ravens
+#          statiske LAN-IP (10.5.0.22:8100), aldri offentlig. Nettbrett og
+#          PC-er på samme wifi slipper dermed Tailscale-oppsett.
 #
 #   /                  → lobbyen (programmer, prosjekter, arbeidsflater)
 #   /w/<flate>/...     → code-server i arbeidsflate-containeren (prefiks strippes)
@@ -7,16 +13,17 @@
 #                        Vite kjører med base=/web/<flate>/)
 #
 # Alt serveres fra samme origin — det er også grunnlaget for se/peke-laget
-# i V2 (ghost-cursors over iframes krever same-origin).
+# i V2 (ghost-cursors over iframes krever same-origin). Lobbyen returnerer
+# relative flate-lenker slik at begge innganger beholder sin egen origin.
 
 {
 	admin off
 	auto_https off
 }
 
-:8100 {
-	tls /certs/raven.crt /certs/raven.key
-
+(ruting) {
+	# Begge innganger logger til samme fil — reaperen (dvale) leser denne,
+	# så LAN-aktivitet må telle på lik linje med tailnett-aktivitet.
 	log {
 		output file /logs/access.log {
 			roll_size 20MiB
@@ -72,4 +79,18 @@
 		rewrite * /vekk{http.request.orig_uri}
 		reverse_proxy s15l-lobby:8200
 	}
+}
+
+# Tailnett-inngangen (HTTPS, tailscale-sertifikat)
+:8100 {
+	tls /certs/raven.crt /certs/raven.key
+	import ruting
+}
+
+# LAN-inngangen (HTTP). TLS er bevisst utelatt: gyldig sertifikat for en
+# LAN-IP finnes ikke, og selvsignert gir verre brukeropplevelse (varsler på
+# hver enhet) uten reell gevinst på et lukket studio-nett. Kjente hull over
+# http: nettleserens clipboard-API (code-server viser kopier-fallback).
+:8101 {
+	import ruting
 }

@@ -13,8 +13,12 @@ services:
     container_name: s15l-caddy
     restart: unless-stopped
     ports:
-      # Kun Tailscale — ingen offentlig eksponering.
+      # Kun Tailscale + studio-LAN — ingen offentlig eksponering.
+      # Tailnett: HTTPS (tailscale-sertifikat). LAN: HTTP på ravens statiske
+      # LAN-IP (nmcli: manual), slik at nettbrett/PC-er på studio-wifien
+      # slipper Tailscale. Samme portnummer utad (8100) for begge.
       - "100.65.19.39:8100:8100"
+      - "10.5.0.22:8100:8101"
     volumes:
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - ./certs:/certs:ro

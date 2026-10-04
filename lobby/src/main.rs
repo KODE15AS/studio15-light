@@ -147,8 +147,10 @@ async fn tilstand(State(app): State<Arc<App>>) -> Response {
                                 "deltager": w.deltager,
                                 "kortnavn": w.kortnavn,
                                 "kjorer": w.running,
-                                "editor_url": format!("{}/w/{}/", app.cfg.public_base, w.kortnavn),
-                                "web_url": format!("{}/web/{}/", app.cfg.public_base, w.kortnavn),
+                                // Relative lenker: fungerer både via ts.net-inngangen og
+                                // LAN-inngangen (studio-wifi) — nettleseren beholder sin origin.
+                                "editor_url": format!("/w/{}/", w.kortnavn),
+                                "web_url": format!("/web/{}/", w.kortnavn),
                             })
                         })
                         .collect();
@@ -578,8 +580,8 @@ async fn ny_arbeidsflate(State(app): State<Arc<App>>, Json(b): Json<NyArbeidsfla
     app.activity.lock().await.insert(kortnavn.clone(), now_unix());
     Json(json!({
         "kortnavn": kortnavn,
-        "editor_url": format!("{}/w/{}/", app.cfg.public_base, kortnavn),
-        "web_url": format!("{}/web/{}/", app.cfg.public_base, kortnavn),
+        "editor_url": format!("/w/{kortnavn}/"),
+        "web_url": format!("/web/{kortnavn}/"),
     }))
     .into_response()
 }
