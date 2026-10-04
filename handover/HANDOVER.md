@@ -82,11 +82,17 @@ Fra skjermsamling-avklaringene (03.10):
 Beslutninger (Jørn, 2026-10-04, under mennesketesten):
 
 - **LAN-inngang uten Tailscale**: Tailscale-oppsett per enhet var for tungt
-  for sete 2 (Android-nettbrett). Caddy fikk en ekstra HTTP-lytter bundet
-  KUN til ravens statiske LAN-IP (`http://10.5.0.22:8100`) — alle på
-  studio-wifien når stacken direkte. Fortsatt ingen offentlig eksponering;
-  lobbyen returnerer relative flate-lenker så begge innganger beholder sin
-  origin. Kjent hull over http: clipboard-API (ingen secure context).
+  for sete 2 (Android-nettbrett). Caddy fikk en ekstra HTTP-lytter (:8101)
+  bundet kun til ravens lokale adresser — fortsatt ingen offentlig
+  eksponering; lobbyen returnerer relative flate-lenker så alle innganger
+  beholder sin origin. Kjent hull over http: clipboard-API (ingen secure
+  context). VIKTIG topologi-funn: studio-wifien KODE15 (10.10.0.0/24) og
+  ravens kablede nett (10.5.0.0/24) er TO SEPARATE nett med hver sin
+  internettlinje (samme ruterboks, to nett, ingen ruting imellom) — derfor
+  gikk sete 1 alltid via Tailscale-relé. Løst ved at raven ble koblet på
+  wifi-en med eget wifi-kort (nmcli-tilkobling «kode15-wifi» på wlo1, uten
+  standardrute/DNS — kablet nett og Tailscale urørt). Wifi-inngangen:
+  `http://10.10.0.22:8100` (DHCP-tildelt — vurder reservasjon i ruteren).
 - **Funnel vurderes i neste etappe**: Jørn ønsker å se på Tailscale Funnel
   (offentlig eksponering) som alternativ inngang. IKKE avgjort — strider
   mot grunnprinsippet «ingen offentlig eksponering», så det må være en
@@ -194,9 +200,10 @@ alt under levert av chat 1, 03.10):
       `skript/hent-sertifikat.sh` henter/fornyer.
 - [x] LAN-inngang uten Tailscale (04.10, se Beslutninger): caddy-snippeten
       «ruting» deles av ts.net-inngangen (:8100 https) og LAN-inngangen
-      (:8101 http, bundet til 10.5.0.22:8100 i compose). Relative
-      flate-lenker fra lobbyen. Verifisert maskinelt: healthz, vekking,
-      editor og webside over http://10.5.0.22:8100.
+      (:8101 http, bundet til både kablet 10.5.0.22:8100 og wifi
+      10.10.0.22:8100 i compose). Relative flate-lenker fra lobbyen.
+      Verifisert maskinelt: healthz, vekking, editor og webside over
+      LAN-inngangen; wifi-adressen svarer 200 på healthz.
 - [x] Dvale/vekke: idle-reaper i lobbyen (45 min, fra caddys tilgangslogg)
       + 503-vekkeside med autovekking og reload. Verifisert maskinelt med
       1-minutts grense.

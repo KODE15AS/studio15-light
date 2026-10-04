@@ -19,6 +19,11 @@ services:
       # slipper Tailscale. Samme portnummer utad (8100) for begge.
       - "100.65.19.39:8100:8100"
       - "10.5.0.22:8100:8101"
+      # Wifi-en (KODE15) er et EGET nett med egen internettlinje — derfor
+      # står raven også på wifi via wlo1 (nmcli-tilkobling «kode15-wifi»,
+      # uten standardrute/DNS). Adressen er DHCP-tildelt; endrer den seg,
+      # må linjen under og mennesketest-resepten oppdateres.
+      - "10.10.0.22:8100:8101"
     volumes:
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - ./certs:/certs:ro

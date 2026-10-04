@@ -9,10 +9,12 @@ studio-wifien. Raven med 70"-skjermen.
 Base-URL (velg den som passer enheten):
 
 - Med Tailscale: https://cadify104raven.tail14de1b.ts.net:8100
-- Uten Tailscale, på studio-wifien (lagt til 04.10 for sete 2-nettbrettet):
-  http://10.5.0.22:8100 — skriv adressen i nettleserens ADRESSEFELT (ikke
-  søke-/AI-feltet). Kjent hull over http: nettleserens clipboard-API
-  (kopier/lim utenfra editoren kan kreve Ctrl+C/V, ikke høyreklikkmeny).
+- Uten Tailscale, på studio-wifien KODE15 (lagt til 04.10 for
+  sete 2-nettbrettet): http://10.10.0.22:8100 — skriv adressen i
+  nettleserens ADRESSEFELT (ikke søke-/AI-feltet). Kjent hull over http:
+  nettleserens clipboard-API (kopier/lim utenfra editoren kan kreve
+  Ctrl+C/V, ikke høyreklikkmeny). NB: wifi-en og ravens kablede nett er to
+  separate nett — raven står på wifi-en med eget wifi-kort (wlo1).
 
 ## 1. Konfetti fra begge seter (sete 2 gjenstår fra V1!)
 
