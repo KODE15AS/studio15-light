@@ -72,6 +72,11 @@
   let deler = $state(false)
   let deleMelding = $state('')
   let websideBoks = $state(null) // wrapper rundt webside-flisen (crop-mål)
+  // Enheter uten skjermfangst (nettbrett = nødløsning) får ingen død
+  // knapp — tavla viser uansett websiden fra serveren (fallback).
+  const delingStottes =
+    !!navigator.mediaDevices?.getDisplayMedia ||
+    new URLSearchParams(location.search).get('deltest') === '1'
   let delStrom = null // MediaStream
   const pcs = new Map() // watcher-id → RTCPeerConnection
   let testTimer = null
@@ -98,9 +103,14 @@
           selfBrowserSurface: 'include',
         })
         const [spor] = strom.getVideoTracks()
-        // Beskjær til webside-flisen (Region Capture, Chromium ≥104).
-        if (window.CropTarget && spor.cropTo && websideBoks) {
-          const maal = await window.CropTarget.fromElement(websideBoks)
+        // Beskjær til INNHOLDET i webside-flisen (Region Capture,
+        // Chromium ≥104) — ikke hele flisen: da ligger Chromes blå
+        // fangst-indikator innenfor vår oransje ID-ramme i stedet for
+        // oppå den (Jørn 05.10), og strømmen slipper flisens topplinje
+        // (tavla har sin egen).
+        const innhold = websideBoks?.querySelector('.flate') ?? websideBoks
+        if (window.CropTarget && spor.cropTo && innhold) {
+          const maal = await window.CropTarget.fromElement(innhold)
           await spor.cropTo(maal)
         }
         spor.addEventListener('ended', stoppDeling) // «Stopp deling» i nettleseren
@@ -110,7 +120,14 @@
       // Si fra til tavler som allerede står på at strømmen finnes.
       sendStrom(minFlate.kortnavn, null, { type: 'starter' })
     } catch (e) {
-      deleMelding = 'Fikk ikke startet deling — prøv igjen.'
+      // Skill «avbrutt av deg» og «støttes ikke» (nettbrett = nødløsning)
+      // fra ekte feil (Jørn 05.10, rapport 2 pkt. 3).
+      deleMelding =
+        e?.name === 'NotAllowedError'
+          ? 'Deling avbrutt.'
+          : e?.name === 'NotSupportedError' || e instanceof TypeError
+            ? 'Deling støttes ikke i denne nettleseren — tavla viser websiden fra serveren som før.'
+            : 'Fikk ikke startet deling — prøv igjen.'
       setTimeout(() => (deleMelding = ''), 6000)
     }
   }
@@ -248,7 +265,7 @@
       <button class="handling slipp" onclick={() => slipp()}>Slipp (Esc)</button>
     {/if}
 
-    {#if minFlate}
+    {#if minFlate && delingStottes}
       <button
         class="veggknapp"
         class:deler

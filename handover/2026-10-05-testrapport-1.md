@@ -38,6 +38,23 @@ Slik virker det:
   på PRIVATE nettverk (Jørn godkjente for Cursor 05.10; vanlig Chrome
   har som regel regelen fra før).
 
+### Oppfølging fra testrapport 2 (05.10, etter Jørns PC/nettbrett-test)
+
+- SUKSESS bekreftet av Jørn på PC; nettbrett falt riktig tilbake til
+  server-websiden.
+- Beskjæringsmålet flyttet fra hele flisen til INNHOLDET i flisen:
+  Chromes blå fangst-indikator (personvern-UI, kan ikke farges om)
+  ligger nå innenfor vår oransje ID-ramme i stedet for oppå den, og
+  strømmen inneholder ikke lenger flisens topplinje.
+- Nettbrett/enheter uten `getDisplayMedia`: «Del til tavla»-knappen
+  skjules helt (nødløsning — ingen død knapp). Feilmeldingene skiller
+  «Deling avbrutt», «støttes ikke i denne nettleseren» og ekte feil.
+- IKKE mulig fra web-kode (nettleserens personvern-UI, bevisst i
+  spesifikasjonen): fjerne «Stopp deling»-infobaren eller hoppe over
+  «Tillat»-dialogen per økt. Mulig fremtidig vei for friksjonsfri deling
+  på studio-PC-ene: egen liten nettleserutvidelse (chrome.tabCapture)
+  eller managed policy — eget stykke arbeid, bevisst ikke gjort nå.
+
 Varig ICE-robusthet (Jørns kommentar): **coturn på raven** (pinnet
 4.7.0-alpine, host-nett, lytter KUN på 10.10.0.22 og 100.65.19.39, UDP
 3478 + reléporter 49160–49200). Klientene prøver direkte først; reléet
