@@ -22,6 +22,7 @@
     eierFarge = '#77838C',
     kontroll = null,
     strom = null,
+    lys = false, // KODE15-webprofil (nybegynnerskjermen, Jørn 05.10)
     onta = () => {},
   } = $props()
 
@@ -47,6 +48,7 @@
 <div
   class="tile"
   class:vegg={modus === 'vegg'}
+  class:lys
   style="--eier: {eierFarge}; --ctrl: {kontroll?.farge ?? 'transparent'}"
 >
   <div class="hode">
@@ -164,5 +166,13 @@
   }
   .vegg iframe {
     pointer-events: none;
+  }
+  /* Lys variant: KODE15-webprofilen (nybegynnerskjermen, Jørn 05.10). */
+  .tile.lys {
+    background: var(--k15-hvit, #fff);
+  }
+  .tile.lys .hode {
+    background: var(--k15-flate, #f4f5f7);
+    color: var(--k15-skifer, #233038);
   }
 </style>

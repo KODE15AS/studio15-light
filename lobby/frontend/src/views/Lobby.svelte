@@ -41,7 +41,6 @@
   let nyttProsjektNavn = $state('')
   let nyttProsjektMal = $state('full')
   let visNyttProsjekt = $state(false)
-  let slettBekreft: Record<string, string> = $state({})
 
   // Prosjektmalene (Jørn 05.10, testrapport 3) — navnene er Jørns.
   const maler = [
@@ -145,10 +144,11 @@
 
   async function slettProsjekt(prosjekt: Prosjekt) {
     if (!gruppen) return
+    // Én bekreftelsesknapp (Jørn 05.10, rapport 4 pkt. 2) — avskrift av
+    // sluggen utgikk; API-ets bekreft-felt fylles av frontenden.
     await kall('DELETE', `/api/prosjekter/${gruppen.slug}/${prosjekt.slug}`, {
-      bekreft: slettBekreft[prosjekt.slug] ?? '',
+      bekreft: prosjekt.slug,
     })
-    slettBekreft[prosjekt.slug] = ''
   }
 
   hent()
@@ -393,24 +393,15 @@
                 <summary>Slett prosjektet</summary>
                 <p>
                   Sletter skjermene, volumene og prosjektrepoet i én
-                  operasjon. Skriv prosjektets slug
-                  (<code>{prosjekt.slug}</code>) for å bekrefte:
+                  operasjon — dette kan ikke angres.
                 </p>
-                <form
-                  class="rad"
-                  onsubmit={(e) => {
-                    e.preventDefault()
-                    slettProsjekt(prosjekt)
-                  }}
+                <button
+                  class="k15-btn k15-btn-secondary"
+                  disabled={opptatt}
+                  onclick={() => slettProsjekt(prosjekt)}
                 >
-                  <input placeholder={prosjekt.slug} bind:value={slettBekreft[prosjekt.slug]} />
-                  <button
-                    class="k15-btn k15-btn-secondary"
-                    disabled={opptatt || slettBekreft[prosjekt.slug] !== prosjekt.slug}
-                  >
-                    Slett for alltid
-                  </button>
-                </form>
+                  Bekreft sletting av prosjektet
+                </button>
               </details>
             </div>
           {/each}

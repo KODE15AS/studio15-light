@@ -279,13 +279,16 @@
 
 <svelte:window onkeydown={tastetrykk} />
 
-<div class="stage">
+<!-- Nybegynnerskjermen følger KODE15-webprofilen (Jørn 05.10, rapport 4
+     pkt. 3.1) — standardskjermen beholder den mørke scenen. -->
+<div class="stage" class:lys={prosjektMal === 'nybegynner'}>
   <header>
     <!-- Logoen er alltid veien hjem (Jørn 04.10) -->
     <a class="hjem" href="/" title="Til startsiden">
       <img src="/kode15-logo.png" alt="KODE15 — til startsiden" />
     </a>
-    <span class="kicker">Samling</span>
+    <!-- «Samling» utgikk (Jørn 05.10, rapport 4 pkt. 4) -->
+    <span class="kicker">Prosjekt:</span>
     <strong class="prosjekt">{prosjektNavn}</strong>
 
     <nav class="flatevalg">
@@ -377,6 +380,7 @@
               url={visteFlate.web_url}
               tileId="{visteFlate.kortnavn}:web"
               {modus}
+              lys
               eierFarge={farge(visteFlate)}
               kontroll={presence.kontroll[visteFlate.kortnavn] ?? null}
               onta={taOver}
@@ -417,10 +421,11 @@
           ></div>
           <div class="rad" style="flex-basis: {rader[2] * 100}%">
             <FlateTile
-              tittel="Hjelper — {visteFlate.deltager}"
+              tittel="Editor — {visteFlate.deltager}"
               url={editorUrl(visteFlate)}
               tileId="{visteFlate.kortnavn}:editor"
               {modus}
+              lys
               eierFarge={farge(visteFlate)}
               kontroll={presence.kontroll[visteFlate.kortnavn] ?? null}
               onta={taOver}
@@ -694,5 +699,72 @@
     margin: 8px 0 0;
     max-width: 90ch;
     line-height: 1.5;
+  }
+  /* --- KODE15-webprofil på nybegynnerskjermen (Jørn 05.10, pkt. 3.1) --- */
+  .stage.lys {
+    background: var(--k15-bg);
+    color: var(--k15-skifer);
+    font-family: var(--k15-font-body);
+  }
+  .stage.lys header {
+    background: var(--k15-hvit);
+    border-bottom: 1px solid var(--k15-linje);
+  }
+  .stage.lys .hjem {
+    border: 1px solid var(--k15-linje);
+  }
+  .stage.lys .kicker,
+  .stage.lys .instruks-kicker {
+    color: var(--k15-noytralgraa);
+    font-family: var(--k15-font-heading);
+  }
+  .stage.lys .prosjekt,
+  .stage.lys .instruks-hode strong {
+    color: var(--k15-blaagraa-mork);
+    font-family: var(--k15-font-heading);
+    font-weight: 500;
+  }
+  .stage.lys .flatevalg button {
+    border-color: var(--k15-linje);
+    color: var(--k15-skifer);
+    background: var(--k15-hvit);
+  }
+  .stage.lys .flatevalg button.aktiv {
+    background: var(--k15-flate);
+    border-color: var(--farge);
+  }
+  .stage.lys .deltager {
+    color: var(--k15-skifer);
+  }
+  .stage.lys .veggknapp {
+    border-color: var(--k15-linje);
+    color: var(--k15-blaagraa-mork);
+  }
+  .stage.lys .veggknapp.deler {
+    border-color: #e55381;
+    color: #e55381;
+  }
+  .stage.lys .skille {
+    background: var(--k15-linje);
+  }
+  .stage.lys .skille:hover {
+    background: var(--k15-blaagraa-lys);
+  }
+  .stage.lys .instruks {
+    background: var(--k15-hvit);
+    border-color: var(--k15-linje);
+    color: var(--k15-skifer);
+  }
+  .stage.lys .trinnknapper button {
+    border-color: var(--k15-blaagraa-mork);
+    color: var(--k15-blaagraa-mork);
+  }
+  .stage.lys .melding {
+    background: var(--k15-hvit);
+    border-color: var(--k15-linje);
+  }
+  .stage.lys .feil {
+    background: #f6e3e7;
+    color: #a33d5e;
   }
 </style>

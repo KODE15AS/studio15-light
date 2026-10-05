@@ -35,6 +35,12 @@ RUN rm -rf /usr/lib/code-server/lib/vscode/extensions/copilot \
            /usr/lib/code-server/lib/vscode/extensions/github-authentication \
   && ! ls /usr/lib/code-server/lib/vscode/extensions/ | grep -Ei 'copilot|github'
 
+# Workbench-HTML-en må være skrivbar for coder: entrypoint legger inn en
+# inline <style> som gjemmer tittellinjen i nybegynner-malen (Jørn 05.10,
+# rapport 4) — web-workbenchen har ingen innstilling som skjuler den, og
+# workbench.css kan ligge cachet i nettleserne (URL uten innholdshash).
+RUN chown coder:coder /usr/lib/code-server/lib/vscode/out/vs/code/browser/workbench/workbench.html
+
 # Prosjektmappen må finnes med riktig eier i imaget: navngitte volumer
 # arver eierskapet herfra ved første montering — ellers blir volumet
 # root-eid og git clone feiler med Permission denied (testfunn 10).

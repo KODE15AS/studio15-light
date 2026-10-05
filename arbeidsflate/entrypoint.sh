@@ -68,8 +68,93 @@ if [ ! -d "$ZOO_STORAGE" ]; then
   sed -e "s|__PROXY_BASE__|${LLM_PROXY_BASE:-http://s15l-litellm:4000/v1}|" \
       -e "s|__PROXY_KEY__|${LLM_PROXY_KEY:-}|" \
       /opt/s15l/zoo-settings.template.json > /home/coder/zoo-settings.json
+  # Nybegynner-malen (Jørn 05.10, rapport 4 pkt. 5): ingen checkpoints i
+  # chatten, og Zoo lukker selv filene den åpner — deltageren skal aldri
+  # se kode, bare agentens dialog.
+  if [ "${S15L_MAL:-full}" = "nybegynner" ]; then
+    python3 - /home/coder/zoo-settings.json <<'PY'
+import json, sys
+sti = sys.argv[1]
+d = json.load(open(sti))
+d["globalSettings"].update({
+    "enableCheckpoints": False,
+    "autoCloseZooOpenedFiles": True,
+    "autoCloseZooOpenedNewFiles": True,
+    "autoCloseZooOpenedFilesAfterUserEdited": True,
+})
+json.dump(d, open(sti, "w"), indent=2)
+PY
+  fi
 else
   rm -f /home/coder/zoo-settings.json
+fi
+
+# Nybegynner-malen: rydd Zoo-webviewen (Jørn 05.10, rapport 4 pkt. 3.3).
+# Introblokken, bunnlinjen med modus/profil/ikoner og teknisk info kan
+# ikke styres med innstillinger — de overstyres med CSS rett i utvidelsens
+# webview-bygg, og placeholder-teksten patches til norsk uten @/⁠/-hintet.
+# Zoo er versjonspinnet i Dockerfile, så selektorene/strengene er stabile;
+# ettersees ved bevisst Zoo-oppgradering. Markørvakt gjør blokken idempotent.
+if [ "${S15L_MAL:-full}" = "nybegynner" ]; then
+  # Tittellinjen («Zoo Code - project - code-server») kan ikke skrus av med
+  # innstillinger i web-workbenchen (window.customTitleBarVisibility er
+  # desktop-only) — den gjøres usynlig med en inline <style> i workbench.html.
+  # Inline fordi workbench.css kan ligge cachet i nettleserne (URL-en har
+  # ingen innholdshash); HTML-en genereres per request og er aldri cachet.
+  # Layouten beholder stripen, men den er blank og lys, så flaten ser ren ut.
+  WBHTML=/usr/lib/code-server/lib/vscode/out/vs/code/browser/workbench/workbench.html
+  if [ -w "$WBHTML" ] && ! grep -q "S15L-NYBEGYNNER" "$WBHTML"; then
+    # python, ikke sed -i: katalogen er root-eid, kun selve fila er skrivbar.
+    python3 - "$WBHTML" <<'PY'
+import sys
+sti = sys.argv[1]
+t = open(sti, encoding="utf-8").read()
+stil = ("<style>/* S15L-NYBEGYNNER (Jørn 05.10, rapport 4 pkt. 3.3-B1/B2) */ "
+        ".monaco-workbench .part.titlebar { opacity: 0 !important; "
+        "pointer-events: none !important; }</style>")
+open(sti, "w", encoding="utf-8").write(t.replace("</head>", stil + "</head>"))
+PY
+  fi
+  for BUILD in /home/coder/.local/share/code-server/extensions/zoocodeorganization.zoo-code-*/webview-ui/build; do
+    [ -d "$BUILD" ] || continue
+    if ! grep -q "S15L-NYBEGYNNER" "$BUILD/assets/index.css" 2>/dev/null; then
+      cat >> "$BUILD/assets/index.css" <<'CSS'
+/* S15L-NYBEGYNNER (Jørn 05.10, rapport 4): all «støy» vekk for nybegynnere. */
+/* 3.3-B3: introblokken (zebra-hero, om-tekst, tips, versjon) skjules */
+div.flex.flex-col.h-full.p-6.min-h-0.overflow-y-auto.gap-4.relative { display: none !important; }
+/* 3.3-B8: nederste kontrollinje (modus, profil, auto-approve, ikoner) */
+div:has(> [data-testid="mode-selector-root"]),
+div:has(> div > [data-testid="mode-selector-root"]),
+div:has(> div > [data-testid="mode-selector-trigger"]) { display: none !important; }
+/* 5: teknisk info (tokens, kontekstvindu, kost) i oppgavehodet */
+[data-testid="context-tokens-count"],
+[data-testid="context-window-size"],
+[data-testid="context-window-label"],
+[data-testid="cost-footer-compact"],
+[data-testid="checkpoint-menu-container"] { display: none !important; }
+/* 3.3-B4: tydelig, alltid synlig ramme rundt promptfeltet */
+div:has(> [data-testid="highlight-layer"]) {
+  border: 1px solid var(--vscode-focusBorder) !important;
+  border-radius: 4px;
+}
+CSS
+    fi
+    J="$BUILD/assets/index.js"
+    if [ -f "$J" ] && ! grep -q "Skriv oppgaven din her" "$J"; then
+      python3 - "$J" <<'PY'
+# Placeholder på norsk (norm «språk») og uten det tekniske @//-hintet
+# (rapport 4 pkt. 3.3-B7). Eksakte strenger fra Zoo 3.87.100557.
+import sys
+sti = sys.argv[1]
+t = open(sti, encoding="utf-8").read()
+hint = "Xe=`\\n(${b(`chat:addContext`)}${c?`, ${b(`chat:dragFiles`)}`:`, ${b(`chat:dragFilesImages`)}`})`"
+t = t.replace(hint, "Xe=``")
+t = t.replace("`Type your task here...`", "`Skriv oppgaven din her \u2026`")
+t = t.replace("`Type a message...`", "`Skriv en melding \u2026`")
+open(sti, "w", encoding="utf-8").write(t)
+PY
+    fi
+  done
 fi
 
 # Regelfil med webside-adressen — .roo/rules/ leses av Zoo Code (verifisert
@@ -103,6 +188,7 @@ if [ ! -f "$SETTINGS_DIR/settings.json" ]; then
   "workbench.statusBar.visible": false,
   "workbench.editor.showTabs": "none",
   "window.menuBarVisibility": "hidden",
+  "window.customTitleBarVisibility": "never",
   "workbench.tips.enabled": false,
   "workbench.layoutControl.enabled": false,
   "window.commandCenter": false,'

@@ -12,6 +12,7 @@
   const LAGER = 's15l.deltager'
 
   let aapen = $state(false)
+  let rot = $state(null) // wrapperen — klikk utenfor den lukker panelet
   let nyttNavn = $state('')
   let feil = $state('')
   let opptatt = $state(false)
@@ -54,21 +55,32 @@
   }
 </script>
 
-<div class="velger">
+<svelte:window
+  onpointerdown={(e) => {
+    // Klikk utenfor lukker panelet (Jørn 05.10, rapport 4 pkt. 1).
+    if (aapen && rot && !rot.contains(e.target)) aapen = false
+  }}
+/>
+
+<div class="velger" bind:this={rot}>
+  <!-- Tydelig kontekst (Jørn 05.10): etiketten «Deltager:» + «ingen
+       valgt» når ingen er valgt. -->
   {#if valgt}
     <button class="chip" onclick={() => (aapen = !aapen)} title="Bytt deltager">
+      <span class="etikett">Deltager:</span>
       <span class="prikk" style="background: {valgt.farge}"></span>
       {valgt.navn}
       <span class="bytt">bytt</span>
     </button>
   {:else}
     <button class="k15-btn k15-btn-primary" onclick={() => (aapen = !aapen)}>
-      Velg deltager
+      Deltager: ingen valgt
     </button>
   {/if}
 
   {#if aapen}
     <div class="panel k15-card">
+      <button class="lukk" title="Lukk" onclick={() => (aapen = false)}>×</button>
       <span class="k15-kicker">Hvem er du?</span>
       {#if deltagere.length > 0}
         <ul>
@@ -118,6 +130,25 @@
     font-weight: 600;
     color: var(--k15-tekst);
     cursor: pointer;
+  }
+  .chip .etikett {
+    font-weight: 400;
+    color: var(--k15-noytralgraa);
+  }
+  .lukk {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    background: none;
+    border: none;
+    font-size: 20px;
+    line-height: 1;
+    color: var(--k15-noytralgraa);
+    cursor: pointer;
+    padding: 4px;
+  }
+  .lukk:hover {
+    color: var(--k15-tekst);
   }
   .chip .bytt {
     font-size: 11.5px;

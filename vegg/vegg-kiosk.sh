@@ -181,6 +181,9 @@ start_kiosk() {
     # Engelsk nettleserlokale: ellers anbefaler code-server norsk språk-
     # pakke med en varsling oppå hver editor-flis (funn 04.10).
     --lang=en-US
+    # Lokal CDP-port (kun 127.0.0.1, lukket system): maskinell feilsøking
+    # og verifisering av kiosken — brukt 05.10 til å avdekke tiling-bugen.
+    --remote-debugging-port=9223
     --user-data-dir="$PROFIL"
   )
   if [ -n "$POSISJON" ]; then
@@ -198,7 +201,9 @@ start_kiosk() {
     > "$PROFIL/Default/Preferences"
   : > "$PROFIL/First Run" # merkefil: førstegangsoppsettet er «gjort»
   log "70\"-skjerm oppdaget (match: $MATCH) — starter kiosk: $NETTLESER"
-  nohup "$NETTLESER" "${args[@]}" >/dev/null 2>&1 &
+  # 9>&-: kiosken må IKKE arve vaktas låse-fd — ellers holder chromium
+  # låsen etter at vakta dør, og ingen ny vakt får startet (funn 05.10).
+  nohup "$NETTLESER" "${args[@]}" >/dev/null 2>&1 9>&- &
   vent_paa_kiosk
 }
 
@@ -207,6 +212,33 @@ stopp_kiosk() {
   [ -n "$KIOSK_PID" ] && kill "$KIOSK_PID" 2>/dev/null
   pkill -f -- "user-data-dir=$PROFIL" 2>/dev/null
   KIOSK_PID=""
+}
+
+# Kontinuerlig fullskjerm-håndheving (Jørn 05.10, rapport 4 pkt. 6):
+# kioskvinduet ble observert HALVBREDT (1905x2140 — GNOME-tiling/mistet
+# fullskjerm etter fjern-restart). Da presses tavla til smale striper på
+# venstre halvdel, og et spøkelsesbilde av forrige vindu kan bli stående
+# på resten (programvare-rendering tegner ikke bakgrunnen på nytt).
+# Vakta sjekker derfor hver runde og tvinger fullskjerm tilbake ved behov.
+haandhev_fullskjerm() {
+  command -v wmctrl >/dev/null 2>&1 || return 0
+  [ -n "$KIOSK_PID" ] || return 0
+  local wid sk vb vh skb skh
+  wid="$(wmctrl -lp 2>/dev/null | awk -v p="$KIOSK_PID" '$3==p {print $1; exit}')"
+  [ -n "$wid" ] || return 0
+  # Sammenlign VINDUETS geometri med skjermens — fullskjerm-FLAGGET er
+  # ikke til å stole på: et vindu som ble flislagt ved opprettelse
+  # beholdt flis-geometrien selv med _NET_WM_STATE_FULLSCREEN satt
+  # (verifisert med CDP 05.10: viewport 1905x2140 på 3840x2160-skjerm).
+  sk="$(wmctrl -d 2>/dev/null | awk 'NR==1 {sub(/x/," ",$4); print $4; exit}')"
+  read -r skb skh <<<"$sk"
+  read -r vb vh <<<"$(wmctrl -lG 2>/dev/null | awk -v w="$wid" '$1==w {print $5, $6; exit}')"
+  [ -n "$skb" ] && [ -n "$vb" ] || return 0
+  [ "$vb" = "$skb" ] && [ "$vh" = "$skh" ] && return 0
+  log "Kioskvinduet er ${vb}x${vh}, skjermen ${skb}x${skh} — tvinger fullskjerm"
+  wmctrl -i -r "$wid" -b remove,fullscreen 2>/dev/null
+  wmctrl -i -r "$wid" -e "0,0,0,${skb},${skh}" 2>/dev/null
+  wmctrl -i -r "$wid" -b add,fullscreen 2>/dev/null
 }
 
 log "Starter. Ser etter skjerm med EDID-match «$MATCH», intervall ${POLL}s."
@@ -222,6 +254,7 @@ while true; do
       sleep 2 # gi desktopen et øyeblikk til å aktivere skjermen
       start_kiosk
     fi
+    haandhev_fullskjerm
   else
     if kiosk_kjorer; then
       stopp_kiosk

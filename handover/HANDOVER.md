@@ -13,7 +13,12 @@ tavle-layout speiler deltagerskjermen, zombie-vekking fikset,
 template-designnotat). 05.10 midt på dagen: testrapport 3 — se
 `2026-10-05-testrapport-3.md` (prosjektmaler full/nybegynner,
 nybegynnerskjerm med spilleplan i 4 trinn, ny org KODE15AS-Nybegynner —
-VENTER på app-installasjon fra Jørn).
+app-installasjonen bekreftet i orden 05.10 ettermiddag). 05.10
+ettermiddag: testrapport 4 — se `2026-10-05-testrapport-4.md`
+(deltagervelger med kontekst og lukking, én-klikks prosjektsletting,
+nybegynnerskjerm i lys KODE15-webprofil med ryddet Zoo-chat på norsk,
+agent-dialogen alltid synlig, tavla: tiling-assistant var rotårsaken +
+selvhelende fullskjerm-vakt).
 
 ## Grunnlag — les disse først
 
