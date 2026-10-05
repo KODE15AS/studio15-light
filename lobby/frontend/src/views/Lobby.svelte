@@ -16,7 +16,13 @@
     editor_url: string
     web_url: string
   }
-  type Prosjekt = { slug: string; navn: string; repo: string; arbeidsflater: Arbeidsflate[] }
+  type Prosjekt = {
+    slug: string
+    navn: string
+    repo: string
+    mal: string
+    arbeidsflater: Arbeidsflate[]
+  }
   type Gruppe = { slug: string; navn: string; github_org: string | null; prosjekter: Prosjekt[] }
   type Deltager = { slug: string; navn: string; farge: string; registrert: string }
 
@@ -33,8 +39,38 @@
   let nyGruppeNavn = $state('')
   let visOrgFlyt = $state(false)
   let nyttProsjektNavn = $state('')
+  let nyttProsjektMal = $state('full')
   let visNyttProsjekt = $state(false)
   let slettBekreft: Record<string, string> = $state({})
+
+  // Prosjektmalene (Jørn 05.10, testrapport 3) — navnene er Jørns.
+  const maler = [
+    {
+      id: 'full',
+      navn: 'Full Zoo Code UI og minimal konfetti-webside',
+      hjelp: 'Svelte + Vite med levende webside og hele editoren synlig.',
+    },
+    {
+      id: 'nybegynner',
+      navn: 'Nybegynner for enkle spill og samarbeide',
+      hjelp: 'Ryddet skjerm: websiden øverst, spilloppgave i fire trinn og hjelperen under.',
+    },
+  ]
+
+  // Samme slugify som lobbyen (validering vises live — Jørn 05.10):
+  // navnet blir en adresse, så æ/ø/å og tegn oversettes.
+  const slugifyNavn = (s: string) =>
+    s
+      .toLowerCase()
+      .replaceAll('æ', 'ae')
+      .replaceAll('ø', 'oe')
+      .replaceAll('å', 'aa')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+  const nySlug = $derived(slugifyNavn(nyttProsjektNavn))
+  // Vakta i lobbyen: gruppe + prosjekt ≤ 47 tegn (DNS-grensen med plass
+  // til deltagernavn). Speiles her så feilen vises FØR man trykker.
+  const maksSlug = $derived(gruppen ? 47 - gruppen.slug.length - 1 : 46)
 
   const gruppen = $derived(grupper.find((g) => g.slug === gruppe) ?? null)
 
@@ -83,8 +119,13 @@
 
   async function lagProsjekt() {
     if (!gruppen || !nyttProsjektNavn.trim()) return
-    await kall('POST', '/api/prosjekter', { program: gruppen.slug, navn: nyttProsjektNavn })
+    await kall('POST', '/api/prosjekter', {
+      program: gruppen.slug,
+      navn: nyttProsjektNavn,
+      mal: nyttProsjektMal,
+    })
     nyttProsjektNavn = ''
+    nyttProsjektMal = 'full'
     visNyttProsjekt = false
   }
 
@@ -248,7 +289,16 @@
           <div class="k15-card orgflyt">
             <span class="k15-kicker">Nytt prosjekt</span>
             <h3>Lag nytt prosjekt</h3>
-            <p>Starter fra malen: Svelte + Vite med levende webside og Zoo Code.</p>
+            <!-- Malvelger (Jørn 05.10, testrapport 3) -->
+            <div class="malvalg">
+              {#each maler as m}
+                <label class="mal" class:valgt={nyttProsjektMal === m.id}>
+                  <input type="radio" name="mal" value={m.id} bind:group={nyttProsjektMal} />
+                  <strong>{m.navn}</strong>
+                  <span>{m.hjelp}</span>
+                </label>
+              {/each}
+            </div>
             <form
               class="rad"
               onsubmit={(e) => {
@@ -257,15 +307,33 @@
               }}
             >
               <input placeholder="Prosjektnavn" bind:value={nyttProsjektNavn} />
-              <button class="k15-btn k15-btn-primary" disabled={opptatt}>Opprett</button>
+              <button
+                class="k15-btn k15-btn-primary"
+                disabled={opptatt || !nySlug || nySlug.length > maksSlug}>Opprett</button
+              >
             </form>
+            <!-- Valideringstekst (Jørn 05.10): navnet blir en adresse -->
+            <p class="hint" class:ugyldig={nySlug.length > maksSlug}>
+              Bokstaver, tall og mellomrom er lov — i adressen blir æ/ø/å til
+              ae/oe/aa og andre tegn til bindestrek.
+              {#if nySlug}
+                Adressen blir <code>{nySlug}</code> ({nySlug.length} av maks
+                {maksSlug} tegn{nySlug.length > maksSlug
+                  ? ' — for langt, velg et kortere navn'
+                  : ''}).
+              {:else}
+                Maks {maksSlug} tegn i adressen.
+              {/if}
+            </p>
           </div>
         {/if}
 
         <div class="prosjekter">
           {#each gruppen.prosjekter as prosjekt}
             <div class="k15-card prosjekt">
-              <span class="k15-nummer">PROSJEKT</span>
+              <span class="k15-nummer"
+                >PROSJEKT{prosjekt.mal === 'nybegynner' ? ' · NYBEGYNNER' : ''}</span
+              >
               <h3>{prosjekt.navn}</h3>
 
               {#if prosjekt.arbeidsflater.length > 0}
@@ -487,6 +555,41 @@
     font-size: 12.5px;
     color: var(--k15-noytralgraa);
     margin: 8px 0 0;
+  }
+  .hint.ugyldig {
+    color: #b3443f;
+  }
+  .malvalg {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 10px;
+    margin-top: 12px;
+  }
+  .mal {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    border: 1px solid var(--k15-linje);
+    border-radius: 10px;
+    padding: 10px 14px;
+    cursor: pointer;
+    background: var(--k15-hvit);
+  }
+  .mal.valgt {
+    border-color: var(--k15-blaagraa-mork);
+    box-shadow: 0 0 0 1px var(--k15-blaagraa-mork);
+  }
+  .mal input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .mal strong {
+    font-size: 13.5px;
+  }
+  .mal span {
+    font-size: 12px;
+    color: var(--k15-noytralgraa);
   }
   .slett {
     margin-top: 14px;

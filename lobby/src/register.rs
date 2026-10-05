@@ -12,6 +12,15 @@ pub struct Prosjekt {
     /// https://github.com/<org>/<slug>.git (program med org, vaktmesteren)
     /// eller file:///repos/<slug>.git (lokalt bare-repo).
     pub repo: String,
+    /// Prosjektmalen (Jørn 05.10, testrapport 3): «full» (Zoo Code-UI +
+    /// konfetti-webside) eller «nybegynner» (ryddet skjerm + spilleplan).
+    /// Velges ved opprettelse og styrer både seeding og skjermlayout.
+    #[serde(default = "mal_standard")]
+    pub mal: String,
+}
+
+pub fn mal_standard() -> String {
+    "full".to_string()
 }
 
 #[derive(Serialize, Deserialize, Clone)]

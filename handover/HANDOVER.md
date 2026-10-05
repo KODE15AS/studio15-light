@@ -7,10 +7,13 @@ grønt — gjenstår kun mennesketestene, resept i
 `2026-10-03-mennesketest-v2.md`. Natt til 05.10 leverte chat 2 endringene
 fra Jørns testrapport — se `2026-10-04-nattarbeid-testrapport.md`
 (navneskifter, startside.studio15.cloud, deltagerregister, brødsmuler,
-sync-fiksen på tavla). 05.10 formiddag: testrapport 1 besvart — se
+sync-fiksen på tavla). 05.10 formiddag: testrapport 1 og 2 besvart — se
 `2026-10-05-testrapport-1.md` (WebRTC-piloten «Del til tavla» + coturn,
 tavle-layout speiler deltagerskjermen, zombie-vekking fikset,
-template-designnotat).
+template-designnotat). 05.10 midt på dagen: testrapport 3 — se
+`2026-10-05-testrapport-3.md` (prosjektmaler full/nybegynner,
+nybegynnerskjerm med spilleplan i 4 trinn, ny org KODE15AS-Nybegynner —
+VENTER på app-installasjon fra Jørn).
 
 ## Grunnlag — les disse først
 

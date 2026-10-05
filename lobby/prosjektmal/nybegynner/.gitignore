@@ -1,0 +1,4 @@
+node_modules/
+dist/
+# Per-arbeidsflate-regler skrives av containeren ved oppstart
+.roo/

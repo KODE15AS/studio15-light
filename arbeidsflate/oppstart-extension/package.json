@@ -3,7 +3,7 @@
   "displayName": "Studio 15 LIGHT",
   "description": "Åpner Zoo Code-chatten automatisk ved oppstart, slik at deltageren lander rett i assistenten.",
   "publisher": "kode15",
-  "version": "1.0.0",
+  "version": "1.1.1",
   "license": "MIT",
   "repository": { "type": "git", "url": "https://github.com/KODE15AS/studio15-light" },
   "engines": { "vscode": "^1.100.0" },

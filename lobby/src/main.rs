@@ -233,6 +233,7 @@ async fn tilstand(State(app): State<Arc<App>>) -> Response {
                         .collect();
                     json!({
                         "slug": pr.slug, "navn": pr.navn, "repo": pr.repo,
+                        "mal": pr.mal,
                         "arbeidsflater": arbeidsflater,
                     })
                 })
@@ -250,6 +251,23 @@ async fn tilstand(State(app): State<Arc<App>>) -> Response {
         "ice": app.cfg.ice_servers,
     }))
     .into_response()
+}
+
+/// Spilleplanen for en mal (nybegynner): YAML-fila i malmappen servert som
+/// JSON. ÉN kilde — samme fil seedes inn i prosjektrepoet for hjelperen,
+/// og vises i instruksfeltet på deltagerskjermen.
+async fn spilleplan(State(app): State<Arc<App>>, Path(mal): Path<String>) -> Response {
+    if !MALER.contains(&mal.as_str()) {
+        return feil(StatusCode::NOT_FOUND, "ukjent prosjektmal");
+    }
+    let sti = format!("{}/{mal}/spilleplan.yaml", app.cfg.prosjektmal);
+    let Ok(tekst) = std::fs::read_to_string(&sti) else {
+        return feil(StatusCode::NOT_FOUND, "malen har ingen spilleplan");
+    };
+    match serde_yaml::from_str::<serde_json::Value>(&tekst) {
+        Ok(v) => Json(v).into_response(),
+        Err(e) => feil(StatusCode::INTERNAL_SERVER_ERROR, &format!("spilleplan: {e}")),
+    }
 }
 
 // ---------- Programmer ----------
@@ -314,7 +332,13 @@ async fn slett_program(
 struct NyttProsjekt {
     program: String,
     navn: String,
+    /// Prosjektmal (Jørn 05.10): «full» eller «nybegynner». Utelatt = full.
+    mal: Option<String>,
 }
+
+/// Gyldige prosjektmaler = undermapper av PROSJEKTMAL. Listen er også
+/// vakta mot sti-triksing i mal-parameteren (ingen «..» e.l.).
+const MALER: &[&str] = &["full", "nybegynner"];
 
 fn kjor(cmd: &mut std::process::Command) -> anyhow::Result<()> {
     let out = cmd.output()?;
@@ -330,12 +354,12 @@ fn kjor(cmd: &mut std::process::Command) -> anyhow::Result<()> {
 
 /// Seeder et tomt remote-repo (bare-repo ELLER GitHub) fra prosjektmalen:
 /// git init → malen inn med navnefletting → commit → push HEAD:main.
-fn seed_fra_mal(app: &App, repo_slug: &str, navn: &str, remote: &str) -> anyhow::Result<()> {
+fn seed_fra_mal(app: &App, repo_slug: &str, navn: &str, mal: &str, remote: &str) -> anyhow::Result<()> {
     use std::process::Command;
     let tmp = format!("/tmp/seed-{repo_slug}");
     let _ = std::fs::remove_dir_all(&tmp);
     kjor(Command::new("git").args(["init", "-b", "main", &tmp]))?;
-    kjor(Command::new("cp").args(["-rT", &app.cfg.prosjektmal, &tmp]))?;
+    kjor(Command::new("cp").args(["-rT", &format!("{}/{mal}", app.cfg.prosjektmal), &tmp]))?;
     // Flett prosjektnavnet inn i malen
     for fil in ["package.json", "index.html", "src/App.svelte"] {
         let sti = format!("{tmp}/{fil}");
@@ -360,7 +384,7 @@ fn seed_fra_mal(app: &App, repo_slug: &str, navn: &str, remote: &str) -> anyhow:
 
 /// Oppretter prosjektets bare-repo på repos-volumet og seeder det fra
 /// prosjektmalen. Brukes av programmer UTEN GitHub-org (lokale prosjekter).
-fn seed_bare_repo(app: &App, repo_slug: &str, navn: &str) -> anyhow::Result<String> {
+fn seed_bare_repo(app: &App, repo_slug: &str, navn: &str, mal: &str) -> anyhow::Result<String> {
     use std::process::Command;
     let bare = format!("{}/{}.git", app.cfg.repos_dir, repo_slug);
     let url = format!("file://{bare}");
@@ -368,7 +392,7 @@ fn seed_bare_repo(app: &App, repo_slug: &str, navn: &str) -> anyhow::Result<Stri
         return Ok(url); // idempotent: «prøv igjen» er alltid trygt
     }
     kjor(Command::new("git").args(["init", "--bare", "-b", "main", &bare]))?;
-    seed_fra_mal(app, repo_slug, navn, &url)?;
+    seed_fra_mal(app, repo_slug, navn, mal, &url)?;
     // Arbeidsflatene kjører som coder (uid 1000) og skal både klone fra og
     // pushe til repoet — lobbyen kjører som root, så eierskapet må over
     // (samme klasse felle som testfunn 10: root-eide volumer).
@@ -384,6 +408,7 @@ async fn seed_github_repo(
     org: &str,
     repo_slug: &str,
     navn: &str,
+    mal: &str,
 ) -> anyhow::Result<String> {
     let vm = app
         .vaktmester
@@ -396,7 +421,7 @@ async fn seed_github_repo(
     let tok = vm.repo_token(org, repo_slug).await?;
     let auth = format!("https://x-access-token:{}@github.com/{org}/{repo_slug}.git", tok.token);
     // Tokenet må aldri lekke i feilmeldinger (git siterer gjerne URL-en).
-    seed_fra_mal(app, repo_slug, navn, &auth)
+    seed_fra_mal(app, repo_slug, navn, mal, &auth)
         .map_err(|e| anyhow::anyhow!("{}", e.to_string().replace(&tok.token, "***")))?;
     Ok(url)
 }
@@ -405,6 +430,10 @@ async fn nytt_prosjekt(State(app): State<Arc<App>>, Json(b): Json<NyttProsjekt>)
     let slug = slugify(&b.navn);
     if slug.is_empty() {
         return feil(StatusCode::BAD_REQUEST, "prosjektnavnet gir ingen gyldig slug");
+    }
+    let mal = b.mal.unwrap_or_else(register::mal_standard);
+    if !MALER.contains(&mal.as_str()) {
+        return feil(StatusCode::BAD_REQUEST, "ukjent prosjektmal");
     }
     let mut reg = app.register.lock().await;
     let Some(prog) = reg.programmer.iter_mut().find(|p| p.slug == b.program) else {
@@ -434,12 +463,12 @@ async fn nytt_prosjekt(State(app): State<Arc<App>>, Json(b): Json<NyttProsjekt>)
         format!("file:///repos/{repo_slug}.git")
     } else if let Some(org) = &github_org {
         // Repo-navnet i org-en er prosjekt-sluggen (org-en ER programmet).
-        match seed_github_repo(&app, org, &slug, &b.navn).await {
+        match seed_github_repo(&app, org, &slug, &b.navn, &mal).await {
             Ok(u) => u,
             Err(e) => return feil(StatusCode::INTERNAL_SERVER_ERROR, &format!("github: {e}")),
         }
     } else {
-        match seed_bare_repo(&app, &repo_slug, &b.navn) {
+        match seed_bare_repo(&app, &repo_slug, &b.navn, &mal) {
             Ok(u) => u,
             Err(e) => return feil(StatusCode::INTERNAL_SERVER_ERROR, &format!("repo: {e}")),
         }
@@ -448,6 +477,7 @@ async fn nytt_prosjekt(State(app): State<Arc<App>>, Json(b): Json<NyttProsjekt>)
         slug: slug.clone(),
         navn: b.navn,
         repo,
+        mal,
     });
     if let Err(e) = reg.save(&app.cfg.register_path) {
         return feil(StatusCode::INTERNAL_SERVER_ERROR, &format!("register: {e}"));
@@ -597,7 +627,7 @@ async fn ny_arbeidsflate(State(app): State<Arc<App>>, Json(b): Json<NyArbeidsfla
     if deltager.is_empty() {
         return feil(StatusCode::BAD_REQUEST, "deltagernavnet gir ingen gyldig slug");
     }
-    let (repo, _navn) = {
+    let (repo, mal) = {
         let reg = app.register.lock().await;
         let Some(pr) = reg
             .programmer
@@ -607,7 +637,7 @@ async fn ny_arbeidsflate(State(app): State<Arc<App>>, Json(b): Json<NyArbeidsfla
         else {
             return feil(StatusCode::NOT_FOUND, "ukjent program/prosjekt");
         };
-        (pr.repo.clone(), pr.navn.clone())
+        (pr.repo.clone(), pr.mal.clone())
     };
     let kortnavn = format!("{}-{}-{}", b.program, b.prosjekt, deltager);
     // DNS-fella (betalt 04.10): containernavnet «s15l-ws-<kortnavn>» er
@@ -652,6 +682,9 @@ async fn ny_arbeidsflate(State(app): State<Arc<App>>, Json(b): Json<NyArbeidsfla
             format!("EDITOR_URL={}/w/{}/", app.cfg.public_base, kortnavn),
             "LLM_PROXY_BASE=http://s15l-litellm:4000/v1".to_string(),
             format!("LLM_PROXY_KEY={}", app.cfg.proxy_key),
+            // Malen styrer editor-UI-et (nybegynner = ryddet Zoo-skjerm);
+            // extension-hosten i code-server leser den fra miljøet.
+            format!("S15L_MAL={mal}"),
         ]
         .into_iter()
         .chain(git_env)
@@ -1129,6 +1162,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/programmer", post(nytt_program))
         .route("/api/programmer/{program}", delete(slett_program))
         .route("/api/prosjekter", post(nytt_prosjekt))
+        .route("/api/spilleplan/{mal}", get(spilleplan))
         .route("/api/prosjekter/{program}/{prosjekt}", delete(slett_prosjekt))
         .route("/api/arbeidsflater", post(ny_arbeidsflate))
         .route("/api/deltagere", get(deltagere_liste).post(deltager_registrer))

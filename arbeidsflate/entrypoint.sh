@@ -93,8 +93,22 @@ EOF
 SETTINGS_DIR=/home/coder/.local/share/code-server/User
 mkdir -p "$SETTINGS_DIR"
 if [ ! -f "$SETTINGS_DIR/settings.json" ]; then
-  cat > "$SETTINGS_DIR/settings.json" <<'EOF'
-{
+  # Nybegynner-malen (Jørn 05.10, testrapport 3): absolutt all «støy» i
+  # editor-UI-et vekk — deltageren skal bare se Zoo-chatten (oppstart-
+  # utvidelsen åpner den som hele editorflaten og lukker sidestolpen).
+  EKSTRA=""
+  if [ "${S15L_MAL:-full}" = "nybegynner" ]; then
+    EKSTRA='
+  "workbench.activityBar.location": "hidden",
+  "workbench.statusBar.visible": false,
+  "workbench.editor.showTabs": "none",
+  "window.menuBarVisibility": "hidden",
+  "workbench.tips.enabled": false,
+  "workbench.layoutControl.enabled": false,
+  "window.commandCenter": false,'
+  fi
+  cat > "$SETTINGS_DIR/settings.json" <<EOF
+{$EKSTRA
   "security.workspace.trust.enabled": false,
   "workbench.startupEditor": "none",
   "files.autoSave": "afterDelay",

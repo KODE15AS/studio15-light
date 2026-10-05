@@ -13,6 +13,7 @@ programmer:
   - slug: konfetti-2
     navn: Konfetti 2
     repo: file:///repos/demo-konfetti-2.git
+    mal: full
 - slug: saturday-test-2
   navn: Saturday test 2
   github_org: KODE15-saturday-test-2
@@ -20,6 +21,16 @@ programmer:
   - slug: test-loerdag-2a
     navn: Test lørdag 2a
     repo: file:///repos/saturday-test-2-test-loerdag-2a.git
+    mal: full
   - slug: nytt-prosjekt-test-repo-2-test-1
     navn: Nytt Prosjekt Test repo 2 test 1
     repo: file:///repos/saturday-test-2-nytt-prosjekt-test-repo-2-test-1.git
+    mal: full
+  - slug: spilltest
+    navn: Spilltest
+    repo: https://github.com/KODE15-saturday-test-2/spilltest.git
+    mal: nybegynner
+- slug: nybegynner
+  navn: Nybegynner
+  github_org: KODE15AS-Nybegynner
+  prosjekter: []

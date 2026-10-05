@@ -1,0 +1,31 @@
+# Spilleplanen for nybegynner-malen (Jørn 05.10, testrapport 3).
+# ÉN kilde, to lesere: startsiden viser trinnene i instruksfeltet på
+# deltagerskjermen (servert fra malen via /api/spilleplan/nybegynner),
+# og hjelperen (Zoo Code) leser denne fila i prosjektrepoet.
+spill: Spillet i fire trinn
+trinn:
+  - nummer: 1
+    tittel: Lag spillet
+    tekst: >-
+      Lag et enkelt spill for to spillere ved samme skjerm — for eksempel
+      bondesjakk (tre på rad), SOS eller noe lignende. Beskriv for
+      hjelperen hvordan du vil at brettet skal se ut, og prøv spillet på
+      websiden over.
+  - nummer: 2
+    tittel: Spill mot en annen deltager
+    tekst: >-
+      Nå skal spillet utvides slik at du spiller mot en av de andre
+      deltagerne her i Studio 15 Light — fra hver deres skjerm. Hvordan
+      dere får det til, må du diskutere med hjelperen.
+  - nummer: 3
+    tittel: Tre spillere
+    tekst: >-
+      Utvid spillet til tre samtidige spillere. Er dere bare to, spiller
+      en datarobot den tredje. Spillet skal vises på en god og intuitiv
+      måte for alle tre.
+  - nummer: 4
+    tittel: Fire spillere
+    tekst: >-
+      Utvid spillet til fire samtidige spillere — dataroboter erstatter
+      spillerne som mangler. Klarer dere å gjøre spillet lett å forstå og
+      fint å se på for alle fire?
