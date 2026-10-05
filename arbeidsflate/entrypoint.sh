@@ -81,6 +81,11 @@ d["globalSettings"].update({
     "autoCloseZooOpenedFiles": True,
     "autoCloseZooOpenedNewFiles": True,
     "autoCloseZooOpenedFilesAfterUserEdited": True,
+    # Jørn 05.10 kveld: +15 % skrift (standard 13), todo-listen på, og
+    # svarforslag skal VENTE på deltagerne — aldri auto-svares.
+    "chatFontSize": 15,
+    "todoListEnabled": True,
+    "alwaysAllowFollowupQuestions": False,
 })
 json.dump(d, open(sti, "w"), indent=2)
 PY
@@ -111,7 +116,11 @@ sti = sys.argv[1]
 t = open(sti, encoding="utf-8").read()
 stil = ("<style>/* S15L-NYBEGYNNER (Jørn 05.10, rapport 4 pkt. 3.3-B1/B2) */ "
         ".monaco-workbench .part.titlebar { opacity: 0 !important; "
-        "pointer-events: none !important; }</style>")
+        "pointer-events: none !important; } "
+        "/* 05.10 kveld: VS Code-varsler (port 5173, settings-import) er "
+        "bare støy for nybegynnere — og skjemmer tavla. */ "
+        ".monaco-workbench .notifications-toasts { display: none !important; }"
+        "</style>")
 open(sti, "w", encoding="utf-8").write(t.replace("</head>", stil + "</head>"))
 PY
   fi
@@ -137,6 +146,12 @@ div:has(> [data-testid="highlight-layer"]) {
   border: 1px solid var(--vscode-focusBorder) !important;
   border-radius: 4px;
 }
+/* 05.10 kveld: skriftstørrelsen i selve promptfeltet følger chatten
+   (+15 %). Høyden eies av Zoos autosize (minRows/maxRows patches i
+   index.js — CSS taper mot komponentens inline !important). */
+div:has(> [data-testid="highlight-layer"]) textarea {
+  font-size: 15px !important;
+}
 CSS
     fi
     J="$BUILD/assets/index.js"
@@ -151,6 +166,11 @@ hint = "Xe=`\\n(${b(`chat:addContext`)}${c?`, ${b(`chat:dragFiles`)}`:`, ${b(`ch
 t = t.replace(hint, "Xe=``")
 t = t.replace("`Type your task here...`", "`Skriv oppgaven din her \u2026`")
 t = t.replace("`Type a message...`", "`Skriv en melding \u2026`")
+# Jørn 05.10 kveld: romslig promptfelt — nedre del av chatkolonnen.
+# Høyden styres av autosize-komponentens radgrenser (inline !important
+# slår all CSS), så grensene patches her: 8 rader i ro (~¼ kolonne),
+# vokser til 28 (~halv kolonne) når deltagerne skriver langt.
+t = t.replace("minRows:3,maxRows:15", "minRows:8,maxRows:28")
 open(sti, "w", encoding="utf-8").write(t)
 PY
     fi

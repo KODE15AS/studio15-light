@@ -32,60 +32,38 @@
           if (pr.mal) prosjektMal = pr.mal
         }
       }
-      if (prosjektMal === 'nybegynner' && spilleplan.length === 0) hentSpilleplan()
     } catch {}
   }
 
-  // --- Nybegynner-malen (Jørn 05.10, testrapport 3) ---
-  // Stablet layout: webside øverst, oppgaven (spilleplanens trinn) i
-  // midten, hjelperen (Zoo-chatten i code-server) nederst. Spilleplanen
-  // har ÉN kilde: malens spilleplan.yaml — samme fil ligger i prosjekt-
-  // repoet for hjelperen og serveres her for instruksfeltet.
-  let spilleplan = $state([])
-  async function hentSpilleplan() {
-    try {
-      const r = await fetch('/api/spilleplan/nybegynner')
-      if (r.ok) spilleplan = (await r.json()).trinn ?? []
-    } catch {}
-  }
-  const trinnNokkel = `s15l-trinn-${program}-${prosjekt}`
-  let trinn = $state(Number(localStorage.getItem(trinnNokkel)) || 1)
-  const aktueltTrinn = $derived(spilleplan.find((t) => t.nummer === trinn))
-  function settTrinn(t) {
-    trinn = Math.min(Math.max(t, 1), spilleplan.length || 4)
-    localStorage.setItem(trinnNokkel, String(trinn))
-  }
-
-  // Strekkbare skiller (Jørns skisse): tre rader med andeler som kan
-  // dras — standard omtrent som skissen, husket per prosjekt.
-  const raderNokkel = `s15l-rader-${program}-${prosjekt}`
-  let rader = $state(
-    JSON.parse(localStorage.getItem(raderNokkel) ?? 'null') ?? [0.5, 0.16, 0.34]
+  // --- Nybegynner-malen (Jørn 05.10 kveld, iterasjon etter rapport 4) ---
+  // To kolonner: hjelperen (Zoo-chatten) til venstre ≈ ⅓, websiden til
+  // høyre ≈ ⅔. Oppgavefeltet utgikk — spilleplanen eies nå av hjelperen
+  // selv (todo-liste + svarknapper i chatten, instruert i AGENTS.md).
+  // Skillet kan dras i bredden og huskes per prosjekt.
+  const kolonneNokkel = `s15l-kolonner-${program}-${prosjekt}`
+  let kolonner = $state(
+    JSON.parse(localStorage.getItem(kolonneNokkel) ?? 'null') ?? [1 / 3, 2 / 3]
   )
   let stabelEl = $state(null)
-  function startDra(e, i) {
+  function startDra(e) {
     // Pointer capture: skillet beholder pekeren selv over iframene.
     e.preventDefault()
     const el = e.currentTarget
-    const hoyde = stabelEl.getBoundingClientRect().height
-    const startY = e.clientY
-    const start = [...rader]
+    const bredde = stabelEl.getBoundingClientRect().width
+    const startX = e.clientX
+    const start = [...kolonner]
     try {
       el.setPointerCapture(e.pointerId)
     } catch {} // enkelte pekere (test/berøring) mangler capture — draget virker likevel
     const flytt = (ev) => {
-      const d = (ev.clientY - startY) / hoyde
-      const sum = start[i] + start[i + 1]
-      const a = Math.max(0.08, Math.min(start[i] + d, sum - 0.08))
-      const nye = [...start]
-      nye[i] = a
-      nye[i + 1] = sum - a
-      rader = nye
+      const d = (ev.clientX - startX) / bredde
+      const a = Math.max(0.15, Math.min(start[0] + d, 0.85))
+      kolonner = [a, 1 - a]
     }
     const slippDra = () => {
       el.removeEventListener('pointermove', flytt)
       el.removeEventListener('pointerup', slippDra)
-      localStorage.setItem(raderNokkel, JSON.stringify(rader))
+      localStorage.setItem(kolonneNokkel, JSON.stringify(kolonner))
     }
     el.addEventListener('pointermove', flytt)
     el.addEventListener('pointerup', slippDra)
@@ -367,18 +345,14 @@
   {:else}
     {#key visteFlate.kortnavn}
       {#if prosjektMal === 'nybegynner'}
-        <!-- Nybegynner (Jørns skisse 05.10): webside øverst, oppgaven i
-             midten, hjelperen nederst — skillene kan strekkes. -->
+        <!-- Nybegynner (Jørn 05.10 kveld): hjelperen ⅓ til venstre,
+             websiden ⅔ til høyre — skillet kan dras i bredden. -->
         <main class="nybegynner" bind:this={stabelEl}>
-          <div
-            class="rad deleboks"
-            style="flex-basis: {rader[0] * 100}%"
-            bind:this={websideBoks}
-          >
+          <div class="kol" style="flex-grow: {kolonner[0]}">
             <FlateTile
-              tittel="Webside — {visteFlate.deltager}"
-              url={visteFlate.web_url}
-              tileId="{visteFlate.kortnavn}:web"
+              tittel="Editor — {visteFlate.deltager}"
+              url={editorUrl(visteFlate)}
+              tileId="{visteFlate.kortnavn}:editor"
               {modus}
               lys
               eierFarge={farge(visteFlate)}
@@ -388,42 +362,14 @@
           </div>
           <div
             class="skille"
-            title="Dra for å endre størrelsen"
-            onpointerdown={(e) => startDra(e, 0)}
+            title="Dra for å endre bredden"
+            onpointerdown={startDra}
           ></div>
-          <section
-            class="instruks"
-            style="flex-basis: {rader[1] * 100}%; --farge: {farge(visteFlate)}"
-          >
-            <div class="instruks-hode">
-              <span class="instruks-kicker">Oppgave</span>
-              <strong>
-                Trinn {trinn} av {spilleplan.length || 4}{aktueltTrinn
-                  ? ` — ${aktueltTrinn.tittel}`
-                  : ''}
-              </strong>
-              <div class="trinnknapper">
-                <button onclick={() => settTrinn(trinn - 1)} disabled={trinn <= 1}
-                  >‹ Forrige</button
-                >
-                <button
-                  onclick={() => settTrinn(trinn + 1)}
-                  disabled={trinn >= (spilleplan.length || 4)}>Neste ›</button
-                >
-              </div>
-            </div>
-            <p>{aktueltTrinn?.tekst ?? 'Henter spilleplanen …'}</p>
-          </section>
-          <div
-            class="skille"
-            title="Dra for å endre størrelsen"
-            onpointerdown={(e) => startDra(e, 1)}
-          ></div>
-          <div class="rad" style="flex-basis: {rader[2] * 100}%">
+          <div class="kol deleboks" style="flex-grow: {kolonner[1]}" bind:this={websideBoks}>
             <FlateTile
-              tittel="Editor — {visteFlate.deltager}"
-              url={editorUrl(visteFlate)}
-              tileId="{visteFlate.kortnavn}:editor"
+              tittel="Webside — {visteFlate.deltager}"
+              url={visteFlate.web_url}
+              tileId="{visteFlate.kortnavn}:web"
               {modus}
               lys
               eierFarge={farge(visteFlate)}
@@ -622,83 +568,35 @@
     padding: 10px;
     min-height: 0;
   }
-  /* Nybegynner-malen: stablet layout med strekkbare skiller. */
+  /* Nybegynner-malen: to kolonner med strekkbart skille — all flate er
+     brukbar (ingen pynteareal, Jørn 05.10 kveld). */
   main.nybegynner {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     gap: 0;
+    padding: 6px;
   }
-  .rad {
+  .kol {
     display: flex;
+    min-width: 0;
     min-height: 0;
-    flex-grow: 0;
-    flex-shrink: 0;
+    flex-basis: 0;
+    flex-shrink: 1;
   }
-  .rad > :global(.tile) {
+  .kol > :global(.tile) {
     flex: 1;
   }
   .skille {
     flex: none;
-    height: 10px;
-    margin: 1px 0;
-    cursor: row-resize;
+    width: 10px;
+    margin: 0 1px;
+    cursor: col-resize;
     border-radius: 5px;
     background: #1d262e;
     touch-action: none;
   }
   .skille:hover {
     background: #2a343d;
-  }
-  .instruks {
-    flex-grow: 0;
-    flex-shrink: 0;
-    min-height: 0;
-    overflow: auto;
-    background: #141b22;
-    border: 1px solid #2a343d;
-    border-left: 4px solid var(--farge, #bbad9a);
-    border-radius: 10px;
-    padding: 10px 16px;
-  }
-  .instruks-hode {
-    display: flex;
-    align-items: baseline;
-    gap: 12px;
-    flex-wrap: wrap;
-  }
-  .instruks-kicker {
-    font-size: 11px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: #8a949c;
-  }
-  .instruks-hode strong {
-    color: #fff;
-    font-weight: 500;
-  }
-  .trinnknapper {
-    margin-left: auto;
-    display: flex;
-    gap: 8px;
-  }
-  .trinnknapper button {
-    background: none;
-    border: 1px solid #3a4652;
-    color: #c7cdd2;
-    font: inherit;
-    font-size: 12px;
-    border-radius: 999px;
-    padding: 3px 12px;
-    cursor: pointer;
-  }
-  .trinnknapper button:disabled {
-    opacity: 0.4;
-    cursor: default;
-  }
-  .instruks p {
-    margin: 8px 0 0;
-    max-width: 90ch;
-    line-height: 1.5;
   }
   /* --- KODE15-webprofil på nybegynnerskjermen (Jørn 05.10, pkt. 3.1) --- */
   .stage.lys {
@@ -713,13 +611,11 @@
   .stage.lys .hjem {
     border: 1px solid var(--k15-linje);
   }
-  .stage.lys .kicker,
-  .stage.lys .instruks-kicker {
+  .stage.lys .kicker {
     color: var(--k15-noytralgraa);
     font-family: var(--k15-font-heading);
   }
-  .stage.lys .prosjekt,
-  .stage.lys .instruks-hode strong {
+  .stage.lys .prosjekt {
     color: var(--k15-blaagraa-mork);
     font-family: var(--k15-font-heading);
     font-weight: 500;
@@ -749,15 +645,6 @@
   }
   .stage.lys .skille:hover {
     background: var(--k15-blaagraa-lys);
-  }
-  .stage.lys .instruks {
-    background: var(--k15-hvit);
-    border-color: var(--k15-linje);
-    color: var(--k15-skifer);
-  }
-  .stage.lys .trinnknapper button {
-    border-color: var(--k15-blaagraa-mork);
-    color: var(--k15-blaagraa-mork);
   }
   .stage.lys .melding {
     background: var(--k15-hvit);

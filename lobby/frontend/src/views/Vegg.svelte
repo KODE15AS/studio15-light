@@ -29,12 +29,12 @@
         const kjorende = pr.arbeidsflater.filter((f) => f.kjorer)
         if (fastProgram && fastProsjekt) {
           if (p.slug === fastProgram && pr.slug === fastProsjekt) {
-            return { program: p.slug, prosjekt: pr.slug, navn: pr.navn, flater: kjorende }
+            return { program: p.slug, prosjekt: pr.slug, navn: pr.navn, mal: pr.mal, flater: kjorende }
           }
           continue
         }
         if (kjorende.length > 0 && (!beste || kjorende.length > beste.kjorende)) {
-          beste = { program: p.slug, prosjekt: pr.slug, navn: pr.navn, flater: kjorende, kjorende: kjorende.length }
+          beste = { program: p.slug, prosjekt: pr.slug, navn: pr.navn, mal: pr.mal, flater: kjorende, kjorende: kjorende.length }
         }
       }
     }
@@ -58,7 +58,7 @@
       flater = valgt.flater
       if (!rom || rom.program !== valgt.program || rom.prosjekt !== valgt.prosjekt) {
         if (rom) forlat()
-        rom = { program: valgt.program, prosjekt: valgt.prosjekt, navn: valgt.navn }
+        rom = { program: valgt.program, prosjekt: valgt.prosjekt, navn: valgt.navn, mal: valgt.mal }
         watch(rom.program, rom.prosjekt)
       }
     } catch {}
@@ -154,13 +154,18 @@
         {/each}
       </div>
     </header>
-    <!-- Alltid minst to kolonner (Jørn 04.10): første flate tar én
-         halvdel, den andre halvdelen står tom til neste flate kommer. -->
-    <main style="--kolonner: {Math.max(flater.length, 2)}">
+    <!-- Dynamisk disponering (Jørn 05.10 kveld): 1–2 deltagere deler
+         bredden (minst to kolonner, 04.10: tom halvdel = plass til
+         nestemann), 3–4 gir 2×2-rutenett — hver rute 1920×1080 på
+         70-tommeren. Flere enn 4: flere kolonner i to rader. -->
+    <main
+      style="--kolonner: {flater.length <= 2 ? 2 : Math.ceil(flater.length / 2)};
+             --rader: {flater.length <= 2 ? 1 : 2}"
+    >
       {#each flater as f (f.kortnavn)}
         {@const eierFarge =
           presence.deltagere.find((d) => d.slug === f.deltager)?.farge ?? f.farge ?? '#77838C'}
-        <section>
+        <section class:nybegynner={rom.mal === 'nybegynner'}>
           <FlateTile
             tittel="Editor — {f.deltager}"
             url={editorUrl(f.editor_url)}
@@ -243,6 +248,7 @@
     flex: 1;
     display: grid;
     grid-template-columns: repeat(var(--kolonner), 1fr);
+    grid-template-rows: repeat(var(--rader, 1), 1fr);
     gap: 10px;
     padding: 10px;
     min-height: 0;
@@ -251,14 +257,17 @@
     pointer-events: none;
     cursor: none;
   }
-  /* Hver halvdel speiler deltagerskjermen (Jørn 05.10): editor til
+  /* Hver rute speiler deltagerskjermen (Jørn 05.10): editor til
      venstre, levende webside til høyre — samme plassering som i
-     samlingsvisningen. */
+     samlingsvisningen. Nybegynner speiler ⅓/⅔-delingen. */
   section {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 10px;
     min-height: 0;
     min-width: 0;
+  }
+  section.nybegynner {
+    grid-template-columns: 1fr 2fr;
   }
 </style>

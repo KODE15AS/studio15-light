@@ -1,7 +1,8 @@
 # Spilleplanen for nybegynner-malen (Jørn 05.10, testrapport 3).
-# ÉN kilde, to lesere: startsiden viser trinnene i instruksfeltet på
-# deltagerskjermen (servert fra malen via /api/spilleplan/nybegynner),
-# og hjelperen (Zoo Code) leser denne fila i prosjektrepoet.
+# Siden 05.10 kveld eies planen av hjelperen alene (AGENTS.md): trinnene
+# presenteres i chatten med todo-liste og svarknapper — oppgavefeltet på
+# deltagerskjermen utgikk. (/api/spilleplan/nybegynner serverer fortsatt
+# fila, men ingen leser den der nå.)
 spill: Spillet i fire trinn
 trinn:
   - nummer: 1

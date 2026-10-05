@@ -18,7 +18,11 @@ ettermiddag: testrapport 4 — se `2026-10-05-testrapport-4.md`
 (deltagervelger med kontekst og lukking, én-klikks prosjektsletting,
 nybegynnerskjerm i lys KODE15-webprofil med ryddet Zoo-chat på norsk,
 agent-dialogen alltid synlig, tavla: tiling-assistant var rotårsaken +
-selvhelende fullskjerm-vakt).
+selvhelende fullskjerm-vakt). 05.10 kveld: nybegynner-iterasjon 2 — se
+`2026-10-05-nybegynner-iterasjon-2.md` (to kolonner ⅓ chat / ⅔ webside
+med dragbart skille, hjelperen eier spilleplanen med agentisk todo-liste
+og klikkbare svarforslag, stort promptfelt via minRows-patch, +15 %
+skrift, varsler skjult, tavla dynamisk 1/2/2×2; nettbrett utgått).
 
 ## Grunnlag — les disse først
 
