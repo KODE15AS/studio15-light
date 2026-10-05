@@ -33,6 +33,10 @@ Slik virker det:
   maskinelt (video oppe på tavla, readyState 4, fallback etter stopp).
   GJENSTÅR menneskelig: ekte getDisplayMedia-flyt med dialogen, og
   Tailscale-PC → raven (testes i neste mennesketest).
+- Windows-note (sett 05.10): første WebRTC-bruk i en prosess kan utløse
+  Windows Defender-brannmurens dialog (UDP-porter for ICE). Svar: tillat
+  på PRIVATE nettverk (Jørn godkjente for Cursor 05.10; vanlig Chrome
+  har som regel regelen fra før).
 
 Varig ICE-robusthet (Jørns kommentar): **coturn på raven** (pinnet
 4.7.0-alpine, host-nett, lytter KUN på 10.10.0.22 og 100.65.19.39, UDP
