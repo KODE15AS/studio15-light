@@ -9,6 +9,9 @@ export const presence = $state({
   deltagere: [],
   kontroll: {}, // kortnavn → { id, navn, farge }
   feil: null,
+  // Flyktig adresse for watch-tilkoblinger (tavla) — kun til
+  // WebRTC-signaleringen (pilot 05.10).
+  watchId: null,
 })
 
 // id → { tile, x, y, navn, farge, ts } — normalisert innenfor tilen.
@@ -56,6 +59,14 @@ function haandterMelding(ev) {
     case 'feil':
       presence.feil = m.melding
       setTimeout(() => (presence.feil = null), 5000)
+      break
+    case 'watch_velkommen':
+      presence.watchId = m.id
+      break
+    case 'strom':
+      // WebRTC-signalering (pilot 05.10): relayet melding — visningene
+      // (Samling/Vegg) registrerer handler og filtrerer selv på `til`.
+      stromHandler?.(m)
       break
   }
 }
@@ -112,6 +123,19 @@ export function sendCursor(tile, x, y) {
 
 export const ta = (flate) => send({ type: 'ta', flate })
 export const slipp = () => send({ type: 'slipp' })
+
+// --- WebRTC-signalering for webside-strømmen (pilot 05.10) ---
+// Går UTENOM send(): tavla (watch) må også kunne sende strøm-signal —
+// serveren slipper kun `strom`-meldinger gjennom fra watch-tilkoblinger.
+let stromHandler = null
+export function onStrom(fn) {
+  stromHandler = fn
+}
+export function sendStrom(flate, til, signal) {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: 'strom', flate, til: til ?? undefined, signal }))
+  }
+}
 
 export function forlat() {
   send({ type: 'forlat' })

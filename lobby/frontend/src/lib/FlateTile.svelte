@@ -11,11 +11,36 @@
   import Cursors from './Cursors.svelte'
   import { sendCursor } from './presence.svelte.js'
 
-  let { tittel, url, tileId, modus, eierFarge = '#77838C', kontroll = null, onta = () => {} } = $props()
+  // strom (pilot 05.10): levende WebRTC-MediaStream fra deltagerens
+  // webside-flis — vises i stedet for iframen når den finnes (ekte
+  // speiling av det deltageren ser). Faller tilbake til iframen uten.
+  let {
+    tittel,
+    url,
+    tileId,
+    modus,
+    eierFarge = '#77838C',
+    kontroll = null,
+    strom = null,
+    onta = () => {},
+  } = $props()
 
   function pek(e) {
     const r = e.currentTarget.getBoundingClientRect()
     sendCursor(tileId, (e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height)
+  }
+
+  // srcObject kan ikke settes deklarativt — liten action som følger prop-en.
+  function kobleStrom(node, s) {
+    node.srcObject = s
+    return {
+      update(ny) {
+        node.srcObject = ny
+      },
+      destroy() {
+        node.srcObject = null
+      },
+    }
   }
 </script>
 
@@ -27,12 +52,20 @@
   <div class="hode">
     <span class="prikk" style="background: {eierFarge}"></span>
     <span class="tittel">{tittel}</span>
+    {#if strom}
+      <span class="live">● direkte</span>
+    {/if}
     {#if kontroll}
       <span class="badge" style="background: {kontroll.farge}">{kontroll.navn} kontrollerer</span>
     {/if}
   </div>
   <div class="flate" class:kontrollert={kontroll}>
-    <iframe src={url} title={tittel} class:dod={modus === 'se' || modus === 'vegg'}></iframe>
+    {#if strom}
+      <!-- Ekte speiling: deltagerens webside-flis som WebRTC-strøm -->
+      <video autoplay muted playsinline use:kobleStrom={strom}></video>
+    {:else}
+      <iframe src={url} title={tittel} class:dod={modus === 'se' || modus === 'vegg'}></iframe>
+    {/if}
     {#if modus === 'se'}
       <!-- Peke-overlay: fanger pekeren (se/peke), dobbeltklikk tar over -->
       <div
@@ -104,6 +137,20 @@
     height: 100%;
     border: 0;
     background: #fff;
+  }
+  video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: #000;
+  }
+  .live {
+    color: #e55381;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
   }
   /* «Død» iframe: ingen input slipper inn (se-modus og veggen). */
   iframe.dod {

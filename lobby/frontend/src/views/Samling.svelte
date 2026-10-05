@@ -5,7 +5,7 @@
   // overtagelsen ER code-servers flerbrukertilkobling (avklart 03.10),
   // presence-laget broadcaster bare hvem som kontrollerer hva.
   import FlateTile from '../lib/FlateTile.svelte'
-  import { presence, join, ta, slipp } from '../lib/presence.svelte.js'
+  import { presence, join, ta, slipp, onStrom, sendStrom } from '../lib/presence.svelte.js'
 
   let { program, prosjekt } = $props()
 
@@ -14,12 +14,14 @@
   let prosjektNavn = $state(prosjekt)
   let flater = $state([])
   let valgt = $state(null) // kortnavn på flaten som vises
+  let iceServers = [] // STUN/TURN (coturn på raven) fra /api/tilstand
 
   async function hent() {
     try {
       const r = await fetch('/api/tilstand')
       if (!r.ok) return
       const data = await r.json()
+      iceServers = data.ice ?? []
       for (const p of data.programmer) {
         if (p.slug !== program) continue
         for (const pr of p.prosjekter) {
@@ -50,8 +52,109 @@
 
   function velg(kortnavn) {
     if (valgt !== kortnavn) slipp() // bytte av flate slipper kontrollen
+    // Deling beskjærer til DIN webside-flis — forlater du egen skjerm,
+    // forsvinner beskjæringsmålet, så delingen stoppes ryddig.
+    if (deler && minFlate && kortnavn !== minFlate.kortnavn) {
+      stoppDeling()
+      deleMelding = 'Deling til tavla stoppet — du forlot din egen skjerm.'
+      setTimeout(() => (deleMelding = ''), 6000)
+    }
     valgt = kortnavn
   }
+
+  // --- «Del til tavla» (WebRTC-pilot 05.10) ---
+  // Deltagerens webside-flis fanges som fane-strøm (Region Capture:
+  // beskåret til flisen) og sendes P2P til tavla. Signalering går over
+  // presence-WebSocketen; tavla søker («soek»), vi svarer med tilbud.
+  // Tavla faller tilbake til sin levende iframe uten strøm — piloten kan
+  // aldri gjøre tavla dårligere. ?deltest=1 bytter fangsten med en
+  // canvas-strøm uten tillatelsesdialog (maskintest-krok).
+  let deler = $state(false)
+  let deleMelding = $state('')
+  let websideBoks = $state(null) // wrapper rundt webside-flisen (crop-mål)
+  let delStrom = null // MediaStream
+  const pcs = new Map() // watcher-id → RTCPeerConnection
+  let testTimer = null
+
+  async function startDeling() {
+    if (!minFlate) return
+    try {
+      let strom
+      if (new URLSearchParams(location.search).get('deltest') === '1') {
+        const c = document.createElement('canvas')
+        c.width = 320
+        c.height = 180
+        const ctx = c.getContext('2d')
+        testTimer = setInterval(() => {
+          ctx.fillStyle = `hsl(${(Date.now() / 20) % 360} 70% 60%)`
+          ctx.fillRect(0, 0, 320, 180)
+        }, 200)
+        strom = c.captureStream(5)
+      } else {
+        strom = await navigator.mediaDevices.getDisplayMedia({
+          video: { frameRate: 15 },
+          audio: false,
+          preferCurrentTab: true,
+          selfBrowserSurface: 'include',
+        })
+        const [spor] = strom.getVideoTracks()
+        // Beskjær til webside-flisen (Region Capture, Chromium ≥104).
+        if (window.CropTarget && spor.cropTo && websideBoks) {
+          const maal = await window.CropTarget.fromElement(websideBoks)
+          await spor.cropTo(maal)
+        }
+        spor.addEventListener('ended', stoppDeling) // «Stopp deling» i nettleseren
+      }
+      delStrom = strom
+      deler = true
+      // Si fra til tavler som allerede står på at strømmen finnes.
+      sendStrom(minFlate.kortnavn, null, { type: 'starter' })
+    } catch (e) {
+      deleMelding = 'Fikk ikke startet deling — prøv igjen.'
+      setTimeout(() => (deleMelding = ''), 6000)
+    }
+  }
+
+  function stoppDeling() {
+    if (minFlate) sendStrom(minFlate.kortnavn, null, { type: 'slutt' })
+    for (const pc of pcs.values()) pc.close()
+    pcs.clear()
+    delStrom?.getTracks().forEach((t) => t.stop())
+    delStrom = null
+    if (testTimer) clearInterval(testTimer)
+    testTimer = null
+    deler = false
+  }
+
+  async function tilbyTil(watcherId) {
+    if (!deler || !delStrom || !minFlate) return
+    pcs.get(watcherId)?.close()
+    const pc = new RTCPeerConnection({ iceServers })
+    pcs.set(watcherId, pc)
+    for (const spor of delStrom.getTracks()) pc.addTrack(spor, delStrom)
+    pc.onicecandidate = (e) => {
+      if (e.candidate) {
+        sendStrom(minFlate.kortnavn, watcherId, { type: 'is', kandidat: e.candidate })
+      }
+    }
+    const tilbud = await pc.createOffer()
+    await pc.setLocalDescription(tilbud)
+    sendStrom(minFlate.kortnavn, watcherId, { type: 'tilbud', sdp: pc.localDescription })
+  }
+
+  onStrom(async (m) => {
+    const meg = presence.deg?.id
+    if (!meg) return
+    try {
+      if (m.signal.type === 'soek' && deler) {
+        tilbyTil(m.fra)
+      } else if (m.signal.type === 'svar' && m.til === meg) {
+        await pcs.get(m.fra)?.setRemoteDescription(m.signal.sdp)
+      } else if (m.signal.type === 'is' && m.til === meg) {
+        await pcs.get(m.fra)?.addIceCandidate(m.signal.kandidat)
+      }
+    } catch {}
+  })
 
   function taOver() {
     if (visteFlate && !erMin) ta(visteFlate.kortnavn)
@@ -145,6 +248,18 @@
       <button class="handling slipp" onclick={() => slipp()}>Slipp (Esc)</button>
     {/if}
 
+    {#if minFlate}
+      <button
+        class="veggknapp"
+        class:deler
+        title={deler
+          ? 'Stopp webside-strømmen til tavla'
+          : 'Send websiden din som direkte strøm til tavla (velg «Del» i dialogen)'}
+        onclick={() => (deler ? stoppDeling() : startDeling())}
+      >
+        {deler ? '■ Deler til tavla' : '▶ Del til tavla'}
+      </button>
+    {/if}
     <button
       class="veggknapp"
       title="Start tavla (70-tommeren) på nytt hvis den henger"
@@ -154,6 +269,10 @@
       {tavleStartes ? 'Tavla startes …' : '↻ Tavle'}
     </button>
   </header>
+
+  {#if deleMelding}
+    <div class="feil">{deleMelding}</div>
+  {/if}
 
   {#if presence.feil}
     <div class="feil">{presence.feil}</div>
@@ -179,15 +298,18 @@
           kontroll={presence.kontroll[visteFlate.kortnavn] ?? null}
           onta={taOver}
         />
-        <FlateTile
-          tittel="Webside — {visteFlate.deltager}"
-          url={visteFlate.web_url}
-          tileId="{visteFlate.kortnavn}:web"
-          {modus}
-          eierFarge={farge(visteFlate)}
-          kontroll={presence.kontroll[visteFlate.kortnavn] ?? null}
-          onta={taOver}
-        />
+        <!-- Wrapper = beskjæringsmål for «Del til tavla» (Region Capture) -->
+        <div class="deleboks" bind:this={websideBoks}>
+          <FlateTile
+            tittel="Webside — {visteFlate.deltager}"
+            url={visteFlate.web_url}
+            tileId="{visteFlate.kortnavn}:web"
+            {modus}
+            eierFarge={farge(visteFlate)}
+            kontroll={presence.kontroll[visteFlate.kortnavn] ?? null}
+            onta={taOver}
+          />
+        </div>
       </main>
     {/key}
   {/if}
@@ -316,6 +438,19 @@
   .veggknapp:disabled {
     opacity: 0.6;
     cursor: default;
+  }
+  /* Aktiv deling: rosa «direkte»-markering (samme som tavlas live-merke) */
+  .veggknapp.deler {
+    border-color: #e55381;
+    color: #e55381;
+  }
+  .deleboks {
+    display: flex;
+    min-width: 0;
+    min-height: 0;
+  }
+  .deleboks > :global(.tile) {
+    flex: 1;
   }
   .feil {
     background: #3a1d26;

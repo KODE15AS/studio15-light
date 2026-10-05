@@ -6,8 +6,9 @@
   //
   // Prosjektvalg: ?program=&prosjekt= i URL-en, ellers automatisk det
   // prosjektet som har flest kjørende arbeidsflater.
+  import { SvelteMap } from 'svelte/reactivity'
   import FlateTile from '../lib/FlateTile.svelte'
-  import { presence, watch, forlat } from '../lib/presence.svelte.js'
+  import { presence, watch, forlat, onStrom, sendStrom } from '../lib/presence.svelte.js'
 
   const params = new URLSearchParams(location.search)
   const fastProgram = params.get('program')
@@ -45,6 +46,7 @@
       const r = await fetch('/api/tilstand')
       if (!r.ok) return
       const data = await r.json()
+      iceServers = data.ice ?? []
       const valgt = velgRom(data)
       if (!valgt) {
         // Ingen aktive prosjekter: koble fra og vent.
@@ -76,6 +78,58 @@
   )
   const editorUrl = (url) =>
     veggUrl(`${url}?folder=/home/coder/project&payload=${PAYLOAD}`)
+
+  // --- Webside-strøm fra deltageren (WebRTC-pilot 05.10) ---
+  // Tavla søker jevnlig («soek»); deltagere som deler svarer med tilbud.
+  // Kommer en strøm opp, viser webside-flisen video i stedet for iframe —
+  // ekte speiling av det deltageren ser. Faller strømmen bort, kommer
+  // iframen tilbake av seg selv.
+  let iceServers = []
+  const strommer = new SvelteMap() // kortnavn → MediaStream
+  const rtc = new Map() // streamer-id → { pc, kortnavn }
+
+  function rydd(fra) {
+    const r = rtc.get(fra)
+    if (!r) return
+    r.pc.close()
+    strommer.delete(r.kortnavn)
+    rtc.delete(fra)
+  }
+
+  onStrom(async (m) => {
+    const meg = presence.watchId
+    if (!meg) return
+    try {
+      if (m.signal.type === 'tilbud' && m.til === meg) {
+        rydd(m.fra)
+        const pc = new RTCPeerConnection({ iceServers })
+        rtc.set(m.fra, { pc, kortnavn: m.flate })
+        pc.ontrack = (e) => strommer.set(m.flate, e.streams[0])
+        pc.onconnectionstatechange = () => {
+          if (['failed', 'closed', 'disconnected'].includes(pc.connectionState)) rydd(m.fra)
+        }
+        pc.onicecandidate = (e) => {
+          if (e.candidate) sendStrom(m.flate, m.fra, { type: 'is', kandidat: e.candidate })
+        }
+        await pc.setRemoteDescription(m.signal.sdp)
+        const svar = await pc.createAnswer()
+        await pc.setLocalDescription(svar)
+        sendStrom(m.flate, m.fra, { type: 'svar', sdp: pc.localDescription })
+      } else if (m.signal.type === 'is' && m.til === meg) {
+        await rtc.get(m.fra)?.pc.addIceCandidate(m.signal.kandidat)
+      } else if (m.signal.type === 'slutt') {
+        rydd(m.fra)
+      } else if (m.signal.type === 'starter') {
+        // Deltager begynte å dele mens tavla sto på — be om tilbud straks.
+        sendStrom('*', null, { type: 'soek' })
+      }
+    } catch {}
+  })
+
+  // Jevnlig søk fanger tavle-restarter, nye delinger og tapte signaler.
+  setInterval(() => {
+    if (rom && presence.watchId) sendStrom('*', null, { type: 'soek' })
+  }, 5000)
 
   hent()
   setInterval(hent, 5000)
@@ -121,6 +175,7 @@
             tileId="{f.kortnavn}:web"
             modus="vegg"
             {eierFarge}
+            strom={strommer.get(f.kortnavn) ?? null}
             kontroll={presence.kontroll[f.kortnavn] ?? null}
           />
         </section>
@@ -196,11 +251,14 @@
     pointer-events: none;
     cursor: none;
   }
-  /* Hver halvdel: editor øverst (60 %), levende webside under (40 %). */
+  /* Hver halvdel speiler deltagerskjermen (Jørn 05.10): editor til
+     venstre, levende webside til høyre — samme plassering som i
+     samlingsvisningen. */
   section {
     display: grid;
-    grid-template-rows: 3fr 2fr;
+    grid-template-columns: 1fr 1fr;
     gap: 10px;
     min-height: 0;
+    min-width: 0;
   }
 </style>

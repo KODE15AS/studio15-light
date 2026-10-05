@@ -2,4 +2,12 @@
 # ingen database, ingen credentials. Identitetsvalg, ikke innlogging
 # (bevisst unntak fra grunnlagsdokumentene, se handover 04.10).
 # Fargen tildeles ved registrering og er fast.
-deltagere: []
+deltagere:
+- slug: pc10
+  navn: PC10
+  farge: '#E8A33D'
+  registrert: 2026-10-05
+- slug: len10
+  navn: LEN10
+  farge: '#5FA8D3'
+  registrert: 2026-10-05

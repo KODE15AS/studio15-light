@@ -77,6 +77,18 @@ pub enum KlientMelding {
     },
     Slipp,
     Forlat,
+    /// WebRTC-signalering for webside-strøm til tavla (pilot 05.10).
+    /// Serveren er KUN postbud: innholdet i `signal` er opakt
+    /// (søk/tilbud/svar/is-kandidat avgjøres av klientene). Dette er den
+    /// ene meldingen tavla (watch) får LOV å sende — den må kunne svare
+    /// på tilbud for å motta strømmen.
+    Strom {
+        /// Flatens kortnavn strømmen gjelder.
+        flate: String,
+        /// Adressert mottaker (deltager- eller watch-id); None = alle.
+        til: Option<Uuid>,
+        signal: serde_json::Value,
+    },
 }
 
 /// Server → klient
@@ -102,6 +114,19 @@ pub enum ServerMelding<'a> {
     },
     Feil {
         melding: String,
+    },
+    /// Hilsen til watch-tilkoblinger (tavla): flyktig adresse som brukes
+    /// som `til` i strøm-signaleringen. Watch er fortsatt read-only ellers.
+    WatchVelkommen {
+        id: Uuid,
+    },
+    /// Relayet WebRTC-signal (se KlientMelding::Strom). Mottagere uten
+    /// match på `til` ignorerer meldingen.
+    Strom {
+        fra: Uuid,
+        flate: String,
+        til: Option<Uuid>,
+        signal: serde_json::Value,
     },
 }
 
@@ -230,6 +255,19 @@ impl Rom {
         inner.deltagere.insert(id, d);
         inner.sessions.insert(tok, id);
         (id, tok, welcome)
+    }
+
+    /// Relay av WebRTC-signal (pilot 05.10): ren broadcast — mottagerne
+    /// filtrerer på `til`. Volumet er lite (kun signalering, aldri media).
+    pub fn strom(&self, fra: Uuid, flate: &str, til: Option<Uuid>, signal: serde_json::Value) {
+        let melding = serde_json::to_string(&ServerMelding::Strom {
+            fra,
+            flate: flate.to_string(),
+            til,
+            signal,
+        })
+        .unwrap();
+        self.broadcast(melding);
     }
 
     pub fn broadcast_cursor(&self, id: Uuid, tile: &str, x: f64, y: f64) {

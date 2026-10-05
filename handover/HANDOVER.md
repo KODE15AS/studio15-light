@@ -7,7 +7,10 @@ grønt — gjenstår kun mennesketestene, resept i
 `2026-10-03-mennesketest-v2.md`. Natt til 05.10 leverte chat 2 endringene
 fra Jørns testrapport — se `2026-10-04-nattarbeid-testrapport.md`
 (navneskifter, startside.studio15.cloud, deltagerregister, brødsmuler,
-sync-fiksen på tavla).
+sync-fiksen på tavla). 05.10 formiddag: testrapport 1 besvart — se
+`2026-10-05-testrapport-1.md` (WebRTC-piloten «Del til tavla» + coturn,
+tavle-layout speiler deltagerskjermen, zombie-vekking fikset,
+template-designnotat).
 
 ## Grunnlag — les disse først
 
@@ -322,6 +325,17 @@ V2 — samarbeidslaget (bygget og maskintestet av chat 2, 03.10):
       sync-granskningen besvart + fiks (tavlas/samlingens fremmede
       editor-fliser åpner prosjektets hovedfil og følger lagringer).
       Verifisert i nettleser + begge regresjonstestene GRØNNE på nytt.
+- [x] Testrapport 1 (05.10, hele pakken i `2026-10-05-testrapport-1.md`):
+      WebRTC-piloten «Del til tavla» (énveis webside-strøm deltager→tavle,
+      signalering over presence, video med iframe-fallback, ● direkte-
+      merke, ?deltest=1-krok — E2E maskintestet); coturn på raven som
+      varig STUN/TURN (Tailscale-robusthet); tavle-halvdelene speiler
+      deltagerskjermen (editor venstre, webside høyre); zombie-vekking
+      fikset (synlighetsvakt på vekkesiden + REAPER_IGNORE_IPS);
+      template-designnotat (2c). BESLUTNING ført: revisjon av
+      erfaringsoverføringen — énveis streaming KUN for websiden;
+      nettbrett er nødløsning for deling. Gjenstår menneskelig: ekte
+      delingsdialog + Tailscale-PC→raven-strøm (neste mennesketest).
 - [ ] Omfattende mennesketest med Jørn — full resept i
       `2026-10-03-mennesketest-v2.md` (inkl. sete 2 som gjenstår fra V1).
       Status 04.10: sete 2 (nettbrett) er inne via wifi-inngangen; punkt 1

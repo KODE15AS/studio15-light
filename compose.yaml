@@ -39,6 +39,35 @@ services:
       - front
       - workspaces
 
+  # STUN/TURN for webside-strømmen til tavla (WebRTC-pilot 05.10):
+  # garantert vei for media også PC↔raven over Tailscale (ICE-kandidater
+  # på tvers av nett kan feile — relé på raven er den varige løsningen).
+  # host-nett: TURN trenger UDP-portspennet og ravens ekte adresser
+  # (10.10.0.22 på wifi, 100.65.19.39 på tailnettet). Ikke offentlig:
+  # raven har ingen offentlig IP, og Funnel rører ikke disse portene.
+  coturn:
+    image: coturn/coturn:4.7.0-alpine
+    container_name: s15l-coturn
+    restart: unless-stopped
+    network_mode: host
+    command:
+      - -n
+      - --log-file=stdout
+      - --no-cli
+      - --listening-port=3478
+      - --listening-ip=10.10.0.22
+      - --listening-ip=100.65.19.39
+      - --relay-ip=10.10.0.22
+      - --relay-ip=100.65.19.39
+      - --fingerprint
+      - --lt-cred-mech
+      - --user=s15l:${TURN_PASSORD}
+      - --realm=s15l
+      - --no-tls
+      - --no-dtls
+      - --min-port=49160
+      - --max-port=49200
+
   lobby:
     build: ./lobby
     image: studio15-light-lobby:v1
@@ -57,6 +86,15 @@ services:
       ACCESS_LOG: /logs/access.log
       # Overstyres kun i test av dvale/vekke (IDLE_MINUTES=1 ved oppstart)
       IDLE_MINUTES: "${IDLE_MINUTES:-45}"
+      # Ravens egne adresser (tavla/kiosken via ts.net, localhost, wifi-IP):
+      # trafikk herfra teller aldri som aktivitet i dvale-vakten (05.10).
+      REAPER_IGNORE_IPS: "100.65.19.39,127.0.0.1,::1,10.10.0.22"
+      # STUN/TURN for webside-strømmen (coturn over, host-nett): klientene
+      # prøver direkte først; reléet er garantert vei over Tailscale.
+      ICE_SERVERS: >-
+        [{"urls":["stun:10.10.0.22:3478","stun:100.65.19.39:3478"]},
+         {"urls":["turn:10.10.0.22:3478?transport=udp","turn:100.65.19.39:3478?transport=udp"],
+          "username":"s15l","credential":"${TURN_PASSORD}"}]
       # Reconnect-vindu for presence før identiteten ryddes bort.
       # Overstyres kun i presence-smoketesten (PRESENCE_TIMEOUT_SECS=2).
       PRESENCE_TIMEOUT_SECS: "${PRESENCE_TIMEOUT_SECS:-120}"

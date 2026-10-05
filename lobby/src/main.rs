@@ -40,6 +40,7 @@ pub struct Cfg {
     pub register_path: String,
     pub access_log: String,
     pub idle_minutes: u64,
+    pub reaper_ignore_ips: Vec<String>,
     pub prosjektmal: String,
     pub repos_dir: String,
     pub webdir: String,
@@ -47,6 +48,7 @@ pub struct Cfg {
     pub deltager_path: String,
     /// Hemmelighet for utledning av per-arbeidsflate-tokens (git-token-stien).
     pub token_secret: String,
+    pub ice_servers: serde_json::Value,
 }
 
 pub struct App {
@@ -245,6 +247,7 @@ async fn tilstand(State(app): State<Arc<App>>) -> Response {
         "programmer": programmer,
         "deltagere": deltagerliste,
         "base": app.cfg.public_base,
+        "ice": app.cfg.ice_servers,
     }))
     .into_response()
 }
@@ -714,9 +717,18 @@ async fn presence_socket(
     let mut rx = rom.tx.subscribe();
     let (mut ut, mut inn) = socket.split();
 
-    // Watch-tilkoblinger får roster-snapshot med en gang.
+    // Watch-tilkoblinger (tavla) joiner aldri, men trenger en adresse for
+    // WebRTC-signaleringen (pilot 05.10) — flyktig id per tilkobling.
+    let watch_id = uuid::Uuid::new_v4();
+
+    // Watch-tilkoblinger får roster-snapshot og signaleringsadressen sin.
     if watch {
         let _ = ut.send(Message::Text(rom.roster_json().into())).await;
+        let hilsen = serde_json::to_string(&presence::ServerMelding::WatchVelkommen {
+            id: watch_id,
+        })
+        .unwrap();
+        let _ = ut.send(Message::Text(hilsen.into())).await;
     }
 
     let mut meg: Option<uuid::Uuid> = None;
@@ -742,8 +754,15 @@ async fn presence_socket(
                 let Ok(melding) = serde_json::from_str::<presence::KlientMelding>(&tekst) else {
                     continue;
                 };
+                // Watch (tavla) er read-only for ØKTEN, men strøm-signalering
+                // (WebRTC-pilot 05.10) må gå begge veier: tavla svarer på
+                // tilbud for å motta webside-strømmen. Media går aldri
+                // gjennom serveren — kun små signal-meldinger.
                 if watch {
-                    continue; // read-only: alle meldinger ignoreres
+                    if let presence::KlientMelding::Strom { flate, til, signal } = melding {
+                        rom.strom(watch_id, &flate, til, signal);
+                    }
+                    continue; // alle andre meldinger ignoreres
                 }
                 use presence::KlientMelding::*;
                 match melding {
@@ -819,6 +838,12 @@ async fn presence_socket(
                             rom.fjern(id);
                         }
                         break;
+                    }
+                    Strom { flate, til, signal } => {
+                        // WebRTC-signalering (pilot 05.10): postbud-relay.
+                        if let Some(id) = meg {
+                            rom.strom(id, &flate, til, signal);
+                        }
                     }
                 }
             }
@@ -921,6 +946,10 @@ async fn vekk_side(
 }
 
 fn vekk_html(tittel: &str, melding: &str, vekk: Option<(Option<&str>, &str)>) -> String {
+    // Synlighetsvakt (funn 05.10): gjenåpnede/gjenopprettede BAKGRUNNS-faner
+    // vekket zombie-flater om morgenen og holdt flater kunstig våkne hele
+    // natten. Vekking og polling skjer kun når fanen faktisk er synlig —
+    // en gjenopprettet fane vekker først når brukeren bytter til den.
     let script = match vekk {
         Some((kortnavn, orig)) => {
             let vekk_kall = match kortnavn {
@@ -931,8 +960,17 @@ fn vekk_html(tittel: &str, melding: &str, vekk: Option<(Option<&str>, &str)>) ->
             };
             format!(
                 r#"<script>
-{vekk_kall}
+const synlig = () => document.visibilityState === 'visible';
+let vekket = false;
+function vekk() {{
+  if (vekket || !synlig()) return;
+  vekket = true;
+  {vekk_kall}
+}}
+vekk();
+document.addEventListener('visibilitychange', vekk);
 setInterval(async () => {{
+  if (!synlig()) return;
   try {{
     const r = await fetch({orig:?}, {{cache: 'no-store'}});
     if (r.ok) location.href = {orig:?};
@@ -997,6 +1035,15 @@ async fn reaper(app: Arc<App>) {
                 if v.get("status").and_then(|s| s.as_u64()).unwrap_or(599) >= 500 {
                     continue;
                 }
+                // Ravens egen trafikk (tavla) teller ikke som aktivitet.
+                let klient = v
+                    .pointer("/request/client_ip")
+                    .or_else(|| v.pointer("/request/remote_ip"))
+                    .and_then(|u| u.as_str())
+                    .unwrap_or("");
+                if app.cfg.reaper_ignore_ips.iter().any(|ip| ip == klient) {
+                    continue;
+                }
                 let mut deler = uri.trim_start_matches('/').splitn(3, '/');
                 if let (Some("w") | Some("web"), Some(navn)) = (deler.next(), deler.next()) {
                     let e = akt.entry(navn.to_string()).or_insert(0.0);
@@ -1035,11 +1082,23 @@ async fn main() -> anyhow::Result<()> {
         register_path: env_or("REGISTER_PATH", "/data/register/programmer.yaml"),
         access_log: env_or("ACCESS_LOG", "/logs/access.log"),
         idle_minutes: env_or("IDLE_MINUTES", "45").parse().unwrap_or(45),
+        // Ravens egne adresser (tavla/kiosken, lokal testing): trafikk herfra
+        // teller ALDRI som aktivitet — ellers nullstiller hver tavle-restart
+        // dvaleklokka for alle fliser den viser (funn 05.10).
+        reaper_ignore_ips: env_or("REAPER_IGNORE_IPS", "")
+            .split(',')
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty())
+            .collect(),
         prosjektmal: env_or("PROSJEKTMAL", "/opt/prosjektmal"),
         repos_dir: env_or("REPOS_DIR", "/repos"),
         webdir: env_or("WEBDIR", "/opt/lobby/web"),
         deltager_path: env_or("DELTAGER_PATH", "/data/register/deltagere.yaml"),
         token_secret: env_or("S15L_TOKEN_SECRET", ""),
+        // RTCIceServers-liste (JSON) for webside-strømmen (pilot 05.10):
+        // coturn på raven gir garantert vei også PC↔raven over Tailscale.
+        ice_servers: serde_json::from_str(&env_or("ICE_SERVERS", "[]"))
+            .unwrap_or_else(|_| serde_json::json!([])),
     };
     let driver = if env_or("WORKSPACE_DRIVER", "docker") == "mock" {
         Driver::new_mock()
