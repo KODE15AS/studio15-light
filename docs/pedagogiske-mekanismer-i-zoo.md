@@ -10,6 +10,20 @@ Alt under er verifisert til stede i bygget (ikke lest fra dokumentasjon).
 Alt er FILER I PROSJEKTREPOET — altså nøyaktig det prosjektmal-mekanismen
 vår allerede seeder. En «oppgavepakke» = en prosjektmal-mappe.
 
+## Kort: hva er todo og followup?
+
+To innebygde verktøy hjelperen (KI-modellen) selv kan kalle under samtalen:
+
+- **Todo (`update_todo_list`)**: hjelperen fører en synlig sjekkliste
+  øverst i chatten — punkter med status ugjort / pågår / ferdig — og
+  oppdaterer den underveis. Deltageren ser alltid hvor i oppgaven de er.
+  Hva listen skal inneholde og når noe er «ferdig», styrer vi i AGENTS.md.
+- **Followup (`ask_followup_question`)**: hjelperen stiller et spørsmål
+  med 2–4 ferdige svar som klikkbare knapper, og venter til deltageren
+  velger (eller skriver fritt). Vi bruker det til bekreftelser («Har dere
+  testet? Fungerer det?») og veivalg — og knappene kan også bytte modus
+  (se punkt 3).
+
 ## 1. Instruksjonslagene (bruker vi delvis i dag)
 
 | Mekanisme | Plassering | Hva den gir |
