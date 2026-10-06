@@ -52,17 +52,30 @@ wifi-IP** (wlo1). Vår caddy binder kun wifi-IP-en (+ tailnettet).
 Ravens kablede IP er **10.5.0.22** (enp5s0), og portene 80/443 der er
 opptatt av elduro-stacken — vi kan ikke bare binde samme URL der.
 
-De tre kablede PC-ene (10.5.0.0/24) må altså krysse Fortigaten over
-til wifi-subnettet for å nå 10.10.0.22 — og det stopper i dag på
-soneskillet/policy. Anbefaling (Jørns bane):
+De tre kablede PC-ene (10.5.0.0/24) måtte altså krysse Fortigaten over
+til wifi-subnettet for å nå 10.10.0.22 — og det stoppet på
+soneskillet/policy (bevisst, av sikkerhetsgrunner — Jørn). Kabel-nettet
+viste seg i tillegg å mangle DNS for offentlige navn.
 
-- **Én Fortigate-policy**: tillat kablet subnett → 10.10.0.22 på
-  TCP 80+443. Ingen endringer på raven, samme URL overalt.
-- Alternativ: Tailscale på de tre PC-ene (fungerer, men oppsett per
-  PC og ts.net-URL med :8100 i stedet for startside-navnet).
-- Diagnose på én av PC-ene hvis policy finnes allerede:
-  `nslookup startside.studio15.cloud` (skal gi 10.10.0.22) og
-  `curl -v https://10.10.0.22/` (timeout = policy/rute mangler).
+**LØST 06.10 kveld — uten Fortigate, bekreftet av Jørn på alle tre
+PC-ene.** Nøkkelinnsikten: 10.10.0.22 og 10.5.0.22 er samme maskin
+(raven), og PC-ene deler switch med ravens kablede kort. To lokale grep
+per PC (som administrator):
+
+1. Hosts-oppføring (navneoppslag, kabel-nettet har ingen DNS):
+   `10.10.0.22 startside.studio15.cloud` i
+   `C:\Windows\System32\drivers\etc\hosts`
+2. Statisk rute (levering rett til raven over kabelen, aldri via
+   brannmuren): `route -p add 10.10.0.22 mask 255.255.255.255 10.5.0.22`
+   (+ `ipconfig /flushdns`)
+
+Forutsetninger verifisert på raven: loose rp_filter (pakker til
+wifi-IP-en aksepteres inn på kabelkortet) og docker-publiserte
+caddy-porter (svarer uavhengig av innkommende kort). Sertifikatet
+stemmer siden navnet er uendret. Ingen sone åpnes; trafikken forlater
+aldri switchen. Når KODE15 senere får full Fortinet-tilgang, kan dette
+erstattes av én ren policy (kablet subnett → 10.10.0.22 TCP 80+443) og
+rutene/hosts-linjene slettes.
 
 ## Annet
 
