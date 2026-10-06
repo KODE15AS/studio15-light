@@ -19,3 +19,7 @@ deltagere:
   navn: LEN11
   farge: '#E55381'
   registrert: 2026-10-05
+- slug: pc12
+  navn: PC12
+  farge: '#B07CC6'
+  registrert: 2026-10-06

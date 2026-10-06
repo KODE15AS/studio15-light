@@ -16,6 +16,11 @@
   let nyttNavn = $state('')
   let feil = $state('')
   let opptatt = $state(false)
+  // Sletting (Jørn 06.10, rapport 1 pkt. 1): én bekreftelse («Vil du
+  // virkelig slette?»), aldri avskrift av navn. slettet-settet skjuler
+  // raden straks — foreldrelisten oppdateres først ved neste polling.
+  let sletteKandidat = $state(null) // slug under bekreftelse
+  let slettet = $state([])
 
   // Gjenopprett valget fra nettleseren når listen er på plass; hold
   // navn/farge i sync med registeret (sluggen er nøkkelen).
@@ -31,6 +36,28 @@
     localStorage.setItem(LAGER, d.slug)
     aapen = false
     feil = ''
+  }
+
+  async function slett(d) {
+    opptatt = true
+    try {
+      const r = await fetch(`/api/deltagere/${encodeURIComponent(d.slug)}`, { method: 'DELETE' })
+      if (!r.ok) {
+        const data = await r.json().catch(() => ({}))
+        throw new Error(data.feil ?? `${r.status}`)
+      }
+      slettet = [...slettet, d.slug]
+      if (valgt?.slug === d.slug) {
+        valgt = null
+        localStorage.removeItem(LAGER)
+      }
+      feil = ''
+    } catch (e) {
+      feil = e.message ?? 'Sletting feilet — prøv igjen.'
+    } finally {
+      sletteKandidat = null
+      opptatt = false
+    }
   }
 
   async function registrer() {
@@ -84,12 +111,29 @@
       <span class="k15-kicker">Hvem er du?</span>
       {#if deltagere.length > 0}
         <ul>
-          {#each deltagere as d (d.slug)}
+          {#each deltagere.filter((d) => !slettet.includes(d.slug)) as d (d.slug)}
             <li>
-              <button class="valg" class:aktiv={valgt?.slug === d.slug} onclick={() => velg(d)}>
-                <span class="prikk" style="background: {d.farge}"></span>
-                {d.navn}
-              </button>
+              {#if sletteKandidat === d.slug}
+                <span class="bekreft">
+                  Vil du virkelig slette {d.navn}?
+                  <button class="k15-btn k15-btn-primary liten" disabled={opptatt} onclick={() => slett(d)}>
+                    Ja, slett
+                  </button>
+                  <button class="k15-btn k15-btn-secondary liten" onclick={() => (sletteKandidat = null)}>
+                    Avbryt
+                  </button>
+                </span>
+              {:else}
+                <button class="valg" class:aktiv={valgt?.slug === d.slug} onclick={() => velg(d)}>
+                  <span class="prikk" style="background: {d.farge}"></span>
+                  {d.navn}
+                </button>
+                <button
+                  class="fjern"
+                  title="Slett {d.navn}"
+                  onclick={() => (sletteKandidat = d.slug)}>×</button
+                >
+              {/if}
             </li>
           {/each}
         </ul>
@@ -177,11 +221,44 @@
     max-height: 240px;
     overflow-y: auto;
   }
+  .panel li {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .fjern {
+    background: none;
+    border: none;
+    color: var(--k15-noytralgraa);
+    font-size: 17px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    flex: none;
+  }
+  .fjern:hover {
+    color: #a33d5e;
+    background: var(--k15-flate);
+  }
+  .bekreft {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 6px 10px;
+    font-size: 13.5px;
+  }
+  .bekreft .liten {
+    padding: 4px 10px;
+    font-size: 12.5px;
+  }
   .valg {
     display: flex;
     align-items: center;
     gap: 10px;
-    width: 100%;
+    flex: 1;
+    min-width: 0;
     background: none;
     border: none;
     border-radius: 8px;

@@ -11,6 +11,8 @@ use bollard::container::{
     Config, CreateContainerOptions, ListContainersOptions, RemoveContainerOptions,
     StartContainerOptions, StopContainerOptions,
 };
+use bollard::exec::{CreateExecOptions, StartExecResults};
+use futures_util::StreamExt;
 use bollard::models::{HostConfig, RestartPolicy, RestartPolicyNameEnum};
 use bollard::volume::{CreateVolumeOptions, RemoveVolumeOptions};
 use bollard::Docker;
@@ -227,6 +229,46 @@ impl Driver {
                     Ok(_) => Ok(()),
                     Err(e) => tolerer(e, &[304]), // 304: allerede stoppet
                 }
+            }
+        }
+    }
+
+    /// Leser Zoo-dialogens meldingsfil (siste task) fra arbeidsflaten —
+    /// grunnlaget for dialog-speilet på tavla (Jørn 06.10, rapport 1
+    /// pkt. 2): tavlas egen code-server-økt viser en FERSK, tom Zoo-chat,
+    /// aldri deltagerens samtale. Selve samtalen bor som fil i
+    /// containeren, så lobbyen henter den derfra (docker exec).
+    pub async fn les_zoo_dialog(&self, kortnavn: &str) -> anyhow::Result<String> {
+        match self {
+            Driver::Mock(_) => Ok(String::new()),
+            Driver::Docker(d) => {
+                let exec = d
+                    .create_exec(
+                        &container_name(kortnavn),
+                        CreateExecOptions {
+                            cmd: Some(vec![
+                                "sh",
+                                "-c",
+                                // Nyeste task-mappe = samtalen som pågår.
+                                "cat \"$(ls -td /home/coder/.local/share/code-server/User/globalStorage/zoocodeorganization.zoo-code/tasks/*/ 2>/dev/null | head -1)ui_messages.json\" 2>/dev/null",
+                            ]),
+                            attach_stdout: Some(true),
+                            attach_stderr: Some(false),
+                            ..Default::default()
+                        },
+                    )
+                    .await?;
+                let mut ut = Vec::new();
+                if let StartExecResults::Attached { mut output, .. } =
+                    d.start_exec(&exec.id, None).await?
+                {
+                    while let Some(melding) = output.next().await {
+                        if let Ok(bollard::container::LogOutput::StdOut { message }) = melding {
+                            ut.extend_from_slice(&message);
+                        }
+                    }
+                }
+                Ok(String::from_utf8_lossy(&ut).into_owned())
             }
         }
     }

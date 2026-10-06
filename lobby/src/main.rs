@@ -190,6 +190,95 @@ async fn deltager_registrer(State(app): State<Arc<App>>, Json(b): Json<NyDeltage
     Json(json!({ "deltager": deltager })).into_response()
 }
 
+/// Sletter en deltager fra registeret (Jørn 06.10, rapport 1 pkt. 1):
+/// én bekreftelsesknapp i frontenden, ingen avskrift av navn. Åpen
+/// tabell uten credentials — sletting er like åpen som registrering.
+/// Eksisterende arbeidsflater beholder deltagernavnet sitt (kortnavnet
+/// bærer det); kun valgmuligheten i velgeren forsvinner.
+async fn deltager_slett(State(app): State<Arc<App>>, Path(slug): Path<String>) -> Response {
+    let mut tabell = app.deltagere.lock().await;
+    let foer = tabell.deltagere.len();
+    tabell.deltagere.retain(|d| d.slug != slug);
+    if tabell.deltagere.len() == foer {
+        return feil(StatusCode::NOT_FOUND, "deltageren finnes ikke");
+    }
+    if let Err(e) = tabell.save(&app.cfg.deltager_path) {
+        return feil(StatusCode::INTERNAL_SERVER_ERROR, &format!("lagring: {e}"));
+    }
+    Json(json!({ "slettet": slug })).into_response()
+}
+
+// ---------- Dialog-speilet (tavla) ----------
+
+/// Tavlas dialog-speil (Jørn 06.10, rapport 1 pkt. 2): tavlas egen
+/// code-server-økt viser alltid en fersk, TOM Zoo-chat — deltagerens
+/// samtale bor i en annen nettleserøkt. Selve samtalen ligger som fil i
+/// containeren (ui_messages.json), så lobbyen leser den derfra og koker
+/// den ned til det tavla skal vise: tekstmeldinger, spørsmål med
+/// svarforslag og små verktøylinjer. Store felt (diffs, filinnhold)
+/// filtreres bort her slik at tavla aldri henter dem over nettet.
+async fn flate_dialog(State(app): State<Arc<App>>, Path(kortnavn): Path<String>) -> Response {
+    let raa = match app.driver.les_zoo_dialog(&kortnavn).await {
+        Ok(r) => r,
+        Err(e) => return feil(StatusCode::BAD_GATEWAY, &format!("dialog: {e}")),
+    };
+    let meldinger: Vec<serde_json::Value> = serde_json::from_str(&raa).unwrap_or_default();
+    let mut ut = Vec::new();
+    for (i, m) in meldinger.iter().enumerate() {
+        let typ = m["type"].as_str().unwrap_or("");
+        let ts = m["ts"].as_i64().unwrap_or(0);
+        let tekst = m["text"].as_str().unwrap_or("");
+        match (typ, m["say"].as_str().unwrap_or(""), m["ask"].as_str().unwrap_or("")) {
+            ("say", "task", _) | ("say", "user_feedback", _) => {
+                if !tekst.is_empty() {
+                    ut.push(json!({ "hvem": "deltager", "tekst": tekst, "ts": ts }));
+                }
+            }
+            ("say", "text", _) | ("say", "completion_result", _) => {
+                // Første melding i samtalen er deltagerens oppgave;
+                // system-sanitering er støy.
+                if tekst.is_empty() || tekst.starts_with("[System:") {
+                    continue;
+                }
+                let hvem = if i == 0 { "deltager" } else { "hjelper" };
+                ut.push(json!({ "hvem": hvem, "tekst": tekst, "ts": ts }));
+            }
+            ("ask", _, "followup") => {
+                let f: serde_json::Value = serde_json::from_str(tekst).unwrap_or_default();
+                let forslag: Vec<&str> = f["suggest"]
+                    .as_array()
+                    .map(|a| a.iter().filter_map(|s| s["answer"].as_str()).collect())
+                    .unwrap_or_default();
+                ut.push(json!({
+                    "hvem": "hjelper",
+                    "tekst": f["question"].as_str().unwrap_or(tekst),
+                    "forslag": forslag,
+                    "ts": ts,
+                }));
+            }
+            ("ask", _, "tool") => {
+                let v: serde_json::Value = serde_json::from_str(tekst).unwrap_or_default();
+                let verb = match v["tool"].as_str().unwrap_or("") {
+                    "editedExistingFile" | "appliedDiff" | "newFileCreated" => "skriver i",
+                    "readFile" => "leser",
+                    "searchFiles" | "listFilesTopLevel" | "listFilesRecursive" => "leter i",
+                    _ => continue, // andre verktøy er støy på tavla
+                };
+                if let Some(sti) = v["path"].as_str() {
+                    ut.push(json!({ "hvem": "verktoy", "tekst": format!("{verb} {sti}"), "ts": ts }));
+                }
+            }
+            _ => {}
+        }
+    }
+    // «Hjelperen jobber»-indikatoren: siste råmelding er et API-kall.
+    let aktiv = meldinger
+        .last()
+        .map(|m| m["say"].as_str() == Some("api_req_started"))
+        .unwrap_or(false);
+    Json(json!({ "meldinger": ut, "aktiv": aktiv })).into_response()
+}
+
 // ---------- Tilstand ----------
 
 async fn tilstand(State(app): State<Arc<App>>) -> Response {
@@ -1166,6 +1255,8 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/prosjekter/{program}/{prosjekt}", delete(slett_prosjekt))
         .route("/api/arbeidsflater", post(ny_arbeidsflate))
         .route("/api/deltagere", get(deltagere_liste).post(deltager_registrer))
+        .route("/api/deltagere/{slug}", delete(deltager_slett))
+        .route("/api/arbeidsflater/{kortnavn}/dialog", get(flate_dialog))
         .route("/api/git-token", post(git_token))
         .route("/api/presence/{program}/{prosjekt}/ws", get(presence_ws))
         .route("/api/arbeidsflater/{kortnavn}/stopp", post(stopp_arbeidsflate))

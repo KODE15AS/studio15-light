@@ -181,8 +181,19 @@
 
   async function tilbyTil(watcherId) {
     if (!deler || !delStrom || !minFlate) return
+    // Tavla søker («soek») hvert 5. sekund for å fange restarter — men en
+    // LEVENDE forbindelse skal aldri re-forhandles: hvert nye tilbud rev
+    // ned strømmen på tavla og ga et svart blink hvert 5. sekund (Jørn
+    // 06.10, rapport 1 pkt. 3). Nytt tilbud kun når forbindelsen er død,
+    // eller når en oppkobling har stått fast i over 15 sekunder.
+    const eksisterende = pcs.get(watcherId)
+    if (eksisterende) {
+      const alder = Date.now() - (eksisterende.s15lOpprettet ?? 0)
+      if (eksisterende.connectionState === 'connected' || alder < 15000) return
+    }
     pcs.get(watcherId)?.close()
     const pc = new RTCPeerConnection({ iceServers })
+    pc.s15lOpprettet = Date.now() // for fastlåst-vakten over
     pcs.set(watcherId, pc)
     for (const spor of delStrom.getTracks()) pc.addTrack(spor, delStrom)
     pc.onicecandidate = (e) => {

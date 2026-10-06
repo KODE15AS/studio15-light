@@ -8,6 +8,7 @@
   // prosjektet som har flest kjørende arbeidsflater.
   import { SvelteMap } from 'svelte/reactivity'
   import FlateTile from '../lib/FlateTile.svelte'
+  import DialogTile from '../lib/DialogTile.svelte'
   import { presence, watch, forlat, onStrom, sendStrom } from '../lib/presence.svelte.js'
 
   const params = new URLSearchParams(location.search)
@@ -166,14 +167,21 @@
         {@const eierFarge =
           presence.deltagere.find((d) => d.slug === f.deltager)?.farge ?? f.farge ?? '#77838C'}
         <section class:nybegynner={rom.mal === 'nybegynner'}>
-          <FlateTile
-            tittel="Editor — {f.deltager}"
-            url={editorUrl(f.editor_url)}
-            tileId="{f.kortnavn}:editor"
-            modus="vegg"
-            {eierFarge}
-            kontroll={presence.kontroll[f.kortnavn] ?? null}
-          />
+          {#if rom.mal === 'nybegynner'}
+            <!-- Dialog-speilet (06.10, rapport 1 pkt. 2): tavlas egen
+                 code-server-økt viser bare en fersk, tom Zoo-chat —
+                 samtalen hentes i stedet fra containeren via lobbyen. -->
+            <DialogTile tittel="Hjelperen — {f.deltager}" kortnavn={f.kortnavn} {eierFarge} />
+          {:else}
+            <FlateTile
+              tittel="Editor — {f.deltager}"
+              url={editorUrl(f.editor_url)}
+              tileId="{f.kortnavn}:editor"
+              modus="vegg"
+              {eierFarge}
+              kontroll={presence.kontroll[f.kortnavn] ?? null}
+            />
+          {/if}
           <FlateTile
             tittel="Webside — {f.deltager}"
             url={veggUrl(f.web_url)}

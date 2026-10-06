@@ -23,6 +23,12 @@ selvhelende fullskjerm-vakt). 05.10 kveld: nybegynner-iterasjon 2 — se
 med dragbart skille, hjelperen eier spilleplanen med agentisk todo-liste
 og klikkbare svarforslag, stort promptfelt via minRows-patch, +15 %
 skrift, varsler skjult, tavla dynamisk 1/2/2×2; nettbrett utgått).
+06.10 morgen: testrapport 1 — se `2026-10-06-testrapport-1.md`
+(slette deltager med én bekreftelse, dialog-speil på tavla i stedet for
+tom editor-økt, webrtc-blinket hvert 5. s fikset, kablet-nett-analysen:
+Fortigate-policy er veien). Samme morgen:
+`docs/pedagogiske-mekanismer-i-zoo.md` — kartlegging av Zoo-mekanismene
+for pedagogiske oppgavepakker (.roomodes, skills, commands, MCP).
 
 ## Grunnlag — les disse først
 
