@@ -36,6 +36,10 @@ i klasserommet; raven beholder skjermen sin og av/på-bryter-behovet
 bortfaller. Spec, design-review (ingen pikselstreaming — Pi-en rendrer
 webappen selv) og ordre: `docs/tavle-pi-spec.md`. Oppsett gjøres når
 delene ankommer (Ubuntu Server 24.04, X11-kiosk, vakt som systemd).
+07.10 kveld: «Oh no! Something has gone wrong» på tavla ved HDMI-
+omkobling — rotårsak funnet (mutter-segfault i EDID-lesing ved hotplug)
+og varig fikset (gnome-session-failed masket på raven, kontrollert
+krasjtestet) — se `2026-10-07-gnome-krasjskjerm.md`.
 
 ## Grunnlag — les disse først
 
