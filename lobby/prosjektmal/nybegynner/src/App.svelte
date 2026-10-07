@@ -1,14 +1,16 @@
 <script lang="ts">
   // Nybegynner-malen: tom og vennlig startside — spillet bygges her
-  // sammen med hjelperen (Zoo Code) i panelet under websiden.
+  // sammen med hjelperen (Zoo Code), som bor i venstre kolonne
+  // (layout-endring 05.10: side-ved-side; tekst rettet 07.10, Jørns
+  // testnotat pkt. 1).
 </script>
 
 <main>
   <h1>__PROSJEKTNAVN__</h1>
   <p>Her kommer spillet ditt!</p>
   <p class="hint">
-    Les oppgaven i feltet under websiden, og skriv til hjelperen nederst
-    på skjermen — alt dere lager vises her med én gang.
+    Snakk med hjelperen til venstre — den gir dere oppgaven og bygger
+    sammen med dere. Alt dere lager vises her med én gang.
   </p>
 </main>
 
