@@ -1,4 +1,27 @@
-# Tavle-PC på Raspberry Pi — spec for maksimal respons
+# TAVLE-PC på Raspberry Pi — spec for maksimal respons
+
+## BESTILT 07.10.2026 — endelig innkjøp (Jørn)
+
+Leverandør: Raspberry Pi Danmark, ordre #230516, 07.10.2026.
+Pris: DKK 2 483 ≈ NOK 3 500 (Raspberry Pi 5 Starter Kit, tilpasset).
+
+| Del | Merknad |
+|---|---|
+| Raspberry Pi 5 — 8 GB | Hovedkortet fra specen |
+| 64 GB microSD SanDisk **High Endurance** | Godt kiosk-valg: utholdenhetskort tåler 24/7-skriving langt bedre enn standardkort. NVMe utgikk — kan ettermonteres i kabinettet senere ved behov. |
+| Offisiell 27 W USB-C-strømforsyning (EU) | Full ytelse, ingen nedskalering |
+| **Argon ONE V5-kabinett** | Aluminium passiv + PWM-vifte, M.2 NVMe-plass (ledig), strømknapp, konverterer til 2× HDMI i full størrelse |
+| Offisiell micro-HDMI-kabel 1 m | Reserve — Argon-kabinettet gir full HDMI ut, så TV-en kobles med vanlig HDMI-kabel |
+| RTC-batteri til Pi 5 | Riktig klokke uten nett ved boot (TLS-sertifikater krever riktig tid) |
+
+Oppsettplanen under gjelder uendret; eneste avvik fra opprinnelig spec
+er SD-drift i stedet for NVMe (kompensert med High Endurance-kort +
+logg/cache i RAM) og at HDMI-kabelen til TV-en blir standard HDMI↔HDMI.
+Argon-viftestyringen installeres som del av oppsettet.
+
+---
+
+## Opprinnelig spec (07.10, grunnlaget for innkjøpet)
 
 Bestillings- og oppsettspec (07.10.2026) for å flytte tavla fra ravens
 HDMI-port til et eget apparat bak 70-tommeren i klasserommet. Målet er

@@ -26,9 +26,16 @@ skrift, varsler skjult, tavla dynamisk 1/2/2×2; nettbrett utgått).
 06.10 morgen: testrapport 1 — se `2026-10-06-testrapport-1.md`
 (slette deltager med én bekreftelse, dialog-speil på tavla i stedet for
 tom editor-økt, webrtc-blinket hvert 5. s fikset, kablet-nett-analysen:
-Fortigate-policy er veien). Samme morgen:
+Fortigate-policy er veien — løst samme kveld med hosts + statisk rute
+på de tre PC-ene). Samme morgen:
 `docs/pedagogiske-mekanismer-i-zoo.md` — kartlegging av Zoo-mekanismene
 for pedagogiske oppgavepakker (.roomodes, skills, commands, MCP).
+07.10: **TAVLE-PC bestilt** — tavla flyttes fra ravens HDMI til egen
+Raspberry Pi 5 (8 GB, Argon ONE V5, High Endurance-SD) bak 70-tommeren
+i klasserommet; raven beholder skjermen sin og av/på-bryter-behovet
+bortfaller. Spec, design-review (ingen pikselstreaming — Pi-en rendrer
+webappen selv) og ordre: `docs/tavle-pi-spec.md`. Oppsett gjøres når
+delene ankommer (Ubuntu Server 24.04, X11-kiosk, vakt som systemd).
 
 ## Grunnlag — les disse først
 
