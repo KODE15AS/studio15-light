@@ -39,7 +39,12 @@ delene ankommer (Ubuntu Server 24.04, X11-kiosk, vakt som systemd).
 07.10 kveld: «Oh no! Something has gone wrong» på tavla ved HDMI-
 omkobling — rotårsak funnet (mutter-segfault i EDID-lesing ved hotplug)
 og varig fikset (gnome-session-failed masket på raven, kontrollert
-krasjtestet) — se `2026-10-07-gnome-krasjskjerm.md`.
+krasjtestet) — se `2026-10-07-gnome-krasjskjerm.md`. Samme kveld:
+to-deltager-test med sju fortløpende funn, alle fikset og utrullet —
+se `2026-10-07-testnotater.md` (starttekst, ingen URL-deling på egen
+skjerm, fremdriftsknapp i svarforslagene, to-deltager-krav i trinn 2,
+sekundær sidestolpe lukkes, kommandoer auto-godkjennes, deltagernavn
+som spillidentitet).
 
 ## Grunnlag — les disse først
 
