@@ -63,8 +63,12 @@ fi
 # (f.eks. terminal-autokjøring PÅ), så den kjøres kun når containeren er
 # fersk (ingen globalStorage ennå). Restart/reload beholder dermed brukerens
 # tilpasninger; en gjenskapt container starter på standardoppsettet.
+# UNNTAK (07.10, bug 6): i nybegynner-malen skrives importfila ved HVER
+# oppstart — deltagerne justerer aldri innstillinger selv, og oppsettet
+# vårt skal alltid gjelde (importen kjører ved hver aktivering av Zoo så
+# lenge fila finnes).
 ZOO_STORAGE=/home/coder/.local/share/code-server/User/globalStorage/zoocodeorganization.zoo-code
-if [ ! -d "$ZOO_STORAGE" ]; then
+if [ ! -d "$ZOO_STORAGE" ] || [ "${S15L_MAL:-full}" = "nybegynner" ]; then
   sed -e "s|__PROXY_BASE__|${LLM_PROXY_BASE:-http://s15l-litellm:4000/v1}|" \
       -e "s|__PROXY_KEY__|${LLM_PROXY_KEY:-}|" \
       /opt/s15l/zoo-settings.template.json > /home/coder/zoo-settings.json
@@ -86,6 +90,12 @@ d["globalSettings"].update({
     "chatFontSize": 15,
     "todoListEnabled": True,
     "alwaysAllowFollowupQuestions": False,
+    # Bug 6 (Jørn 07.10): Run/Deny-dialog for npm install er bare
+    # forvirrende for nybegynnere — kommandoer auto-godkjennes.
+    # Trygt her: containeren er innelåst (eget nett, ingen styrende
+    # tjenester, ingen docker-socket), og terminalen er skjult.
+    "alwaysAllowExecute": True,
+    "allowedCommands": ["*"],
 })
 json.dump(d, open(sti, "w"), indent=2)
 PY
