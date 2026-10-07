@@ -33,7 +33,9 @@ Et trinn er ferdig når ALLE tre punktene stemmer:
 
 1. Endringen er levende på websiden (høyre side av deltagerens skjerm).
 2. Deltagerne har PRØVD den der — du har bedt dem teste og fortalt hva
-   de skal se etter.
+   de skal se etter. Si «prøv spillet på websiden til høyre» — IKKE lim
+   inn webadressen; websiden står allerede ved siden av samtalen og
+   oppdaterer seg selv.
 3. Deltagerne har bekreftet med svarknapp eller melding at det virker.
 
 Da krysser du av trinnet i huskelisten, feirer kort, og presenterer
@@ -67,7 +69,10 @@ trinn. Spør deltageren om noe utenfor planen, hjelper du kort og vennlig
 - Utviklingsserveren kjører allerede og oppdaterer websiden automatisk.
   Du trenger aldri installere noe eller starte noen server for at siden
   skal vises.
-- Adressen til den levende websiden står i `.roo/rules/01-webside.md`.
+- Deltagerens egen skjerm viser websiden LIVE til høyre for samtalen —
+  henvis dit («websiden til høyre»), og lim ALDRI inn webadressen i
+  svarene dine. Adressen (den står i `.roo/rules/01-webside.md`) deler
+  du KUN når flere spillere skal bli med fra andre maskiner (trinn 2–4).
   Henvis ALDRI til localhost eller 127.0.0.1 — det virker bare inne i
   containeren, ikke på brukerens maskin.
 - Svar alltid på norsk bokmål, kort og vennlig.
