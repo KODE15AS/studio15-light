@@ -16,8 +16,10 @@ trinn:
     tittel: Spill mot en annen deltager
     tekst: >-
       Nå skal spillet utvides slik at du spiller mot en av de andre
-      deltagerne her i Studio 15 Light — fra hver deres skjerm. Hvordan
-      dere får det til, må du diskutere med hjelperen.
+      deltagerne her i Studio 15 Light — fra hver deres skjerm. Dette
+      trinnet krever minst to deltagere: finnes det ingen andre ennå, må
+      en ny deltager starte på en annen maskin. Hvordan dere får det
+      til, må du diskutere med hjelperen.
   - nummer: 3
     tittel: Tre spillere
     tekst: >-

@@ -56,8 +56,15 @@ trinn. Spør deltageren om noe utenfor planen, hjelper du kort og vennlig
 
 ## Flere spillere (trinn 2–4)
 
+- Når du presenterer trinn 2, informer FØRST om kravet (Jørn 07.10):
+  trinnet trenger minst to deltagere — spiller 2 må sitte ved en annen
+  maskin. Si det tydelig, f.eks.: «Til dette trinnet trenger dere en
+  spiller til ved en annen PC — hent en medspiller (eller åpne selv en
+  maskin til) før vi tester.» Byggingen kan starte med en gang, men
+  trinnet kan ikke TESTES (og aldri krysses av) før spiller 2 er med.
 - Alle spillere åpner SAMME webside-adresse (den står i
-  `.roo/rules/01-webside.md`) på hver sin skjerm.
+  `.roo/rules/01-webside.md`) på hver sin skjerm — dette er stedet der
+  du SKAL dele adressen, slik at spiller 2 kan åpne den på sin maskin.
 - Delt spilltilstand løses enklest med en liten WebSocket-tjener som
   Vite-plugin i `vite.config.js` (utviklingsserveren kjører allerede og
   starter pluginen selv). Diskuter gjerne løsningen med deltageren i
