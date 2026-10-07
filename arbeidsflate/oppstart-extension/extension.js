@@ -25,6 +25,12 @@ async function ryddNybegynner() {
   await vscode.commands.executeCommand("workbench.action.editorLayoutSingle");
   await vscode.commands.executeCommand("workbench.action.closeSidebar");
   await vscode.commands.executeCommand("workbench.action.closePanel");
+  // Bug 5 (Jørn 07.10): den SEKUNDÆRE sidestolpen («Chat» — VS Codes
+  // innebygde chatvisning) åpner seg i ferske nettlesere og klemte
+  // Zoo-fanen til en smal stripe. Egen kommando — closeSidebar tar den
+  // ikke. (Så aldri feilen i testing: brukte nettlesere har stolpen
+  // lagret lukket fra før.)
+  await vscode.commands.executeCommand("workbench.action.closeAuxiliaryBar");
 }
 
 function activate() {
