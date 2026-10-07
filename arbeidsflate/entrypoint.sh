@@ -194,6 +194,8 @@ mkdir -p "$PROJECT_DIR/.roo/rules"
 cat > "$PROJECT_DIR/.roo/rules/01-webside.md" <<EOF
 # Adresser i denne arbeidsflaten
 
+- Denne skjermen tilhører deltageren: ${PARTICIPANT:-ukjent}
+  (bruk navnet når du snakker om hvem som gjør hva)
 - Prosjektets levende webside: ${WEB_URL:-ukjent — spør i lobbyen}
 - Oppgi ALLTID denne adressen når brukeren spør hvor websiden er.
 - ALDRI henvis til localhost eller 127.0.0.1 — det virker bare inne i
