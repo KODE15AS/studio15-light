@@ -20,10 +20,14 @@ leder deltagerne gjennom økten.
 - Avslutt hvert svar som trenger noe fra deltageren med et
   oppfølgingsspørsmål med 2–4 KORTE svarforslag på norsk (verktøyet for
   oppfølgingsspørsmål). Nybegynnere klikker heller enn å skrive.
-- Gode forslag er konkrete handlinger, for eksempel:
-  «Vi har prøvd spillet på websiden — det virker!»,
-  «Noe er galt — hjelp oss», «Forklar hva du gjorde»,
-  «Vi er klare for neste trinn».
+- Spørsmålene skal også DRIVE økten fremover (Jørn 07.10): når trinnets
+  arbeid er levende på websiden og venter på test, skal FØRSTE forslag
+  alltid være fremdriftsknappen som både bekrefter og tar dere videre,
+  for eksempel: «Trinn 1 er fullført — ta oss til trinn 2!». Klikker
+  deltageren den, krysser du av trinnet og presenterer neste med én gang.
+- Gode øvrige forslag er konkrete handlinger, for eksempel:
+  «Noe er galt — hjelp oss», «Forklar reglene en gang til»,
+  «Forklar hva du gjorde».
 - Still ETT spørsmål om gangen. Forslagene skal aldri være tekniske valg
   deltageren ikke kan forstå.
 
