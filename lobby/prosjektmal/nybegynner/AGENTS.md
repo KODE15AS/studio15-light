@@ -75,10 +75,16 @@ trinn. Spør deltageren om noe utenfor planen, hjelper du kort og vennlig
   endrer seg.
 - SELVE INVITASJONEN (obligatorisk, rett etter valget): skriv en
   melding som inneholder HELE webside-adressen (kopier den ordrett fra
-  `.roo/rules/01-webside.md`), f.eks.: «Be NAVN åpne denne adressen i
-  nettleseren på sin maskin: https://… — da spiller dere mot hverandre
-  her.» En invitasjon UTEN adressen er ubrukelig — gjesten aner ikke
-  hvor spillet er. Dette er unntaket der adressen SKAL limes inn.
+  `.roo/rules/01-webside.md`) MED gjestens navn som parameter på
+  slutten: `?spiller=<gjestens navn, URL-kodet>` — f.eks.
+  `https://…/web/<flate>/?spiller=Lenovo%201`. Da vet spillet HVEM som
+  åpner lenken, og identiteter kan aldri byttes om. Skriv f.eks.: «Be
+  NAVN åpne denne adressen i nettleseren på sin maskin: https://… — da
+  spiller dere mot hverandre her.» En invitasjon UTEN adressen er
+  ubrukelig — gjesten aner ikke hvor spillet er. Dette er unntaket der
+  adressen SKAL limes inn. Presiser at lenken er til GJESTEN — din
+  deltager skal bare se på websiden til høyre, aldri åpne
+  invitasjonslenken selv.
 - Er ingen andre aktive (eller alle opptatt i eget spill), skal
   deltageren ALDRI bli stående og vente: lag en datarobot som
   motspiller, og si at en ekte medspiller kan bytte inn senere.
@@ -107,6 +113,33 @@ trinn. Spør deltageren om noe utenfor planen, hjelper du kort og vennlig
   Vite-plugin i `vite.config.js` (utviklingsserveren kjører allerede og
   starter pluginen selv). Diskuter gjerne løsningen med deltageren i
   enkle ord først.
+- VAKTBIKKJE ER PÅBUDT i alle flerspill (Jørn 08.10, etter låste spill):
+  en WebSocket-forbindelse kan dø stille — siden ser normal ut, men er
+  frosset eller enveis. Derfor skal klienten (1) stemple tiden hver gang
+  tilstand mottas, (2) sende hent-forespørselen på nytt hvert 3. sekund,
+  og (3) kjøre `location.reload()` hvis det ikke har kommet svar på 10
+  sekunder mens siden er synlig. Mønster (tilpass hendelsesnavnene):
+
+  ```js
+  if (!(window as any).__spillVakt) {
+    (window as any).__spillSist = Date.now();
+    (window as any).__spillVakt = setInterval(() => {
+      import.meta.hot?.send('spill:hent', {});
+      if (Date.now() - ((window as any).__spillSist ?? 0) > 10000
+          && document.visibilityState === 'visible') location.reload();
+    }, 3000);
+  }
+  // …og i tilstand-mottakeren: (window as any).__spillSist = Date.now()
+  ```
+
+  (`window`-globalene hindrer at HMR-oppdateringer stabler opp flere
+  intervaller.) Tjeneren må alltid svare på hent-hendelsen.
+- UGYLDIGE KLIKK SKAL GI BESKJED (Jørn 08.10): klikk på opptatt rute
+  eller utenfor tur skal aldri ignoreres stille — vis en kort, vennlig
+  melding i spillet («Den ruten er opptatt — velg en ledig!», «Vent
+  litt — det er X sin tur!»). Tjeneren skal UANSETT avvise ugyldige
+  trekk selv og sende gjeldende tilstand tilbake, så klienter aldri kan
+  låse hverandre.
 - Spillerne heter noe! (Jørn 07.10): bruk DELTAGERNAVNENE konsekvent i
   spillet — turindikator, poeng og meldinger sier «PC13 sin tur», aldri
   bare «Rød sin tur». Farger kan gjerne brukes som visuell støtte, men

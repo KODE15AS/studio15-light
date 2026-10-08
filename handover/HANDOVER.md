@@ -51,6 +51,13 @@ som spillidentitet).
 deltagerregisteret, veksling uten at noe stoppes/slettes), og tavla er
 deltagerstyrt på tvers av prosjekter (GET /api/tavle, ett presence-rom
 per prosjekt på veggen). Se `2026-10-08-flerdeltager-parkert.md`.
+08.10 kveld: forensik på «låste» flerspill-spill — spillogikken var
+korrekt; rotårsaken var WebSocket-forbindelser som dør stille uten
+selvhelbredelse (vite-klienten prøver bare én gang). Vern i tre lag:
+HTTP/3 av i caddy, påbudt vaktbikkje i alle flerspill (hent hvert 3. s
++ selv-reload etter 10 s stillhet), tilbakemelding ved ugyldige klikk.
+Invitasjonslenker bærer nå gjestens navn (`?spiller=`). Se
+`2026-10-08-flerspill-laaste-spill.md`.
 
 ## Grunnlag — les disse først
 

@@ -26,6 +26,12 @@
 {
 	admin off
 	auto_https off
+	# Kun TCP (h1/h2): HTTP/3 ga halvdøde WebSockets i spillene (funn
+	# 08.10) — Chrome kunne motta, men ikke sende, og vite-klienten
+	# har ingen selvhelbredelse. h3 gir oss ingenting på LAN/tailnett.
+	servers {
+		protocols h1 h2
+	}
 }
 
 (ruting) {
