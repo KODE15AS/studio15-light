@@ -15,11 +15,14 @@ trinn:
   - nummer: 2
     tittel: Spill mot en annen deltager
     tekst: >-
-      Nå skal spillet utvides slik at du spiller mot en av de andre
-      deltagerne her i Studio 15 Light — fra hver deres skjerm. Dette
-      trinnet krever minst to deltagere: finnes det ingen andre ennå, må
-      en ny deltager starte på en annen maskin. Hvordan dere får det
-      til, må du diskutere med hjelperen.
+      Nå skal spillet utvides slik at du spiller mot en medspiller —
+      fra hver deres maskin. Er du først klar, inviterer du: hjelperen
+      viser hvem i prosjektgruppen som er aktive, du velger medspiller,
+      og medspilleren åpner websiden DIN i nettleseren på sin maskin.
+      Er ingen ledige, lager hjelperen en datarobot du spiller mot.
+      Spillet ditt beholdes og vris så det passer for dere som spiller —
+      hjelperen kan ikke koble prosjekter sammen, og alle beholder sitt
+      eget spill.
   - nummer: 3
     tittel: Tre spillere
     tekst: >-

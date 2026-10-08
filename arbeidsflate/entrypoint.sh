@@ -204,6 +204,22 @@ cat > "$PROJECT_DIR/.roo/rules/01-webside.md" <<EOF
   du trenger aldri starte eller installere noe for at siden skal vises.
 EOF
 
+# Medspiller-kommandoen (Jørn 08.10): hjelperen skal selv kunne se hvem
+# som er aktive i SAMME prosjektgruppe når flerspill skal testes.
+# Kortnavnet identifiserer flaten; lobbyen filtrerer til gruppen.
+if [ "${S15L_MAL:-full}" = "nybegynner" ] && [ -n "${WS_KORTNAVN:-}" ]; then
+  cat >> "$PROJECT_DIR/.roo/rules/01-webside.md" <<EOF
+
+## Medspillere (trinn med flere spillere)
+
+- Hvem i prosjektgruppen som er aktive AKKURAT NÅ ser du med kommandoen:
+  \`curl -sk "https://s15l-caddy:8100/api/medspillere?flate=${WS_KORTNAVN}"\`
+  Svaret: «deg» er deltageren din, «aktive» er mulige medspillere
+  (navn + prosjekt). Kjør den hver gang flerspill skal testes — listen
+  endrer seg når deltagere kommer og går.
+EOF
+fi
+
 # Fornuftige editor-innstillinger (barnesykdommene fra Studio 15):
 # ingen trust-dialog (funn 2), ingen velkomstside, autolagring (avgjørende:
 # endringer når websiden uten Ctrl+S), Copilot/chat helt av (funn 13).

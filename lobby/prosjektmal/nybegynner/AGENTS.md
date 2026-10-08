@@ -56,15 +56,48 @@ trinn. Spør deltageren om noe utenfor planen, hjelper du kort og vennlig
 
 ## Flere spillere (trinn 2–4)
 
+- SLIK VIRKER FLERSPILL HER (Jørn 08.10) — dette er fakta du må kjenne:
+  dette prosjektet har ÉN deltager (navnet står i
+  `.roo/rules/01-webside.md`), og alt flerspill skjer på DETTE
+  prosjektets webside. Medspillere er GJESTER: de blir med ved å åpne
+  webside-adressen i en vanlig nettleser på sin egen maskin. De har
+  ingen egen hjelper i dette prosjektet.
+- Du kan ALDRI koble prosjekter sammen. Hver deltager har sitt EGET
+  spill i sitt eget prosjekt, og det skal det fortsette å være — det
+  finnes ikke noe felles spill for alle. Når deltagere spiller sammen,
+  skjer det på invitørens webside; etterpå fortsetter hver deltager på
+  sitt eget spill og sitt eget trinn.
+- INVITASJONSREGIEN (Jørn 08.10): den som først er klar til å teste et
+  flerspiller-trinn, inviterer. Når DIN deltager er klar: kjør
+  medspiller-kommandoen (den står i `.roo/rules/01-webside.md`) og la
+  deltageren VELGE medspiller — vis de aktive navnene som svarforslag,
+  ett navn per knapp. Si så tydelig, med navn: «Be NAVN åpne adressen
+  under i nettleseren på sin maskin — da spiller dere mot hverandre
+  her.» Kjør kommandoen på nytt hver gang — listen endrer seg.
+- Er ingen andre aktive (eller alle opptatt i eget spill), skal
+  deltageren ALDRI bli stående og vente: lag en datarobot som
+  motspiller, og si at en ekte medspiller kan bytte inn senere.
+- Blir DIN deltager invitert til en annens spill, er det helt fint —
+  deltageren spiller der som gjest i nettleseren. Her hos dere
+  fortsetter dere etterpå på SAMME trinn med deres eget spill.
 - Når du presenterer trinn 2, informer FØRST om kravet (Jørn 07.10):
-  trinnet trenger minst to deltagere — spiller 2 må sitte ved en annen
-  maskin. Si det tydelig, f.eks.: «Til dette trinnet trenger dere en
-  spiller til ved en annen PC — hent en medspiller (eller åpne selv en
-  maskin til) før vi tester.» Byggingen kan starte med en gang, men
-  trinnet kan ikke TESTES (og aldri krysses av) før spiller 2 er med.
-- Alle spillere åpner SAMME webside-adresse (den står i
-  `.roo/rules/01-webside.md`) på hver sin skjerm — dette er stedet der
-  du SKAL dele adressen, slik at spiller 2 kan åpne den på sin maskin.
+  trinnet trenger en spiller til ved en annen maskin. Byggingen kan
+  starte med en gang, men trinnet kan ikke TESTES (og aldri krysses av)
+  før spiller 2 (eller dataroboten) er med.
+- Webside-adressen (den står i `.roo/rules/01-webside.md`) deler du KUN
+  som del av invitasjonen over — aldri ellers.
+
+## Kreativitetskravet — spillet korrigeres, aldri byttes ut
+
+- Uansett trinn, og uansett om dere inviterer eller blir invitert: er
+  spillet i DETTE prosjektet ikke egnet for antallet som skal spille,
+  skal du vise kreativiteten din ved å KORRIGERE det eksisterende
+  spillet — aldri forkaste det, aldri erstatte det med et standardspill.
+  Bruk det deltageren har laget og vri det: tur-basert variant,
+  poengduell, delt brett, speilvendte roller — uventede varianter er et
+  MÅL, ikke et problem. Spill ingen har sett før skaper engasjement.
+- Forklar kort og entusiastisk HVA du vrir og hvorfor, og la deltageren
+  styre justeringene videre — det er deltagerens spill.
 - Delt spilltilstand løses enklest med en liten WebSocket-tjener som
   Vite-plugin i `vite.config.js` (utviklingsserveren kjører allerede og
   starter pluginen selv). Diskuter gjerne løsningen med deltageren i

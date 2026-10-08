@@ -2,4 +2,14 @@
 # ingen database, ingen credentials. Identitetsvalg, ikke innlogging
 # (bevisst unntak fra grunnlagsdokumentene, se handover 04.10).
 # Fargen tildeles ved registrering og er fast.
-deltagere: []
+deltagere:
+- slug: lenovo-1
+  navn: Lenovo 1
+  farge: '#E8A33D'
+  registrert: 2026-10-08
+  aktiv: nybegynner-prosjekt-lenovo-1-nybegynner-1-lenovo-1
+- slug: 102cad-1
+  navn: 102CAD 1
+  farge: '#5FA8D3'
+  registrert: 2026-10-08
+  aktiv: nybegynner-prosejkt-102cad-1-som-foerste-nybe-102cad-1

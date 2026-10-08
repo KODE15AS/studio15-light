@@ -383,6 +383,65 @@ async fn tavle(State(app): State<Arc<App>>) -> Response {
     Json(json!({ "fliser": fliser, "ice": app.cfg.ice_servers })).into_response()
 }
 
+#[derive(Deserialize)]
+struct MedspillerParams {
+    /// Spørrende arbeidsflates kortnavn — avgrenser svaret til SAMME
+    /// prosjektgruppe og skiller «deg» fra mulige medspillere.
+    flate: Option<String>,
+}
+
+/// Hvem kan være med? (Jørn 08.10) — hjelperne i arbeidsflatene spør her
+/// (eneste GET-unntak i caddy-vakten) når flerspill skal testes. Regien:
+/// kun deltagere i SAMME prosjektgruppe teller, deltageren som er først
+/// klar velger medspiller blant de aktive, og hjelperen adresserer dem
+/// ved navn. Kun navn og prosjektnavn — samme åpenhet som
+/// deltagerregisteret ellers.
+async fn medspillere(State(app): State<Arc<App>>, Query(q): Query<MedspillerParams>) -> Response {
+    let deltagerliste = app.deltagere.lock().await.clone().deltagere;
+    let flater = match app.driver.list().await {
+        Ok(f) => f,
+        Err(e) => return feil(StatusCode::INTERNAL_SERVER_ERROR, &format!("docker: {e}")),
+    };
+    let reg = app.register.lock().await.clone();
+    // Spørrende flate → gruppe + egen deltager-slug.
+    let meg = q
+        .flate
+        .as_deref()
+        .and_then(|kn| flater.iter().find(|w| w.kortnavn == kn));
+    let gruppe = meg.map(|w| w.program.clone());
+    let meg_slug = meg.map(|w| w.deltager.clone());
+    let prosjekt_navn = |w: &driver::WsInfo| {
+        reg.programmer
+            .iter()
+            .find(|p| p.slug == w.program)
+            .and_then(|p| p.prosjekter.iter().find(|x| x.slug == w.prosjekt))
+            .map(|x| x.navn.clone())
+            .unwrap_or_else(|| w.prosjekt.clone())
+    };
+    let mut deg = None;
+    let mut aktive = Vec::new();
+    for d in &deltagerliste {
+        let Some(kn) = d.aktiv.as_deref() else { continue };
+        let Some(w) = flater.iter().find(|w| w.kortnavn == kn && w.running) else { continue };
+        if gruppe.as_deref().is_some_and(|g| g != w.program) {
+            continue; // kun samme prosjektgruppe (Jørn 08.10)
+        }
+        if meg_slug.as_deref() == Some(d.slug.as_str()) {
+            deg = Some(d.navn.clone());
+        } else {
+            aktive.push(json!({ "navn": d.navn, "prosjekt": prosjekt_navn(w) }));
+        }
+    }
+    let gruppe_navn = gruppe.as_deref().map(|g| {
+        reg.programmer
+            .iter()
+            .find(|p| p.slug == g)
+            .map(|p| p.navn.clone())
+            .unwrap_or_else(|| g.to_string())
+    });
+    Json(json!({ "gruppe": gruppe_navn, "deg": deg, "aktive": aktive })).into_response()
+}
+
 /// Spilleplanen for en mal (nybegynner): YAML-fila i malmappen servert som
 /// JSON. ÉN kilde — samme fil seedes inn i prosjektrepoet for hjelperen,
 /// og vises i instruksfeltet på deltagerskjermen.
@@ -829,7 +888,6 @@ async fn ny_arbeidsflate(State(app): State<Arc<App>>, Json(b): Json<NyArbeidsfla
     // push/pull (tokens lever 1 time — aldri fast i miljøet).
     let mut git_env = vec![];
     if vaktmester::parse_github_url(&repo).is_some() && !app.cfg.token_secret.is_empty() {
-        git_env.push(format!("WS_KORTNAVN={kortnavn}"));
         git_env.push(format!(
             "GIT_TOKEN_SECRET={}",
             flate_hemmelighet(&app.cfg.token_secret, &kortnavn)
@@ -847,6 +905,9 @@ async fn ny_arbeidsflate(State(app): State<Arc<App>>, Json(b): Json<NyArbeidsfla
         env: vec![
             format!("PROJECT_REPO={repo}"),
             format!("PARTICIPANT={deltager}"),
+            // Alltid med (08.10): entrypointen skriver medspiller-
+            // kommandoen (med kortnavnet) inn i regelfila til hjelperen.
+            format!("WS_KORTNAVN={kortnavn}"),
             format!("WEB_BASE=/web/{kortnavn}/"),
             format!("WEB_URL={}/web/{}/", app.cfg.public_base, kortnavn),
             format!("EDITOR_URL={}/w/{}/", app.cfg.public_base, kortnavn),
@@ -1344,6 +1405,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/healthz", get(|| async { "ok" }))
         .route("/api/tilstand", get(tilstand))
         .route("/api/tavle", get(tavle))
+        .route("/api/medspillere", get(medspillere))
         .route("/api/programmer", post(nytt_program))
         .route("/api/programmer/{program}", delete(slett_program))
         .route("/api/prosjekter", post(nytt_prosjekt))

@@ -48,3 +48,31 @@ full opprydding.
 Merk: de to gamle konfetti-flatene i demo (joern-paa-pc +
 joern-paa-lenovo) er fra før regelen og bryter den — de ligger i dvale
 og er ufarlige, men prosjektet kan bare «eies» av én av dem nå.
+
+## Flerspiller-regien (Jørn 08.10 ettermiddag, etter stalemate-funn)
+
+Test 08.10 formiddag avdekket stalemate i trinn 2: begge hjelperne
+bygde flerspiller i HVERT sitt prosjekt og ventet på en motspiller som
+aldri kom — hjelperne kjente ikke gjestemodellen. Jørns regi (bygget
+samme dag):
+
+- **Gjestemodellen**: alt flerspill skjer på invitørens webside;
+  medspillere åpner adressen i nettleseren på sin maskin. Prosjekter
+  kan ALDRI kobles sammen, og det finnes ikke noe felles spill — hver
+  deltager beholder og viderefører sitt eget spill i sitt eget prosjekt.
+- **Invitasjonsregien**: den som først er klar inviterer, og VELGER
+  medspiller blant aktive deltagere i SAMME prosjektgruppe (hjelperen
+  viser navnene som svarknapper). Ingen ledige → datarobot, aldri
+  venting. Invitert til en annens spill → spill der som gjest, fortsett
+  etterpå på samme trinn hjemme.
+- **Kreativitetskravet**: passer ikke spillet for antallet spillere,
+  skal hjelperen KORRIGERE det eksisterende spillet (aldri bytte det
+  ut) — uventede varianter er et mål.
+- **Teknisk**: `GET /api/medspillere?flate=<kortnavn>` (unntak 2 i
+  caddy-vakten, kun GET) gir «deg» + «aktive» filtrert til flatens
+  prosjektgruppe. Lobbyen setter nå WS_KORTNAVN i alle flater;
+  entrypointen skriver den ferdige curl-kommandoen inn i
+  `.roo/rules/01-webside.md` (nybegynner). Regien står i malens
+  AGENTS.md + spilleplan.yaml — gjelder NYE prosjekter.
+- **Fallgruve betalt**: `caddy reload` virker ikke (admin-endepunktet
+  er av) — Caddyfile-endringer krever `docker compose restart caddy`.

@@ -61,6 +61,18 @@
 		reverse_proxy s15l-lobby:8200
 	}
 
+	# Unntak 2 (Jørn 08.10): hjelperen i arbeidsflaten skal kunne se hvem
+	# som er AKTIVE i Studio 15 akkurat nå (trinn 2: «be medspilleren din
+	# åpne adressen»). Kun GET, kun denne ene stien — ren lesing av navn
+	# og prosjektnavn, samme åpenhet som deltagerregisteret ellers.
+	@medspillere {
+		path /api/medspillere
+		method GET
+	}
+	handle @medspillere {
+		reverse_proxy s15l-lobby:8200
+	}
+
 	# Vakt fra testfunn 22: arbeidsflate-containere (med terminal) skal
 	# aldri nå styrende tjenester. De deler docker-nett med caddy (for at
 	# caddy skal nå dem), så alt som KOMMER FRA arbeidsflate-subnettet
