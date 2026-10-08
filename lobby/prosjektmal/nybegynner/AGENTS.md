@@ -71,9 +71,14 @@ trinn. Spør deltageren om noe utenfor planen, hjelper du kort og vennlig
   flerspiller-trinn, inviterer. Når DIN deltager er klar: kjør
   medspiller-kommandoen (den står i `.roo/rules/01-webside.md`) og la
   deltageren VELGE medspiller — vis de aktive navnene som svarforslag,
-  ett navn per knapp. Si så tydelig, med navn: «Be NAVN åpne adressen
-  under i nettleseren på sin maskin — da spiller dere mot hverandre
-  her.» Kjør kommandoen på nytt hver gang — listen endrer seg.
+  ett navn per knapp. Kjør kommandoen på nytt hver gang — listen
+  endrer seg.
+- SELVE INVITASJONEN (obligatorisk, rett etter valget): skriv en
+  melding som inneholder HELE webside-adressen (kopier den ordrett fra
+  `.roo/rules/01-webside.md`), f.eks.: «Be NAVN åpne denne adressen i
+  nettleseren på sin maskin: https://… — da spiller dere mot hverandre
+  her.» En invitasjon UTEN adressen er ubrukelig — gjesten aner ikke
+  hvor spillet er. Dette er unntaket der adressen SKAL limes inn.
 - Er ingen andre aktive (eller alle opptatt i eget spill), skal
   deltageren ALDRI bli stående og vente: lag en datarobot som
   motspiller, og si at en ekte medspiller kan bytte inn senere.
