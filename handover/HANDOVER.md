@@ -45,6 +45,10 @@ se `2026-10-07-testnotater.md` (starttekst, ingen URL-deling på egen
 skjerm, fremdriftsknapp i svarforslagene, to-deltager-krav i trinn 2,
 sekundær sidestolpe lukkes, kommandoer auto-godkjennes, deltagernavn
 som spillidentitet).
+08.10: flere deltagere i SAMME prosjekt er PARKERT (Jørns beslutning) —
+én deltager per prosjekt er normen; se
+`2026-10-08-flerdeltager-parkert.md` (TODO: designe løsning eller
+blokkere muligheten; tavla viser i dag ett prosjekt om gangen).
 
 ## Grunnlag — les disse først
 
