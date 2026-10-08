@@ -261,6 +261,13 @@
       ? flate.editor_url
       : `${flate.editor_url}?folder=/home/coder/project&payload=${PAYLOAD}`
 
+  // Hvem ser på websiden? (Jørn 08.10): deltagerskjermen sender med
+  // ?spiller=<navn> så spillet kan identifisere seeren automatisk —
+  // «Hvem er du?»-spørsmål på egen skjerm utgikk. Gjester (ren URL uten
+  // parameter) identifiseres av spillet selv (den inviterte).
+  const websideUrl = (flate) =>
+    deltagerNavn ? `${flate.web_url}?spiller=${encodeURIComponent(deltagerNavn)}` : flate.web_url
+
   if (deltagerNavn) join(program, prosjekt, deltagerNavn)
   hent()
   setInterval(hent, 5000)
@@ -379,7 +386,7 @@
           <div class="kol deleboks" style="flex-grow: {kolonner[1]}" bind:this={websideBoks}>
             <FlateTile
               tittel="Webside — {visteFlate.deltager}"
-              url={visteFlate.web_url}
+              url={websideUrl(visteFlate)}
               tileId="{visteFlate.kortnavn}:web"
               {modus}
               lys
@@ -404,7 +411,7 @@
           <div class="deleboks" bind:this={websideBoks}>
             <FlateTile
               tittel="Webside — {visteFlate.deltager}"
-              url={visteFlate.web_url}
+              url={websideUrl(visteFlate)}
               tileId="{visteFlate.kortnavn}:web"
               {modus}
               eierFarge={farge(visteFlate)}

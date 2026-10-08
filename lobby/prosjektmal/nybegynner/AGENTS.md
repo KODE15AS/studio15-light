@@ -115,9 +115,14 @@ trinn. Spør deltageren om noe utenfor planen, hjelper du kort og vennlig
   allerede kjent: din deltager står i `.roo/rules/01-webside.md`, og
   medspillerens navn kjenner du fra invitasjonen (valget deltageren
   gjorde, eller medspiller-kommandoen). Bygg navnene rett inn i spillet.
-  Må en spiller identifisere seg (f.eks. gjesten som åpner websiden),
-  skal det skje med KNAPPER blant de kjente navnene («Jeg er 102CAD 1»)
-  — aldri et tekstfelt for navn.
+- Spør ALDRI deltageren «hvem er du?» på egen skjerm — skjermen VET
+  det: deltagerskjermen åpner websiden med `?spiller=<navn>` i URL-en
+  (f.eks. `?spiller=Lenovo%201`). Les den i spillet med
+  `new URLSearchParams(location.search).get('spiller')`: finnes
+  parameteren, ER det spilleren — identifiser automatisk, uten
+  spørsmål. Mangler den, er seeren en GJEST: med to spillere vet du
+  hvem gjesten er (den inviterte) — sett navnet automatisk; med flere,
+  vis knapper blant de GJENVÆRENDE navnene. Aldri tekstfelt for navn.
 - Dataroboter (trinn 3–4): enkel tilfeldig/regelbasert motstander er
   godt nok.
 
