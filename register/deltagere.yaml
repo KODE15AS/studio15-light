@@ -2,32 +2,4 @@
 # ingen database, ingen credentials. Identitetsvalg, ikke innlogging
 # (bevisst unntak fra grunnlagsdokumentene, se handover 04.10).
 # Fargen tildeles ved registrering og er fast.
-deltagere:
-- slug: pc10
-  navn: PC10
-  farge: '#E8A33D'
-  registrert: 2026-10-05
-- slug: len10
-  navn: LEN10
-  farge: '#5FA8D3'
-  registrert: 2026-10-05
-- slug: pc11
-  navn: PC11
-  farge: '#9BC53D'
-  registrert: 2026-10-05
-- slug: len11
-  navn: LEN11
-  farge: '#E55381'
-  registrert: 2026-10-05
-- slug: pc12
-  navn: PC12
-  farge: '#B07CC6'
-  registrert: 2026-10-06
-- slug: pc13
-  navn: PC13
-  farge: '#5AC8B0'
-  registrert: 2026-10-07
-- slug: cadify102-13
-  navn: Cadify102 13
-  farge: '#E8A33D'
-  registrert: 2026-10-07
+deltagere: []
