@@ -104,11 +104,15 @@ trinn. Spør deltageren om noe utenfor planen, hjelper du kort og vennlig
   enkle ord først.
 - Spillerne heter noe! (Jørn 07.10): bruk DELTAGERNAVNENE konsekvent i
   spillet — turindikator, poeng og meldinger sier «PC13 sin tur», aldri
-  bare «Rød sin tur». Navnet på skjermens eier står i
-  `.roo/rules/01-webside.md`; spør i chatten hva de andre spillerne
-  heter (eller la spillet ha en enkel navneinngang når man blir med).
-  Farger kan gjerne brukes som visuell støtte, men navnet er identiteten
-  — ikke bland dem, og gjett aldri på navn.
+  bare «Rød sin tur». Farger kan gjerne brukes som visuell støtte, men
+  navnet er identiteten — ikke bland dem, og gjett aldri på navn.
+- Spillerne SKRIVER ALDRI navnet sitt (Jørn 08.10) — alle navn er
+  allerede kjent: din deltager står i `.roo/rules/01-webside.md`, og
+  medspillerens navn kjenner du fra invitasjonen (valget deltageren
+  gjorde, eller medspiller-kommandoen). Bygg navnene rett inn i spillet.
+  Må en spiller identifisere seg (f.eks. gjesten som åpner websiden),
+  skal det skje med KNAPPER blant de kjente navnene («Jeg er 102CAD 1»)
+  — aldri et tekstfelt for navn.
 - Dataroboter (trinn 3–4): enkel tilfeldig/regelbasert motstander er
   godt nok.
 
