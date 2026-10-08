@@ -104,6 +104,11 @@
         alle = alle.filter((f) => f.program === fastProgram && f.prosjekt === fastProsjekt)
       }
       fliser = alle
+      // Ferske fliser får nådeperioden fra første observasjon — deltageren
+      // rekker å joine presence før flisen eventuelt skjules.
+      for (const f of fliser) {
+        if (!sistSett.has(f.deltager)) sistSett.set(f.deltager, Date.now())
+      }
       // Presence-rommene synkes mot flisenes prosjekter.
       const trengs = new Set(fliser.map(romKey))
       for (const [key, r] of rom) {
@@ -139,12 +144,30 @@
   const erTilkoblet = (f) =>
     romSt(f)?.deltagere.some((d) => d.slug === f.deltager && d.tilkoblet) ?? false
 
+  // Deltager borte = flis av tavla (Jørn 08.10): presence styrer flisene.
+  // En deltager som lukker skjermen sin forsvinner fra tavla etter en
+  // kort nådeperiode (overlever F5/reconnect og oppstartsvinduet), og
+  // flisen kommer tilbake i det øyeblikket skjermen åpnes igjen.
+  // Rom-tilkoblingene følger fortsatt ALLE fliser, så returen oppdages.
+  const NAADE_MS = 15000
+  const sistSett = new SvelteMap() // deltager-slug → sist sett tilkoblet
+  let naa = $state(Date.now())
+  setInterval(() => {
+    for (const f of fliser) {
+      if (erTilkoblet(f)) sistSett.set(f.deltager, Date.now())
+    }
+    naa = Date.now()
+  }, 3000)
+  const synlige = $derived(
+    fliser.filter((f) => erTilkoblet(f) || naa - (sistSett.get(f.deltager) ?? 0) < NAADE_MS)
+  )
+
   hent()
   setInterval(hent, 5000)
 </script>
 
 <div class="vegg">
-  {#if fliser.length === 0}
+  {#if synlige.length === 0}
     <div class="venter">
       <span class="kicker">Studio 15 LIGHT</span>
       <h1>Ingen aktive prosjekter</h1>
@@ -153,9 +176,9 @@
   {:else}
     <header>
       <span class="kicker">Studio 15 LIGHT · tavle</span>
-      <strong>{[...new Set(fliser.map((f) => f.prosjekt_navn))].join(' · ')}</strong>
+      <strong>{[...new Set(synlige.map((f) => f.prosjekt_navn))].join(' · ')}</strong>
       <div class="roster">
-        {#each fliser as f (f.kortnavn)}
+        {#each synlige as f (f.kortnavn)}
           <span class="deltager" class:borte={!erTilkoblet(f)} style="--farge: {f.farge}">
             <span class="prikk"></span>{f.navn}
           </span>
@@ -167,10 +190,10 @@
          nestemann), 3–4 gir 2×2-rutenett — hver rute 1920×1080 på
          70-tommeren. Flere enn 4: flere kolonner i to rader. -->
     <main
-      style="--kolonner: {fliser.length <= 2 ? 2 : Math.ceil(fliser.length / 2)};
-             --rader: {fliser.length <= 2 ? 1 : 2}"
+      style="--kolonner: {synlige.length <= 2 ? 2 : Math.ceil(synlige.length / 2)};
+             --rader: {synlige.length <= 2 ? 1 : 2}"
     >
-      {#each fliser as f (f.kortnavn)}
+      {#each synlige as f (f.kortnavn)}
         {@const kontroll = romSt(f)?.kontroll[f.kortnavn] ?? null}
         <section class:nybegynner={f.mal === 'nybegynner'}>
           {#if f.mal === 'nybegynner'}
