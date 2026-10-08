@@ -31,7 +31,17 @@
     if (d) valgt = d
   })
 
+  // Eksklusivt identitetsvalg (Jørn 08.10): en deltager som er i bruk
+  // (tilkoblet et sted) kan ikke velges av andre. Eget gjeldende valg i
+  // denne nettleseren er alltid lov — ellers låses man ute av egen
+  // identitet mens ens egen skjerm står åpen i en annen fane.
+  const laast = (d) => d.opptatt && valgt?.slug !== d.slug
+
   function velg(d) {
+    if (laast(d)) {
+      feil = `${d.navn} er i bruk akkurat nå — velg en annen, eller registrer deg selv.`
+      return
+    }
     valgt = d
     localStorage.setItem(LAGER, d.slug)
     aapen = false
@@ -124,9 +134,16 @@
                   </button>
                 </span>
               {:else}
-                <button class="valg" class:aktiv={valgt?.slug === d.slug} onclick={() => velg(d)}>
+                <button
+                  class="valg"
+                  class:aktiv={valgt?.slug === d.slug}
+                  class:laast={laast(d)}
+                  title={laast(d) ? `${d.navn} er i bruk akkurat nå` : ''}
+                  onclick={() => velg(d)}
+                >
                   <span class="prikk" style="background: {d.farge}"></span>
                   {d.navn}
+                  {#if laast(d)}<span class="ibruk">i bruk</span>{/if}
                 </button>
                 <button
                   class="fjern"
@@ -274,6 +291,18 @@
   .valg.aktiv {
     background: var(--k15-flate);
     font-weight: 600;
+  }
+  .valg.laast {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+  .ibruk {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--k15-noytralgraa);
+    border: 1px solid var(--k15-linje);
+    border-radius: 999px;
+    padding: 1px 8px;
   }
   .panel form {
     display: flex;

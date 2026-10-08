@@ -76,3 +76,29 @@ samme dag):
   AGENTS.md + spilleplan.yaml — gjelder NYE prosjekter.
 - **Fallgruve betalt**: `caddy reload` virker ikke (admin-endepunktet
   er av) — Caddyfile-endringer krever `docker compose restart caddy`.
+
+## Tilgangsregler mellom deltagere (Jørn 08.10 ettermiddag)
+
+Uten innlogging er dette STYRING (synlige veier + tilstandsvakter),
+ikke sikkerhet — akseptert premiss (identitetsvalg, ikke autentisering).
+
+- **Regel 0 — websiden er adresse-styrt**: alle med URL-en kan
+  interagere med en deltagers webside som om de var eieren (gjester,
+  tavla, inviterte). `?spiller=`-parameteren identifiserer eierens egen
+  skjerm, men håndheves ikke. Dette er ønsket (invitasjonsmodellen).
+- **Ingen starter/styrer en annens prosjekt**: Samling-, Editor-,
+  Vekk- og Stopp-knappene vises kun for eieren (valgt deltager =
+  flatens deltager). Webside-lenken er åpen for alle når flaten kjører.
+  API-vakten fra i morges (409 i ny_arbeidsflate) står.
+- **Sletting er eierens**: slett-knappen vises kun for eieren — eller
+  for alle når prosjektet ikke har noen skjerm (tomt skall). Admin går
+  via API/terminal.
+- **Impersonate = eksklusivt identitetsvalg på startsiden**: hvem som
+  helst kan velge en ledig deltageridentitet, men en som er I BRUK
+  (presence-tilkoblet et sted) er låst («i bruk»-merke + avvisning).
+  Eget gjeldende valg i samme nettleser er alltid lov. Teknisk:
+  `Presence::tilkoblede_slugs()` → `opptatt` per deltager i
+  /api/tilstand. Identiteten frigjøres i det økten lukkes.
+- **Kommer senere (besluttet, ikke bygget)**: (1) «Lag min kopi» —
+  kopiere en annens prosjekt til eget; (2) ta-over fra tavla med
+  tastatur/mus (ref. Skjermsamling).

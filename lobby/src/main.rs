@@ -334,9 +334,22 @@ async fn tilstand(State(app): State<Arc<App>>) -> Response {
             })
         })
         .collect();
+    // Eksklusivt identitetsvalg (Jørn 08.10): «opptatt» = tilkoblet i et
+    // presence-rom akkurat nå — velgeren på startsiden låser da valget.
+    let tilkoblede = app.presence.tilkoblede_slugs();
+    let deltagere_ut: Vec<_> = deltagerliste
+        .iter()
+        .map(|d| {
+            json!({
+                "slug": d.slug, "navn": d.navn, "farge": d.farge,
+                "registrert": d.registrert, "aktiv": d.aktiv,
+                "opptatt": tilkoblede.contains(&d.slug),
+            })
+        })
+        .collect();
     Json(json!({
         "programmer": programmer,
-        "deltagere": deltagerliste,
+        "deltagere": deltagere_ut,
         "base": app.cfg.public_base,
         "ice": app.cfg.ice_servers,
     }))

@@ -342,7 +342,12 @@
 
               {#if prosjekt.arbeidsflater.length > 0}
                 <ul class="flater">
+                  <!-- Eierstyring (Jørn 08.10): kun eieren ser Samling/
+                       Editor/Stopp/Vekk — andre kan ALDRI starte eller
+                       styre en annens skjerm. Websiden (gjest) er åpen
+                       for alle når flaten kjører (regel 0: URL = adgang). -->
                   {#each prosjekt.arbeidsflater as flate}
+                    {@const erMin = valgtDeltager?.slug === flate.deltager}
                     <li>
                       <span
                         class="status"
@@ -351,26 +356,32 @@
                       ></span>
                       <strong>{flate.deltager}</strong>
                       {#if flate.kjorer}
-                        <a
-                          href="/samling/{gruppen.slug}/{prosjekt.slug}/?deltager={encodeURIComponent(
-                            flate.deltager
-                          )}"
-                          target="_blank">Samling</a
-                        >
-                        <a href={flate.editor_url} target="_blank">Editor</a>
+                        {#if erMin}
+                          <a
+                            href="/samling/{gruppen.slug}/{prosjekt.slug}/?deltager={encodeURIComponent(
+                              flate.deltager
+                            )}"
+                            target="_blank">Samling</a
+                          >
+                          <a href={flate.editor_url} target="_blank">Editor</a>
+                        {/if}
                         <a href={flate.web_url} target="_blank">Webside</a>
-                        <button
-                          class="lenkeknapp"
-                          onclick={() => kall('POST', `/api/arbeidsflater/${flate.kortnavn}/stopp`)}
-                          >Stopp</button
-                        >
+                        {#if erMin}
+                          <button
+                            class="lenkeknapp"
+                            onclick={() => kall('POST', `/api/arbeidsflater/${flate.kortnavn}/stopp`)}
+                            >Stopp</button
+                          >
+                        {/if}
                       {:else}
                         <span class="sover">i dvale</span>
-                        <button
-                          class="lenkeknapp"
-                          onclick={() => kall('POST', `/api/arbeidsflater/${flate.kortnavn}/vekk`)}
-                          >Vekk</button
-                        >
+                        {#if erMin}
+                          <button
+                            class="lenkeknapp"
+                            onclick={() => kall('POST', `/api/arbeidsflater/${flate.kortnavn}/vekk`)}
+                            >Vekk</button
+                          >
+                        {/if}
                       {/if}
                     </li>
                   {/each}
@@ -403,6 +414,10 @@
                 og kan åpnes igjen når som helst.
               </p>
 
+              <!-- Sletting er eierens (Jørn 08.10): synlig kun for eieren
+                   — eller for alle når prosjektet ikke har noen skjerm
+                   ennå (tomt skall). Admin går via API/terminal. -->
+              {#if !eierAv(prosjekt) || valgtDeltager?.slug === eierAv(prosjekt)}
               <details class="slett">
                 <summary>Slett prosjektet</summary>
                 <p>
@@ -417,6 +432,7 @@
                   Bekreft sletting av prosjektet
                 </button>
               </details>
+              {/if}
             </div>
           {/each}
         </div>

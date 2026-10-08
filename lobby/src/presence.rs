@@ -386,4 +386,21 @@ impl Presence {
             .or_insert_with(Rom::ny)
             .clone()
     }
+
+    /// Deltager-slugs som er TILKOBLET i et eller annet rom akkurat nå —
+    /// grunnlaget for det eksklusive identitetsvalget (Jørn 08.10):
+    /// en deltager som er i bruk kan ikke velges av andre på startsiden.
+    pub fn tilkoblede_slugs(&self) -> std::collections::HashSet<String> {
+        let rom = self.rom.lock().unwrap();
+        let mut ut = std::collections::HashSet::new();
+        for r in rom.values() {
+            let inner = r.inner.lock().unwrap();
+            for d in inner.deltagere.values() {
+                if d.tilkoblet {
+                    ut.insert(d.slug.clone());
+                }
+            }
+        }
+        ut
+    }
 }
