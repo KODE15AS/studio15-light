@@ -7,7 +7,14 @@ deltagere:
   navn: Lenovo 1
   farge: '#E8A33D'
   registrert: 2026-10-08
+  aktiv: nybegynner-prosjekt-for-lenovo-1-nr-2-lenovo-1
 - slug: 102cad-1
   navn: 102CAD 1
   farge: '#5FA8D3'
   registrert: 2026-10-08
+  aktiv: nybegynner-102cad-1-prosjekt-nybegynner-nr-2-102cad-1
+- slug: 112cad-1
+  navn: 112CAD 1
+  farge: '#9BC53D'
+  registrert: 2026-10-08
+  aktiv: nybegynner-prosjekt-for-112cad-1-nybegynner-2-112cad-1

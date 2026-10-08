@@ -365,7 +365,15 @@
                           >
                           <a href={flate.editor_url} target="_blank">Editor</a>
                         {/if}
-                        <a href={flate.web_url} target="_blank">Webside</a>
+                        <!-- Eieren får spiller-parameteren med (08.10):
+                             uten den tror spillet at eieren er gjest.
+                             Andre får ren gjeste-URL (regel 0). -->
+                        <a
+                          href={erMin
+                            ? `${flate.web_url}?spiller=${encodeURIComponent(valgtDeltager.navn)}`
+                            : flate.web_url}
+                          target="_blank">Webside</a
+                        >
                         {#if erMin}
                           <button
                             class="lenkeknapp"

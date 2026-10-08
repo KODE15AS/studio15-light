@@ -21,4 +21,16 @@ programmer:
 - slug: nybegynner
   navn: Nybegynner
   github_org: KODE15AS-Nybegynner
-  prosjekter: []
+  prosjekter:
+  - slug: prosjekt-for-lenovo-1-nr-2
+    navn: Prosjekt for Lenovo 1 nr 2
+    repo: https://github.com/KODE15AS-Nybegynner/prosjekt-for-lenovo-1-nr-2.git
+    mal: nybegynner
+  - slug: 102cad-1-prosjekt-nybegynner-nr-2
+    navn: 102CAD 1 Prosjekt nybegynner nr 2
+    repo: https://github.com/KODE15AS-Nybegynner/102cad-1-prosjekt-nybegynner-nr-2.git
+    mal: nybegynner
+  - slug: prosjekt-for-112cad-1-nybegynner-2
+    navn: Prosjekt for 112CAD 1 nybegynner 2
+    repo: https://github.com/KODE15AS-Nybegynner/prosjekt-for-112cad-1-nybegynner-2.git
+    mal: nybegynner
