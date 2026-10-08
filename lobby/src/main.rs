@@ -182,6 +182,7 @@ async fn deltager_registrer(State(app): State<Arc<App>>, Json(b): Json<NyDeltage
         navn,
         farge,
         registrert: chrono::Utc::now().format("%Y-%m-%d").to_string(),
+        aktiv: None,
     };
     tabell.deltagere.push(deltager.clone());
     if let Err(e) = tabell.save(&app.cfg.deltager_path) {
@@ -340,6 +341,46 @@ async fn tilstand(State(app): State<Arc<App>>) -> Response {
         "ice": app.cfg.ice_servers,
     }))
     .into_response()
+}
+
+/// Tavlas sannhetskilde (Jørn 08.10): deltagerSTYRT i stedet for
+/// prosjektstyrt — én flis per deltager med aktiv arbeidsflate, på tvers
+/// av prosjekter. (En deltager er i ett prosjekt om gangen; å åpne skjerm
+/// i et annet prosjekt flytter flisen dit.)
+async fn tavle(State(app): State<Arc<App>>) -> Response {
+    let deltagerliste = app.deltagere.lock().await.clone().deltagere;
+    let flater = match app.driver.list().await {
+        Ok(f) => f,
+        Err(e) => return feil(StatusCode::INTERNAL_SERVER_ERROR, &format!("docker: {e}")),
+    };
+    let reg = app.register.lock().await.clone();
+    let mut fliser = Vec::new();
+    for d in &deltagerliste {
+        let Some(kn) = &d.aktiv else { continue };
+        let Some(w) = flater.iter().find(|w| &w.kortnavn == kn) else { continue };
+        let Some(pr) = reg
+            .programmer
+            .iter()
+            .find(|p| p.slug == w.program)
+            .and_then(|p| p.prosjekter.iter().find(|x| x.slug == w.prosjekt))
+        else {
+            continue;
+        };
+        fliser.push(json!({
+            "deltager": d.slug,
+            "navn": d.navn,
+            "farge": d.farge,
+            "kortnavn": w.kortnavn,
+            "kjorer": w.running,
+            "program": w.program,
+            "prosjekt": w.prosjekt,
+            "prosjekt_navn": pr.navn,
+            "mal": pr.mal,
+            "editor_url": format!("/w/{}/", w.kortnavn),
+            "web_url": format!("/web/{}/", w.kortnavn),
+        }));
+    }
+    Json(json!({ "fliser": fliser, "ice": app.cfg.ice_servers })).into_response()
 }
 
 /// Spilleplanen for en mal (nybegynner): YAML-fila i malmappen servert som
@@ -606,9 +647,28 @@ async fn slett_prosjekt(
         Ok(f) => f,
         Err(e) => return feil(StatusCode::INTERNAL_SERVER_ERROR, &format!("docker: {e}")),
     };
+    let mut slettede_kortnavn = Vec::new();
     for w in flater.iter().filter(|w| w.program == program && w.prosjekt == prosjekt) {
         if let Err(e) = app.driver.remove_workspace(&w.kortnavn).await {
             return feil(StatusCode::INTERNAL_SERVER_ERROR, &format!("sletting: {e}"));
+        }
+        slettede_kortnavn.push(w.kortnavn.clone());
+    }
+    // Aktiv-pekere (08.10) til slettede flater nullstilles — ellers blir
+    // deltagere stående «aktive» i et prosjekt som ikke finnes.
+    if !slettede_kortnavn.is_empty() {
+        let mut tabell = app.deltagere.lock().await;
+        let mut endret = false;
+        for d in tabell.deltagere.iter_mut() {
+            if d.aktiv.as_deref().is_some_and(|k| slettede_kortnavn.iter().any(|s| s == k)) {
+                d.aktiv = None;
+                endret = true;
+            }
+        }
+        if endret {
+            if let Err(e) = tabell.save(&app.cfg.deltager_path) {
+                eprintln!("[sletting] klarte ikke nullstille aktiv-pekere: {e}");
+            }
         }
     }
     // 2) prosjektrepoet — GitHub-repo via vaktmesteren, ellers bare-repoet
@@ -743,6 +803,27 @@ async fn ny_arbeidsflate(State(app): State<Arc<App>>, Json(b): Json<NyArbeidsfla
             ),
         );
     }
+    // Ett prosjekt = én deltagerskjerm (Jørn 08.10): flerdeltager i samme
+    // prosjekt er parkert (se handover 2026-10-08). Nestemann blir med
+    // via websiden — eller får sitt eget prosjekt.
+    match app.driver.list().await {
+        Ok(flater) => {
+            if let Some(andre) = flater
+                .iter()
+                .find(|w| w.program == b.program && w.prosjekt == b.prosjekt && w.deltager != deltager)
+            {
+                return feil(
+                    StatusCode::CONFLICT,
+                    &format!(
+                        "prosjektet tilhører {} — ett prosjekt har én deltagerskjerm. \
+                         Bli med via websiden, eller lag et eget prosjekt.",
+                        andre.deltager
+                    ),
+                );
+            }
+        }
+        Err(e) => return feil(StatusCode::INTERNAL_SERVER_ERROR, &format!("docker: {e}")),
+    }
     // GitHub-prosjekter: arbeidsflaten får en per-flate-hemmelighet og
     // henter ferske repo-scopede tokens via /api/git-token ved hver
     // push/pull (tokens lever 1 time — aldri fast i miljøet).
@@ -783,6 +864,20 @@ async fn ny_arbeidsflate(State(app): State<Arc<App>>, Json(b): Json<NyArbeidsfla
         return feil(StatusCode::INTERNAL_SERVER_ERROR, &format!("docker: {e}"));
     }
     app.activity.lock().await.insert(kortnavn.clone(), now_unix());
+    // Én deltager = ett aktivt prosjekt (Jørn 08.10): å åpne skjermen
+    // flytter deltageren hit — forrige flate beholdes urørt (containeren
+    // kjører videre til dvale, rask veksling tilbake), men forlater tavla.
+    {
+        let mut tabell = app.deltagere.lock().await;
+        if let Some(d) = tabell.deltagere.iter_mut().find(|d| d.slug == deltager) {
+            if d.aktiv.as_deref() != Some(&kortnavn) {
+                d.aktiv = Some(kortnavn.clone());
+                if let Err(e) = tabell.save(&app.cfg.deltager_path) {
+                    eprintln!("[arbeidsflate] klarte ikke lagre aktiv-flytting: {e}");
+                }
+            }
+        }
+    }
     Json(json!({
         "kortnavn": kortnavn,
         "editor_url": format!("/w/{kortnavn}/"),
@@ -1248,6 +1343,7 @@ async fn main() -> anyhow::Result<()> {
     let router = Router::new()
         .route("/healthz", get(|| async { "ok" }))
         .route("/api/tilstand", get(tilstand))
+        .route("/api/tavle", get(tavle))
         .route("/api/programmer", post(nytt_program))
         .route("/api/programmer/{program}", delete(slett_program))
         .route("/api/prosjekter", post(nytt_prosjekt))

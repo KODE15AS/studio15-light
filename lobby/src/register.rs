@@ -79,6 +79,12 @@ pub struct Deltager {
     pub navn: String,
     pub farge: String,
     pub registrert: String,
+    /// Deltagerens AKTIVE arbeidsflate — kortnavn (Jørn 08.10): en
+    /// deltager er i ETT prosjekt om gangen. Å åpne skjerm i et annet
+    /// prosjekt flytter deltageren dit; den forrige flaten beholdes
+    /// urørt (rask veksling tilbake), men forlater tavla.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub aktiv: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Default)]

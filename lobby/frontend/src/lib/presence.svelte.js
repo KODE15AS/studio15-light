@@ -150,6 +150,68 @@ export function forlat() {
   presence.tilkoblet = false
 }
 
+// --- Flerroms-watch for tavla (08.10) ---
+// Tavla er deltagerstyrt og kan vise flere prosjekter samtidig — da
+// trengs én watch-tilkobling PER prosjektrom (WebRTC-signaleringen bor i
+// rommet). Frittstående fabrikk, uavhengig av singleton-tilstanden over
+// (Samling bruker fortsatt den).
+export function kobleVeggRom(program, prosjekt) {
+  const st = $state({ watchId: null, deltagere: [], kontroll: {} })
+  let sock = null
+  let timer = null
+  let handler = null
+  let lukket = false
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws'
+  const url = `${proto}://${location.host}/api/presence/${program}/${prosjekt}/ws?watch=1`
+
+  function aapneRom() {
+    if (lukket) return
+    sock = new WebSocket(url)
+    sock.onmessage = (ev) => {
+      let m
+      try {
+        m = JSON.parse(ev.data)
+      } catch {
+        return
+      }
+      if (m.type === 'roster') {
+        st.deltagere = m.deltagere
+        st.kontroll = m.kontroll
+      } else if (m.type === 'watch_velkommen') {
+        st.watchId = m.id
+      } else if (m.type === 'strom') {
+        handler?.(m)
+      }
+    }
+    sock.onclose = () => {
+      st.watchId = null
+      if (!lukket) timer = setTimeout(aapneRom, 1500)
+    }
+    sock.onerror = () => sock && sock.close()
+  }
+  aapneRom()
+
+  return {
+    st,
+    onStrom: (fn) => (handler = fn),
+    sendStrom: (flate, til, signal) => {
+      if (sock && sock.readyState === WebSocket.OPEN) {
+        sock.send(JSON.stringify({ type: 'strom', flate, til: til ?? undefined, signal }))
+      }
+    },
+    lukk: () => {
+      lukket = true
+      if (timer) clearTimeout(timer)
+      if (sock) {
+        sock.onclose = null
+        sock.close()
+        sock = null
+      }
+      st.watchId = null
+    },
+  }
+}
+
 // Ghost-cursors som har stått stille lenge ryddes bort.
 setInterval(() => {
   const naa = Date.now()

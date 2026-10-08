@@ -45,10 +45,12 @@ se `2026-10-07-testnotater.md` (starttekst, ingen URL-deling på egen
 skjerm, fremdriftsknapp i svarforslagene, to-deltager-krav i trinn 2,
 sekundær sidestolpe lukkes, kommandoer auto-godkjennes, deltagernavn
 som spillidentitet).
-08.10: flere deltagere i SAMME prosjekt er PARKERT (Jørns beslutning) —
-én deltager per prosjekt er normen; se
-`2026-10-08-flerdeltager-parkert.md` (TODO: designe løsning eller
-blokkere muligheten; tavla viser i dag ett prosjekt om gangen).
+08.10: flere deltagere i SAMME prosjekt er PARKERT og nå BLOKKERT
+(Jørns beslutning + bygget samme dag): ett prosjekt = én deltagerskjerm
+(409-vakt), én deltager = ett aktivt prosjekt (aktiv-peker i
+deltagerregisteret, veksling uten at noe stoppes/slettes), og tavla er
+deltagerstyrt på tvers av prosjekter (GET /api/tavle, ett presence-rom
+per prosjekt på veggen). Se `2026-10-08-flerdeltager-parkert.md`.
 
 ## Grunnlag — les disse først
 

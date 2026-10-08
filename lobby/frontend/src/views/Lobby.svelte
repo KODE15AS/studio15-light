@@ -73,6 +73,10 @@
 
   const gruppen = $derived(grupper.find((g) => g.slug === gruppe) ?? null)
 
+  // Ett prosjekt = én deltagerskjerm (Jørn 08.10): prosjektets «eier» er
+  // deltageren bak den (eneste) eksisterende skjermen.
+  const eierAv = (prosjekt: Prosjekt) => prosjekt.arbeidsflater[0]?.deltager ?? null
+
   async function hent() {
     try {
       const r = await fetch('/api/tilstand')
@@ -373,7 +377,15 @@
                 </ul>
               {/if}
 
-              {#if valgtDeltager}
+              <!-- Ett prosjekt = én deltagerskjerm (Jørn 08.10): tilhører
+                   prosjektet en annen, vises veien inn via websiden i
+                   stedet for åpne-knappen. API-et håndhever det samme. -->
+              {#if valgtDeltager && eierAv(prosjekt) && eierAv(prosjekt) !== valgtDeltager.slug}
+                <p class="hint">
+                  Prosjektet tilhører <strong>{eierAv(prosjekt)}</strong> — bli
+                  med via websiden over, eller lag et eget prosjekt.
+                </p>
+              {:else if valgtDeltager}
                 <button
                   class="k15-btn k15-btn-primary"
                   disabled={opptatt}
@@ -385,8 +397,10 @@
                 <p class="hint">Velg deltager øverst til høyre for å åpne din skjerm.</p>
               {/if}
               <p class="hint">
-                To deltagere kan dele prosjektet med hver sin skjerm — eller
-                jobbe på samme skjerm ved å åpne samme adresse.
+                Ett prosjekt har én deltagerskjerm — og en deltager er i ett
+                prosjekt om gangen. Åpner du skjermen din her, flytter du
+                deg (og tavla) hit; det forrige prosjektet ditt står urørt
+                og kan åpnes igjen når som helst.
               </p>
 
               <details class="slett">

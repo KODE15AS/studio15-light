@@ -19,17 +19,32 @@ sporet:
   med flere flater i samme prosjekt blir tavledisponeringen og
   «hvilken dialog er prosjektets dialog?» uavklart.
 
-## TODO (påminnelse — må besluttes senere)
+## AVKLART samme dag (Jørn 08.10 ~09:00): regelen er bygget
 
-- ENTEN designe en ordentlig løsning for flere deltagere i samme
-  prosjekt (én «vertsflate» for spillet + gjestevisninger? felles
-  dialog?), ELLER blokkere muligheten i lobbyen (ett prosjekt = én
-  deltagerskjerm) så ingen kan gå seg vill i den.
+Jørn valgte å blokkere muligheten og gjøre regelen eksplisitt:
 
-## Kjent begrensning relevant for dagens test (2 prosjekter)
+1. **Ett prosjekt = én deltagerskjerm.** `POST /api/arbeidsflater`
+   avviser (409) en annen deltager når prosjektet allerede har en
+   skjerm; startsiden viser «Prosjektet tilhører X — bli med via
+   websiden» i stedet for åpne-knappen. Spiller 2 er alltid gjest via
+   webside-adressen.
+2. **Én deltager = ett aktivt prosjekt.** Deltageren har en
+   `aktiv`-peker (kortnavn) i `register/deltagere.yaml`. Å åpne skjerm
+   i et annet prosjekt flytter pekeren dit — INGENTING slettes eller
+   stoppes: forrige container kjører videre (til vanlig dvale), så
+   veksling tilbake er umiddelbar (målt: ~30 ms når containeren står).
+3. **Tavla er deltagerSTYRT, på tvers av prosjekter.** Nytt
+   `GET /api/tavle`: én flis per deltager med aktiv, kjørende flate.
+   Veggen holder én presence-watch-tilkobling PER prosjektrom
+   (`kobleVeggRom` i presence.svelte.js) — webrtc-speiling og
+   dialog-speil virker uavhengig per flis. `?program=&prosjekt=`
+   begrenser fortsatt til ett prosjekt om ønskelig.
 
-Tavla viser I DAG ett prosjekt om gangen: uten ?program=&prosjekt= i
-URL-en velger den prosjektet med flest kjørende flater. Med to
-prosjekter à én flate vises bare det ene. Vurderes sammen med punktet
-over (tavle på tvers av prosjekter — naturlig når én deltager = ett
-prosjekt blir normen).
+Prosjektsletting nullstiller aktiv-pekere som pekte inn i prosjektet.
+E2E-verifisert 08.10: 409-vakt, veksling a→c→a med alle containere
+urørt, tavle med to fliser fra to prosjekter (skjermbilde ok), og
+full opprydding.
+
+Merk: de to gamle konfetti-flatene i demo (joern-paa-pc +
+joern-paa-lenovo) er fra før regelen og bryter den — de ligger i dvale
+og er ufarlige, men prosjektet kan bare «eies» av én av dem nå.
