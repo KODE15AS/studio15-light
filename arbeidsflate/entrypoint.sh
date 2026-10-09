@@ -154,6 +154,13 @@ div.flex.flex-col.h-full.p-6.min-h-0.overflow-y-auto.gap-4.relative { display: n
 div:has(> [data-testid="mode-selector-root"]),
 div:has(> div > [data-testid="mode-selector-root"]),
 div:has(> div > [data-testid="mode-selector-trigger"]) { display: none !important; }
+/* 09.10 (Jørn test 1): bildeknappen i promptfeltet åpner VS Codes
+   fildialog uten lukkekryss (muse-felle) og tar kun bilder — all
+   opplasting går via «Last opp dokument»-knappen på skjermen i stedet.
+   To selektorer: aria-teksten (pinnet Zoo, engelsk UI) og knappens
+   container (klassekomboen finnes nøyaktig én gang i bygget). */
+button[aria-label="Add images to message"],
+div.z-30.flex.flex-col.items-center.gap-0 { display: none !important; }
 /* 5: teknisk info (tokens, kontekstvindu, kost) i oppgavehodet */
 [data-testid="context-tokens-count"],
 [data-testid="context-window-size"],

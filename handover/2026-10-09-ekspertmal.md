@@ -61,6 +61,26 @@ UI-innstillinger i containeren, opplasting inkl. sti-trikse-forsøk som
 nøytraliseres, verktøyene til stede, webside 200, sletting sporløs) +
 presence-testen GRØNN (16/16) + konfetti-testen med GitHub-variant GRØNN.
 
+## Jørns test 1 (09.10, like etter leveransen)
+
+- **Org + vaktmester:** `KODE15-Ekspert` opprettet; den vanlige tabben
+  (appen ikke installert i org-en) funnet og rettet av Jørn. E2E-kvittert
+  med vaktmester-token: privat repo opprettet i org-en (seedet, main) og
+  slettet sporløst via lobbyen. Gruppen «Ekspert» var dessuten opprettet
+  uten org-kobling — rettet i registeret (direkte YAML-edit + lobby-
+  restart; det finnes ikke noe koblings-endepunkt i etterkant — husk
+  org-feltet VED opprettelse, eller bygg et endepunkt senere).
+  Prosjekt opprettet FØR koblingen (prosjekt-00) beholder lokalt repo.
+- **Bildeknapp-fella** (pkt. 1+2): Zoo-chattens bildeknapp åpnet VS Codes
+  fildialog uten lukkekryss (muse-felle) og tar uansett kun bilder —
+  skjult i blank-UI-malene (CSS i entrypoint; selektor på aria-tekst +
+  klassekombo, begge verifisert unike i pinnet Zoo-bygg). All opplasting
+  går via skjermens «Last opp dokument».
+- **Opplastingsdialog** (pkt. 3): knappen åpner nå en liten lukkbar
+  dialog — «Velg filer …» pluss tipset om at lenker (f.eks. Dropbox) kan
+  limes rett i chatten. Ekspert-AGENTS.md lærte samtidig agenten å hente
+  lenker selv (Dropbox: dl=0 → dl=1) og legge dem i innboks/.
+
 ## Gjenstår
 
 - Jørn: opprette org/prosjektgruppen «Ekspert» (guidet flyt på

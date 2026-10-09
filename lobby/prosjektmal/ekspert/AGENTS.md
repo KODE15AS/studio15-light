@@ -88,6 +88,10 @@ slipper å gjette og aldri går på de samme fellene to ganger.
   for PDF kan du installere verktøy selv), strukturer innholdet inn i
   repoet (docs/, README, handover), flytt eller slett originalen etter
   avtale, og oppsummer i chatten hva du fant og gjorde.
+- Deltageren kan også lime inn LENKER i chatten (Dropbox, nettsider,
+  GitHub) — hent dem selv med curl. Dropbox: bytt `dl=0` med `dl=1` i
+  lenken for å få selve fila. Legg nedlastede dokumenter i `innboks/`
+  og behandle dem som over.
 
 ## Konvensjoner (KODE15)
 
