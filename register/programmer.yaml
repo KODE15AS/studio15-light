@@ -24,5 +24,9 @@ programmer:
   prosjekter: []
 - slug: ekspert
   navn: Ekspert
-  github_org: null
-  prosjekter: []
+  github_org: KODE15-Ekspert
+  prosjekter:
+  - slug: prosjekt-00-test-for-slettmeg
+    navn: Prosjekt 00 test for slettmeg
+    repo: file:///repos/ekspert-prosjekt-00-test-for-slettmeg.git
+    mal: ekspert
