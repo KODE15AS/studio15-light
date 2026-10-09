@@ -254,7 +254,7 @@
     oppFeil = feilet.length > 0
     oppMelding = feilet.length
       ? `Fikk ikke lastet opp: ${feilet.join(', ')} — prøv igjen.`
-      : `${ok} dokument${ok === 1 ? '' : 'er'} lagt i prosjektets innboks — be hjelperen i chatten ta ${ok === 1 ? 'det' : 'dem'} inn i prosjektet.`
+      : `${ok} dokument${ok === 1 ? '' : 'er'} lagt i prosjektets innboks — be Agenten i chatten ta ${ok === 1 ? 'det' : 'dem'} inn i prosjektet.`
     setTimeout(() => (oppMelding = ''), 12000)
   }
 
@@ -365,7 +365,7 @@
       <button
         class="veggknapp"
         disabled={lasterOpp}
-        title="Dokumentene legges i prosjektets innboks — hjelperen tar dem inn i prosjektet. Lenker (f.eks. Dropbox) kan limes rett i chatten."
+        title="Dokumentene legges i prosjektets innboks — Agenten tar dem inn i prosjektet. Lenker (f.eks. Dropbox) kan limes rett i chatten."
         onclick={() => filInput?.click()}
       >
         {lasterOpp ? 'Laster opp …' : '📄 Last opp dokument'}

@@ -204,7 +204,7 @@
                  Gjelder begge blank-UI-malene (ekspert 09.10): deltageren
                  ser aldri editoren, så tavla speiler dialogen. -->
             <DialogTile
-              tittel="Hjelperen — {f.navn} · {f.prosjekt_navn}"
+              tittel="{f.mal === 'ekspert' ? 'Agenten' : 'Hjelperen'} — {f.navn} · {f.prosjekt_navn}"
               kortnavn={f.kortnavn}
               eierFarge={f.farge}
             />

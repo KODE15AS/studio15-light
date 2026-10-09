@@ -97,6 +97,16 @@ presence-testen GRØNN (16/16) + konfetti-testen med GitHub-variant GRØNN.
   AGENTS.md skjerper samtidig at alt nødvendig alltid skal stå i
   handover/README slik at en fersk samtale fortsetter sømløst.
 
+## Jørns test 3 (09.10): standardsiden og begreper
+
+- Ekspert-malens standardside skrevet om: ingen «src/»-sjargong — teksten
+  sier at siden er levende og at deltageren bygger det han vil i dialog
+  med AGENTEN (begrepet i ekspert-malen er «Agenten», ikke «hjelperen» —
+  tavlas dialogtittel og skjermens opplastingstekster rettet tilsvarende).
+  Klikktelleren beholdt (Jørns ønske — fin live-test). Siden følger nå
+  KODE15-webprofilen (tokens fra raven-platform/web-profil, inline i
+  malen så prosjektet står på egne ben).
+
 ## Gjenstår
 
 - Jørn: opprette org/prosjektgruppen «Ekspert» (guidet flyt på
