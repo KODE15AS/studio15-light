@@ -81,6 +81,22 @@ presence-testen GRØNN (16/16) + konfetti-testen med GitHub-variant GRØNN.
   limes rett i chatten. Ekspert-AGENTS.md lærte samtidig agenten å hente
   lenker selv (Dropbox: dl=0 → dl=1) og legge dem i innboks/.
 
+## Jørns test 2 (09.10)
+
+- Opplastingsdialogen fra test 1 DROPPET igjen (Jørns ønske): knappen
+  åpner filvelgeren direkte; lenke-tipset (Dropbox) bor i tooltip og i
+  agentens fakta (AGENTS.md).
+- «Deler denne fanen …»-linjen øverst er NETTLESERENS sikkerhets-UI for
+  faneopptak («Del til tavla» aktiv) — kan ikke fjernes av en webside.
+  Den forsvinner med «Stopp deling»; tavla viser uansett websiden
+  serverside (iframe-fallback), så deling trengs bare for spesialtilfeller.
+- «Start New Task» omdøpt til «Ny samtale — prosjektet beholdes» i
+  blank-UI-malene (index.js-patch): knappen går IKKE tilbake til malen —
+  den starter en frisk samtale med nullstilt chatminne, prosjektfilene
+  urørt. Beholdt fordi lange prosjekter trenger friske samtaler; malens
+  AGENTS.md skjerper samtidig at alt nødvendig alltid skal stå i
+  handover/README slik at en fersk samtale fortsetter sømløst.
+
 ## Gjenstår
 
 - Jørn: opprette org/prosjektgruppen «Ekspert» (guidet flyt på

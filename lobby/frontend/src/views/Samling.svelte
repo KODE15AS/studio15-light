@@ -229,14 +229,12 @@
   let lasterOpp = $state(false)
   let oppMelding = $state('')
   let oppFeil = $state(false)
-  // Liten dialog (Jørn 09.10, test 1 pkt. 3): forklarer begge veiene inn —
-  // filer herfra, lenker (f.eks. Dropbox) rett i chatten.
-  let visOpplast = $state(false)
+  // Dialogen fra test 1 ble droppet igjen (Jørn 09.10, test 2): knappen
+  // åpner filvelgeren direkte — lenke-tipset bor i tooltip og kvittering.
   async function lastOppFiler(e) {
     const filer = [...e.target.files]
     e.target.value = '' // samme fil skal kunne lastes opp på nytt
     if (!filer.length || !minFlate) return
-    visOpplast = false
     lasterOpp = true
     let ok = 0
     const feilet = []
@@ -364,30 +362,14 @@
     {/if}
 
     {#if prosjektMal === 'ekspert' && minFlate}
-      <div class="opplast">
-        <button
-          class="veggknapp"
-          disabled={lasterOpp}
-          title="Gi prosjektdokumenter til hjelperen"
-          onclick={() => (visOpplast = !visOpplast)}
-        >
-          {lasterOpp ? 'Laster opp …' : '📄 Last opp dokument'}
-        </button>
-        {#if visOpplast}
-          <div class="opplast-dialog">
-            <button class="lukk" title="Lukk" onclick={() => (visOpplast = false)}>✕</button>
-            <p>
-              Dokumenter du laster opp legges i prosjektets innboks —
-              hjelperen tar dem inn i prosjektet.
-            </p>
-            <button class="k15-velg" onclick={() => filInput?.click()}>Velg filer …</button>
-            <p class="tips">
-              Tips: lenker (f.eks. Dropbox) kan limes rett inn i chatten —
-              hjelperen henter dem selv.
-            </p>
-          </div>
-        {/if}
-      </div>
+      <button
+        class="veggknapp"
+        disabled={lasterOpp}
+        title="Dokumentene legges i prosjektets innboks — hjelperen tar dem inn i prosjektet. Lenker (f.eks. Dropbox) kan limes rett i chatten."
+        onclick={() => filInput?.click()}
+      >
+        {lasterOpp ? 'Laster opp …' : '📄 Last opp dokument'}
+      </button>
       <input type="file" multiple hidden bind:this={filInput} onchange={lastOppFiler} />
     {/if}
 
@@ -647,56 +629,6 @@
     color: #a9d8b8;
     padding: 6px 14px;
     flex: none;
-  }
-  /* Opplastingsdialogen (ekspert): liten, lukkbar, forklarer begge veier. */
-  .opplast {
-    position: relative;
-  }
-  .opplast-dialog {
-    position: absolute;
-    top: calc(100% + 8px);
-    right: 0;
-    z-index: 40;
-    width: 300px;
-    background: var(--k15-hvit, #fff);
-    color: var(--k15-skifer, #233038);
-    border: 1px solid var(--k15-linje, #d8dde2);
-    border-radius: 10px;
-    box-shadow: 0 8px 28px rgba(12, 17, 22, 0.25);
-    padding: 14px 16px;
-    font-size: 13px;
-    text-align: left;
-  }
-  .opplast-dialog p {
-    margin: 0 0 10px;
-    line-height: 1.45;
-  }
-  .opplast-dialog .tips {
-    margin: 10px 0 0;
-    color: var(--k15-noytralgraa, #77838c);
-  }
-  .opplast-dialog .lukk {
-    position: absolute;
-    top: 6px;
-    right: 8px;
-    background: none;
-    border: none;
-    color: var(--k15-noytralgraa, #77838c);
-    font-size: 13px;
-    cursor: pointer;
-    padding: 2px;
-  }
-  .opplast-dialog .k15-velg {
-    background: var(--k15-blaagraa-mork, #525d65);
-    color: #fff;
-    border: none;
-    border-radius: 999px;
-    padding: 6px 18px;
-    font: inherit;
-    cursor: pointer;
-  }
-  .opplast-dialog .k15-velg:hover {
-    filter: brightness(1.1);
   }
   .melding {
     margin: auto;

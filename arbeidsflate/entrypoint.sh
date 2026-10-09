@@ -192,6 +192,12 @@ hint = "Xe=`\\n(${b(`chat:addContext`)}${c?`, ${b(`chat:dragFiles`)}`:`, ${b(`ch
 t = t.replace(hint, "Xe=``")
 t = t.replace("`Type your task here...`", "`Skriv oppgaven din her \u2026`")
 t = t.replace("`Type a message...`", "`Skriv en melding \u2026`")
+# Jørn 09.10 (test 2 pkt. 3): «Start New Task» leses som «tilbake til
+# malen» — det knappen FAKTISK gjør er å starte en ny samtale med blanke
+# kontekstvinduer; prosjektfilene beholdes. Ærlig norsk tekst i stedet
+# for skjuling: lange prosjekter TRENGER friske samtaler (handover-normen
+# i malen gir kontinuiteten).
+t = t.replace("`Start New Task`", "`Ny samtale \u2014 prosjektet beholdes`")
 # Jørn 05.10 kveld: romslig promptfelt — nedre del av chatkolonnen.
 # Høyden styres av autosize-komponentens radgrenser (inline !important
 # slår all CSS), så grensene patches her: 8 rader i ro (~¼ kolonne),

@@ -18,6 +18,10 @@ slipper å gjette og aldri går på de samme fellene to ganger.
   synlig, og still oppfølgingsspørsmål (verktøyet, gjerne med svarforslag)
   når briefen er uklar eller et veivalg er deltagerens. Profesjonell tone,
   norsk bokmål.
+- Deltageren kan starte «Ny samtale» (prosjektet beholdes, men DITT
+  chatminne nullstilles). Derfor: alt som trengs for å fortsette skal til
+  enhver tid stå i repoet (handover/HANDOVER.md, README, koden) — en
+  fersk samtale skal kunne plukke opp arbeidet sømløst derfra.
 
 ## Miljøfakta — arbeidsflaten (utviklingscockpiten)
 
