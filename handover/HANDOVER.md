@@ -58,6 +58,9 @@ HTTP/3 av i caddy, påbudt vaktbikkje i alle flerspill (hent hvert 3. s
 + selv-reload etter 10 s stillhet), tilbakemelding ved ugyldige klikk.
 Invitasjonslenker bærer nå gjestens navn (`?spiller=`). Se
 `2026-10-08-flerspill-laaste-spill.md`.
+09.10: chat 2 avsluttet — nybegynner/bondesjakk ferdigtestet, alt
+ryddet; chat 3 lager prosjektmal for mer profesjonelle oppgaver. Se
+`2026-10-09-handover-chat-2-til-3.md`.
 
 ## Grunnlag — les disse først
 
