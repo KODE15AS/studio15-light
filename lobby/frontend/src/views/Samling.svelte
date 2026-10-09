@@ -35,11 +35,12 @@
     } catch {}
   }
 
-  // --- Nybegynner-malen (Jørn 05.10 kveld, iterasjon etter rapport 4) ---
+  // --- Blank-UI-malene (nybegynner 05.10, ekspert 09.10) ---
   // To kolonner: hjelperen (Zoo-chatten) til venstre ≈ ⅓, websiden til
-  // høyre ≈ ⅔. Oppgavefeltet utgikk — spilleplanen eies nå av hjelperen
-  // selv (todo-liste + svarknapper i chatten, instruert i AGENTS.md).
+  // høyre ≈ ⅔. Oppgavefeltet utgikk — regien eies av hjelperen selv
+  // (todo-liste + svarknapper i chatten, instruert i malens AGENTS.md).
   // Skillet kan dras i bredden og huskes per prosjekt.
+  const blankUi = $derived(prosjektMal === 'nybegynner' || prosjektMal === 'ekspert')
   const kolonneNokkel = `s15l-kolonner-${program}-${prosjekt}`
   let kolonner = $state(
     JSON.parse(localStorage.getItem(kolonneNokkel) ?? 'null') ?? [1 / 3, 2 / 3]
@@ -220,6 +221,41 @@
     } catch {}
   })
 
+  // --- Dokumentopplasting (ekspert-malen, 09.10) ---
+  // Deltageren laster opp prosjektdokumenter (brief, spesifikasjoner,
+  // skanninger) rett fra skjermen; de lander i prosjektets innboks/ der
+  // agenten (instruert i malens AGENTS.md) strukturerer dem inn i repoet.
+  let filInput = $state(null)
+  let lasterOpp = $state(false)
+  let oppMelding = $state('')
+  let oppFeil = $state(false)
+  async function lastOppFiler(e) {
+    const filer = [...e.target.files]
+    e.target.value = '' // samme fil skal kunne lastes opp på nytt
+    if (!filer.length || !minFlate) return
+    lasterOpp = true
+    let ok = 0
+    const feilet = []
+    for (const fil of filer) {
+      try {
+        const r = await fetch(
+          `/api/arbeidsflater/${minFlate.kortnavn}/opplast?navn=${encodeURIComponent(fil.name)}`,
+          { method: 'POST', body: fil }
+        )
+        if (r.ok) ok += 1
+        else feilet.push(fil.name)
+      } catch {
+        feilet.push(fil.name)
+      }
+    }
+    lasterOpp = false
+    oppFeil = feilet.length > 0
+    oppMelding = feilet.length
+      ? `Fikk ikke lastet opp: ${feilet.join(', ')} — prøv igjen.`
+      : `${ok} dokument${ok === 1 ? '' : 'er'} lagt i prosjektets innboks — be hjelperen i chatten ta ${ok === 1 ? 'det' : 'dem'} inn i prosjektet.`
+    setTimeout(() => (oppMelding = ''), 12000)
+  }
+
   function taOver() {
     if (visteFlate && !erMin) ta(visteFlate.kortnavn)
   }
@@ -275,9 +311,10 @@
 
 <svelte:window onkeydown={tastetrykk} />
 
-<!-- Nybegynnerskjermen følger KODE15-webprofilen (Jørn 05.10, rapport 4
-     pkt. 3.1) — standardskjermen beholder den mørke scenen. -->
-<div class="stage" class:lys={prosjektMal === 'nybegynner'}>
+<!-- Blank-UI-skjermene (nybegynner/ekspert) følger KODE15-webprofilen
+     (Jørn 05.10, rapport 4 pkt. 3.1) — standardskjermen beholder den
+     mørke scenen. -->
+<div class="stage" class:lys={blankUi}>
   <header>
     <!-- Logoen er alltid veien hjem (Jørn 04.10) -->
     <a class="hjem" href="/" title="Til startsiden">
@@ -322,6 +359,18 @@
       <button class="handling slipp" onclick={() => slipp()}>Slipp (Esc)</button>
     {/if}
 
+    {#if prosjektMal === 'ekspert' && minFlate}
+      <button
+        class="veggknapp"
+        disabled={lasterOpp}
+        title="Last opp prosjektdokumenter — de legges i prosjektets innboks, og hjelperen tar dem inn i prosjektet"
+        onclick={() => filInput?.click()}
+      >
+        {lasterOpp ? 'Laster opp …' : '📄 Last opp dokument'}
+      </button>
+      <input type="file" multiple hidden bind:this={filInput} onchange={lastOppFiler} />
+    {/if}
+
     {#if minFlate && delingStottes}
       <button
         class="veggknapp"
@@ -348,6 +397,10 @@
     <div class="feil">{deleMelding}</div>
   {/if}
 
+  {#if oppMelding}
+    <div class={oppFeil ? 'feil' : 'info'}>{oppMelding}</div>
+  {/if}
+
   {#if presence.feil}
     <div class="feil">{presence.feil}</div>
   {/if}
@@ -362,9 +415,9 @@
     </div>
   {:else}
     {#key visteFlate.kortnavn}
-      {#if prosjektMal === 'nybegynner'}
-        <!-- Nybegynner (Jørn 05.10 kveld): hjelperen ⅓ til venstre,
-             websiden ⅔ til høyre — skillet kan dras i bredden. -->
+      {#if blankUi}
+        <!-- Blank UI (Jørn 05.10 kveld; ekspert 09.10): hjelperen ⅓ til
+             venstre, websiden ⅔ til høyre — skillet kan dras i bredden. -->
         <main class="nybegynner" bind:this={stabelEl}>
           <div class="kol" style="flex-grow: {kolonner[0]}">
             <FlateTile
@@ -568,6 +621,13 @@
     padding: 6px 14px;
     flex: none;
   }
+  /* Kvittering for dokumentopplasting (ekspert) — rolig, ikke alarm. */
+  .info {
+    background: #1d2b22;
+    color: #a9d8b8;
+    padding: 6px 14px;
+    flex: none;
+  }
   .melding {
     margin: auto;
     background: #141b22;
@@ -671,5 +731,9 @@
   .stage.lys .feil {
     background: #f6e3e7;
     color: #a33d5e;
+  }
+  .stage.lys .info {
+    background: #e3f0e7;
+    color: #2e6b45;
   }
 </style>

@@ -534,13 +534,14 @@ async fn slett_program(
 struct NyttProsjekt {
     program: String,
     navn: String,
-    /// Prosjektmal (Jørn 05.10): «full» eller «nybegynner». Utelatt = full.
+    /// Prosjektmal (Jørn 05.10): «full», «nybegynner» eller «ekspert»
+    /// (09.10, profesjonelle prosjekter). Utelatt = full.
     mal: Option<String>,
 }
 
 /// Gyldige prosjektmaler = undermapper av PROSJEKTMAL. Listen er også
 /// vakta mot sti-triksing i mal-parameteren (ingen «..» e.l.).
-const MALER: &[&str] = &["full", "nybegynner"];
+const MALER: &[&str] = &["full", "nybegynner", "ekspert"];
 
 fn kjor(cmd: &mut std::process::Command) -> anyhow::Result<()> {
     let out = cmd.output()?;
@@ -563,7 +564,14 @@ fn seed_fra_mal(app: &App, repo_slug: &str, navn: &str, mal: &str, remote: &str)
     kjor(Command::new("git").args(["init", "-b", "main", &tmp]))?;
     kjor(Command::new("cp").args(["-rT", &format!("{}/{mal}", app.cfg.prosjektmal), &tmp]))?;
     // Flett prosjektnavnet inn i malen
-    for fil in ["package.json", "index.html", "src/App.svelte"] {
+    for fil in [
+        "package.json",
+        "index.html",
+        "src/App.svelte",
+        // Ekspert-malen (09.10): skjelettene bærer også prosjektnavnet
+        "README.md",
+        "handover/HANDOVER.md",
+    ] {
         let sti = format!("{tmp}/{fil}");
         if let Ok(innhold) = std::fs::read_to_string(&sti) {
             let nytt = innhold
@@ -958,6 +966,53 @@ async fn ny_arbeidsflate(State(app): State<Arc<App>>, Json(b): Json<NyArbeidsfla
         "web_url": format!("/web/{kortnavn}/"),
     }))
     .into_response()
+}
+
+#[derive(Deserialize)]
+struct OpplastParams {
+    /// Opprinnelig filnavn fra deltagerens maskin (sanitert her).
+    navn: String,
+}
+
+/// Dokumentopplasting (ekspert-malen, 09.10): deltageren laster opp
+/// prosjektdokumenter (brief, spesifikasjoner, skanninger) fra skjermen;
+/// fila legges i prosjektets `innboks/` der agenten er instruert (malens
+/// AGENTS.md) om å strukturere innholdet inn i repoet. Rå kropp + navn i
+/// query — multipart gir ingenting ekstra her.
+async fn last_opp_dokument(
+    State(app): State<Arc<App>>,
+    Path(kortnavn): Path<String>,
+    Query(q): Query<OpplastParams>,
+    kropp: axum::body::Bytes,
+) -> Response {
+    // Kortnavnet er alltid en slug-sammensetning — alt annet avvises før
+    // det blir et containernavn.
+    if kortnavn.is_empty() || !kortnavn.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-') {
+        return feil(StatusCode::BAD_REQUEST, "ugyldig kortnavn");
+    }
+    // Filnavnet saniteres: kun siste sti-komponent, ingen skjulte filer
+    // eller styretegn — æøå og mellomrom er greit (agenten rydder uansett).
+    let navn = q
+        .navn
+        .rsplit(['/', '\\'])
+        .next()
+        .unwrap_or("")
+        .chars()
+        .filter(|c| !c.is_control())
+        .take(150)
+        .collect::<String>();
+    if navn.is_empty() || navn.starts_with('.') {
+        return feil(StatusCode::BAD_REQUEST, "ugyldig filnavn");
+    }
+    if kropp.is_empty() {
+        return feil(StatusCode::BAD_REQUEST, "tom fil");
+    }
+    if let Err(e) = app.driver.last_opp(&kortnavn, &navn, &kropp).await {
+        return feil(StatusCode::INTERNAL_SERVER_ERROR, &format!("opplasting: {e}"));
+    }
+    // Opplasting er deltageraktivitet — flaten skal ikke dvale midt i den.
+    app.activity.lock().await.insert(kortnavn.clone(), now_unix());
+    Json(json!({ "lagret": format!("innboks/{navn}"), "bytes": kropp.len() })).into_response()
 }
 
 async fn stopp_arbeidsflate(State(app): State<Arc<App>>, Path(kortnavn): Path<String>) -> Response {
@@ -1430,6 +1485,12 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/arbeidsflater/{kortnavn}/dialog", get(flate_dialog))
         .route("/api/git-token", post(git_token))
         .route("/api/presence/{program}/{prosjekt}/ws", get(presence_ws))
+        // Dokumentopplasting (ekspert): rå kropp, romsligere grense enn
+        // axum-standarden på 2 MB — skannede PDF-er er gjerne 10–20 MB.
+        .route(
+            "/api/arbeidsflater/{kortnavn}/opplast",
+            post(last_opp_dokument).layer(axum::extract::DefaultBodyLimit::max(50 * 1024 * 1024)),
+        )
         .route("/api/arbeidsflater/{kortnavn}/stopp", post(stopp_arbeidsflate))
         .route("/api/arbeidsflater/{kortnavn}/vekk", post(vekk_arbeidsflate))
         .route("/api/vegg/restart", post(vegg_restart_sett).get(vegg_restart_les))

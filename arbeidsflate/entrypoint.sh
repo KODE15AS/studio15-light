@@ -20,6 +20,15 @@ set -euo pipefail
 PROJECT_DIR="${PROJECT_DIR:-/home/coder/project}"
 mkdir -p "$PROJECT_DIR"
 
+# Blankt UI (nybegynner 05.10, ekspert 09.10): deltageren ser kun chatten
+# og websiden — editor-støyen ryddes og kommandoer auto-godkjennes. Alt
+# som gjelder BEGGE malene styres av denne; det rent pedagogiske
+# (medspiller-kommandoen) sjekker fortsatt S15L_MAL direkte.
+case "${S15L_MAL:-full}" in
+  nybegynner|ekspert) S15L_BLANK_UI=1 ;;
+  *) S15L_BLANK_UI="" ;;
+esac
+
 git config --global user.name "${PARTICIPANT:-deltager}"
 git config --global user.email "${PARTICIPANT:-deltager}@studio15-light.lokal"
 git config --global init.defaultBranch main
@@ -63,19 +72,19 @@ fi
 # (f.eks. terminal-autokjøring PÅ), så den kjøres kun når containeren er
 # fersk (ingen globalStorage ennå). Restart/reload beholder dermed brukerens
 # tilpasninger; en gjenskapt container starter på standardoppsettet.
-# UNNTAK (07.10, bug 6): i nybegynner-malen skrives importfila ved HVER
+# UNNTAK (07.10, bug 6): i blank-UI-malene skrives importfila ved HVER
 # oppstart — deltagerne justerer aldri innstillinger selv, og oppsettet
 # vårt skal alltid gjelde (importen kjører ved hver aktivering av Zoo så
 # lenge fila finnes).
 ZOO_STORAGE=/home/coder/.local/share/code-server/User/globalStorage/zoocodeorganization.zoo-code
-if [ ! -d "$ZOO_STORAGE" ] || [ "${S15L_MAL:-full}" = "nybegynner" ]; then
+if [ ! -d "$ZOO_STORAGE" ] || [ -n "$S15L_BLANK_UI" ]; then
   sed -e "s|__PROXY_BASE__|${LLM_PROXY_BASE:-http://s15l-litellm:4000/v1}|" \
       -e "s|__PROXY_KEY__|${LLM_PROXY_KEY:-}|" \
       /opt/s15l/zoo-settings.template.json > /home/coder/zoo-settings.json
-  # Nybegynner-malen (Jørn 05.10, rapport 4 pkt. 5): ingen checkpoints i
-  # chatten, og Zoo lukker selv filene den åpner — deltageren skal aldri
-  # se kode, bare agentens dialog.
-  if [ "${S15L_MAL:-full}" = "nybegynner" ]; then
+  # Blank-UI-malene (Jørn 05.10, rapport 4 pkt. 5; ekspert 09.10): ingen
+  # checkpoints i chatten, og Zoo lukker selv filene den åpner —
+  # deltageren skal aldri se kode, bare agentens dialog.
+  if [ -n "$S15L_BLANK_UI" ]; then
     python3 - /home/coder/zoo-settings.json <<'PY'
 import json, sys
 sti = sys.argv[1]
@@ -104,13 +113,13 @@ else
   rm -f /home/coder/zoo-settings.json
 fi
 
-# Nybegynner-malen: rydd Zoo-webviewen (Jørn 05.10, rapport 4 pkt. 3.3).
+# Blank-UI-malene: rydd Zoo-webviewen (Jørn 05.10, rapport 4 pkt. 3.3).
 # Introblokken, bunnlinjen med modus/profil/ikoner og teknisk info kan
 # ikke styres med innstillinger — de overstyres med CSS rett i utvidelsens
 # webview-bygg, og placeholder-teksten patches til norsk uten @/⁠/-hintet.
 # Zoo er versjonspinnet i Dockerfile, så selektorene/strengene er stabile;
 # ettersees ved bevisst Zoo-oppgradering. Markørvakt gjør blokken idempotent.
-if [ "${S15L_MAL:-full}" = "nybegynner" ]; then
+if [ -n "$S15L_BLANK_UI" ]; then
   # Tittellinjen («Zoo Code - project - code-server») kan ikke skrus av med
   # innstillinger i web-workbenchen (window.customTitleBarVisibility er
   # desktop-only) — den gjøres usynlig med en inline <style> i workbench.html.
@@ -226,11 +235,11 @@ fi
 SETTINGS_DIR=/home/coder/.local/share/code-server/User
 mkdir -p "$SETTINGS_DIR"
 if [ ! -f "$SETTINGS_DIR/settings.json" ]; then
-  # Nybegynner-malen (Jørn 05.10, testrapport 3): absolutt all «støy» i
+  # Blank-UI-malene (Jørn 05.10, testrapport 3): absolutt all «støy» i
   # editor-UI-et vekk — deltageren skal bare se Zoo-chatten (oppstart-
   # utvidelsen åpner den som hele editorflaten og lukker sidestolpen).
   EKSTRA=""
-  if [ "${S15L_MAL:-full}" = "nybegynner" ]; then
+  if [ -n "$S15L_BLANK_UI" ]; then
     EKSTRA='
   "workbench.activityBar.location": "hidden",
   "workbench.statusBar.visible": false,

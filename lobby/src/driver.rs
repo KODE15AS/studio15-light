@@ -273,6 +273,38 @@ impl Driver {
         }
     }
 
+    /// Legger en opplastet fil i prosjektets `innboks/` (ekspert-malen,
+    /// 09.10): deltageren laster opp prosjektdokumenter fra skjermen, og
+    /// agenten strukturerer dem inn i repoet. Skrives som tar-arkiv rett
+    /// inn i containeren (PUT /containers/…/archive) — ingen shell-quoting,
+    /// og eierskapet settes til coder (uid 1000) i tar-headeren.
+    pub async fn last_opp(&self, kortnavn: &str, filnavn: &str, data: &[u8]) -> anyhow::Result<()> {
+        match self {
+            Driver::Mock(_) => Ok(()),
+            Driver::Docker(d) => {
+                let mut arkiv = tar::Builder::new(Vec::new());
+                let mut hode = tar::Header::new_gnu();
+                hode.set_size(data.len() as u64);
+                hode.set_mode(0o644);
+                hode.set_uid(1000);
+                hode.set_gid(1000);
+                hode.set_mtime(chrono::Utc::now().timestamp() as u64);
+                arkiv.append_data(&mut hode, format!("innboks/{filnavn}"), data)?;
+                let bytes = arkiv.into_inner()?;
+                d.upload_to_container(
+                    &container_name(kortnavn),
+                    Some(bollard::container::UploadToContainerOptions {
+                        path: "/home/coder/project",
+                        ..Default::default()
+                    }),
+                    bytes.into(),
+                )
+                .await?;
+                Ok(())
+            }
+        }
+    }
+
     /// Fjerner container + prosjektvolum. Del av sletteregimet
     /// («sletting er sletting»).
     pub async fn remove_workspace(&self, kortnavn: &str) -> anyhow::Result<()> {

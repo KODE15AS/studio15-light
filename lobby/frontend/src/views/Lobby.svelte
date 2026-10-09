@@ -54,6 +54,12 @@
       navn: 'Nybegynner for enkle spill og samarbeide',
       hjelp: 'Ryddet skjerm: websiden øverst, spilloppgave i fire trinn og hjelperen under.',
     },
+    {
+      id: 'ekspert',
+      navn: 'Ekspert for profesjonelle prosjekter',
+      hjelp:
+        'Ryddet skjerm uten føringer: agenten kjenner raven-miljøet, prosjektbriefen styrer. Dokumenter lastes opp fra skjermen.',
+    },
   ]
 
   // Samme slugify som lobbyen (validering vises live — Jørn 05.10):
@@ -336,7 +342,9 @@
           {#each gruppen.prosjekter as prosjekt}
             <div class="k15-card prosjekt">
               <span class="k15-nummer"
-                >PROSJEKT{prosjekt.mal === 'nybegynner' ? ' · NYBEGYNNER' : ''}</span
+                >PROSJEKT{prosjekt.mal && prosjekt.mal !== 'full'
+                    ? ` · ${prosjekt.mal.toUpperCase()}`
+                    : ''}</span
               >
               <h3>{prosjekt.navn}</h3>
 

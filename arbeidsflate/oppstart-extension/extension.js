@@ -34,10 +34,12 @@ async function ryddNybegynner() {
 }
 
 function activate() {
-  const nybegynner = process.env.S15L_MAL === "nybegynner";
+  // Blankt UI: nybegynner (05.10) og ekspert (09.10) — chatten er hele
+  // flaten, all editor-støy ryddes.
+  const blankUi = ["nybegynner", "ekspert"].includes(process.env.S15L_MAL);
   const start = async () => {
     try {
-      if (nybegynner) {
+      if (blankUi) {
         await ryddNybegynner();
       } else {
         await vscode.commands.executeCommand("zoo-code.SidebarProvider.focus");
@@ -47,7 +49,7 @@ function activate() {
     }
   };
   setTimeout(start, 1500);
-  if (nybegynner) setTimeout(start, 5000); // andre runde når alt er lastet
+  if (blankUi) setTimeout(start, 5000); // andre runde når alt er lastet
 }
 
 function deactivate() {}

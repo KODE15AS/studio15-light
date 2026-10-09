@@ -61,6 +61,16 @@ Invitasjonslenker bærer nå gjestens navn (`?spiller=`). Se
 09.10: chat 2 avsluttet — nybegynner/bondesjakk ferdigtestet, alt
 ryddet; chat 3 lager prosjektmal for mer profesjonelle oppgaver. Se
 `2026-10-09-handover-chat-2-til-3.md`.
+09.10 formiddag: **ekspert-malen levert** (chat 3) — prosjektmal for
+profesjonelle oppgaver med raven-fakta i stedet for regi, blankt UI +
+autokjøring som nybegynner, dokumentopplasting til prosjektets innboks,
+og trappetrinns-beslutningen for norm «container» (utvikling i S15L,
+tjenestekjøring som egen 1:1-stack på raven — kodelader-mønsteret;
+lobby-orkestrering utsatt til etter proxy-agenten). Arbeidsflate-imaget
+fikk minimal C-verktøykjede (build-essential m.fl.) så agenten kan
+installere rustup/native moduler selv. Alt maskintestet grønt. Gjenstår:
+Jørn oppretter org/prosjektgruppen «Ekspert». Se
+`2026-10-09-ekspertmal.md`.
 
 ## Grunnlag — les disse først
 

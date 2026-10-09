@@ -195,11 +195,14 @@
     >
       {#each synlige as f (f.kortnavn)}
         {@const kontroll = romSt(f)?.kontroll[f.kortnavn] ?? null}
-        <section class:nybegynner={f.mal === 'nybegynner'}>
-          {#if f.mal === 'nybegynner'}
+        {@const blankUi = f.mal === 'nybegynner' || f.mal === 'ekspert'}
+        <section class:nybegynner={blankUi}>
+          {#if blankUi}
             <!-- Dialog-speilet (06.10, rapport 1 pkt. 2): tavlas egen
                  code-server-økt viser bare en fersk, tom Zoo-chat —
-                 samtalen hentes i stedet fra containeren via lobbyen. -->
+                 samtalen hentes i stedet fra containeren via lobbyen.
+                 Gjelder begge blank-UI-malene (ekspert 09.10): deltageren
+                 ser aldri editoren, så tavla speiler dialogen. -->
             <DialogTile
               tittel="Hjelperen — {f.navn} · {f.prosjekt_navn}"
               kortnavn={f.kortnavn}

@@ -10,9 +10,14 @@ FROM codercom/code-server:4.140.0-debian
 
 USER root
 
-# Node LTS for Vite-utviklingsserveren (prosjektets levende webside)
+# Node LTS for Vite-utviklingsserveren (prosjektets levende webside).
+# Ekspert-malen (09.10): et minimalt verktøylag slik at agenten kan
+# installere resten selv i hjemmemappen — rustup, native npm-moduler og
+# pip-pakker trenger en C-verktøykjede (lenking feiler uten), og
+# unzip/jq/sqlite3 er grunnverktøy for dokumenter og lagring.
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
   && apt-get install -y --no-install-recommends nodejs \
+       build-essential pkg-config unzip jq sqlite3 \
   && rm -rf /var/lib/apt/lists/*
 
 # Ripgrep-fellen fra Studio 15 (testfunn 6): Roo lette kun etter

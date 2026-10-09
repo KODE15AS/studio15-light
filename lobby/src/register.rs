@@ -13,7 +13,8 @@ pub struct Prosjekt {
     /// eller file:///repos/<slug>.git (lokalt bare-repo).
     pub repo: String,
     /// Prosjektmalen (Jørn 05.10, testrapport 3): «full» (Zoo Code-UI +
-    /// konfetti-webside) eller «nybegynner» (ryddet skjerm + spilleplan).
+    /// konfetti-webside), «nybegynner» (ryddet skjerm + spilleplan) eller
+    /// «ekspert» (09.10: ryddet skjerm, raven-fakta, dokumentinnboks).
     /// Velges ved opprettelse og styrer både seeding og skjermlayout.
     #[serde(default = "mal_standard")]
     pub mal: String,
