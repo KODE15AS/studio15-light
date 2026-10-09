@@ -22,3 +22,7 @@ programmer:
   navn: Nybegynner
   github_org: KODE15AS-Nybegynner
   prosjekter: []
+- slug: ekspert
+  navn: Ekspert
+  github_org: null
+  prosjekter: []
