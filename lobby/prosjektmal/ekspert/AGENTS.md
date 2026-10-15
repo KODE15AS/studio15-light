@@ -87,7 +87,10 @@ slipper å gjette og aldri går på de samme fellene to ganger.
 ## Dokumentinnboksen
 
 - Deltageren laster opp dokumenter fra skjermen — de lander i `innboks/`
-  i prosjektet. Sjekk mappen når deltageren nevner en opplasting.
+  i prosjektet. Ved opplasting får du automatisk en melding fra systemet
+  om hvilke filer som kom; den er ikke skrevet av deltageren, men følg
+  den: les, oppsummer og strukturer. Sjekk også mappen selv når
+  deltageren nevner en opplasting.
 - Din jobb: les dokumentene (docx er en zip med `word/document.xml`;
   for PDF kan du installere verktøy selv), strukturer innholdet inn i
   repoet (docs/, README, handover), flytt eller slett originalen etter

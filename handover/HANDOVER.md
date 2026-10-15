@@ -71,6 +71,14 @@ fikk minimal C-verktøykjede (build-essential m.fl.) så agenten kan
 installere rustup/native moduler selv. Alt maskintestet grønt. Gjenstår:
 Jørn oppretter org/prosjektgruppen «Ekspert». Se
 `2026-10-09-ekspertmal.md`.
+15.10: **innboks-vakten levert** — Jørns første DEFA-test avdekket at
+opplastede dokumenter bare ble liggende i `innboks/` til noen skrev i
+chatten. Oppstartsutvidelsen poller nå `innboks/` (ekspert-malen) og
+starter automatisk en Zoo-oppgave i fullskjermfane
+(`startNewTask({newTab:true})` via Zoo-API-et) som leser, oppsummerer og
+strukturerer dokumentet — Deltageren ser Agentens «dialog med seg selv»
+umiddelbart etter opplasting. Ro-vakt: starter aldri mens en samtale er
+aktiv (<90 s siden siste melding). Se `2026-10-15-innboksvakt.md`.
 
 ## Grunnlag — les disse først
 

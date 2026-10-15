@@ -254,7 +254,7 @@
     oppFeil = feilet.length > 0
     oppMelding = feilet.length
       ? `Fikk ikke lastet opp: ${feilet.join(', ')} — prøv igjen.`
-      : `${ok} dokument${ok === 1 ? '' : 'er'} lagt i prosjektets innboks — be Agenten i chatten ta ${ok === 1 ? 'det' : 'dem'} inn i prosjektet.`
+      : `${ok} dokument${ok === 1 ? '' : 'er'} lagt i prosjektets innboks — Agenten begynner på ${ok === 1 ? 'det' : 'dem'} i chatten om et øyeblikk.`
     setTimeout(() => (oppMelding = ''), 12000)
   }
 
