@@ -252,11 +252,59 @@
     }
     lasterOpp = false
     oppFeil = feilet.length > 0
-    oppMelding = feilet.length
-      ? `Fikk ikke lastet opp: ${feilet.join(', ')} — prøv igjen.`
-      : `${ok} dokument${ok === 1 ? '' : 'er'} lagt i prosjektets innboks — Agenten begynner på ${ok === 1 ? 'det' : 'dem'} i chatten om et øyeblikk.`
-    setTimeout(() => (oppMelding = ''), 12000)
+    // Suksess meldes ikke lenger som flyktig toast — den grønne
+    // innboks-linjen under (Jørn 15.10) står til innboksen er tømt.
+    oppMelding = feilet.length ? `Fikk ikke lastet opp: ${feilet.join(', ')} — prøv igjen.` : ''
+    if (feilet.length) setTimeout(() => (oppMelding = ''), 12000)
+    if (ok > 0) hentInnboks()
   }
+
+  // --- Innboks-linjen (Jørn 15.10) ---
+  // Grønn statuslinje som står så lenge det ligger dokumenter i
+  // prosjektets innboks/ — forsvinner (med kvittering) når Agenten har
+  // tømt den. «Tøm innboksen» lar deltageren ombestemme seg; vakten i
+  // containeren sjekker at filene finnes før den vekker Agenten.
+  let innboksFiler = $state([])
+  let innboksKvittering = $state('')
+  let tommer = $state(false)
+  let haddeFiler = false
+  let tomtAvBruker = false
+
+  async function hentInnboks() {
+    if (!minFlate) return
+    try {
+      const r = await fetch(`/api/arbeidsflater/${minFlate.kortnavn}/innboks`)
+      if (!r.ok) return // flaten sover e.l. — behold forrige status
+      const filer = (await r.json()).filer || []
+      if (haddeFiler && filer.length === 0) {
+        innboksKvittering = tomtAvBruker
+          ? 'Innboksen er tømt.'
+          : 'Agenten har tømt innboksen — se oppsummeringen i chatten.'
+        setTimeout(() => (innboksKvittering = ''), 15000)
+      }
+      haddeFiler = filer.length > 0
+      if (filer.length > 0) tomtAvBruker = false
+      innboksFiler = filer
+    } catch {}
+  }
+
+  async function tomInnboks() {
+    if (!minFlate || tommer) return
+    tommer = true
+    tomtAvBruker = true
+    try {
+      await fetch(`/api/arbeidsflater/${minFlate.kortnavn}/innboks/tom`, { method: 'POST' })
+    } catch {}
+    await hentInnboks()
+    tommer = false
+  }
+
+  $effect(() => {
+    if (prosjektMal !== 'ekspert' || !minFlate) return
+    hentInnboks()
+    const iv = setInterval(hentInnboks, 8000)
+    return () => clearInterval(iv)
+  })
 
   function taOver() {
     if (visteFlate && !erMin) ta(visteFlate.kortnavn)
@@ -401,6 +449,22 @@
 
   {#if oppMelding}
     <div class={oppFeil ? 'feil' : 'info'}>{oppMelding}</div>
+  {/if}
+
+  {#if innboksFiler.length > 0}
+    <div class="info innboks">
+      <span>
+        📥 {innboksFiler.length === 1
+          ? `«${innboksFiler[0]}» er lastet opp`
+          : `${innboksFiler.length} dokumenter er lastet opp`} — Agenten tar innholdet inn i
+        prosjektet og melder fra i chatten. Linjen forsvinner når innboksen er tømt.
+      </span>
+      <button class="toem" onclick={tomInnboks} disabled={tommer}>
+        {tommer ? 'Tømmer …' : 'Tøm innboksen'}
+      </button>
+    </div>
+  {:else if innboksKvittering}
+    <div class="info">{innboksKvittering}</div>
   {/if}
 
   {#if presence.feil}
@@ -630,6 +694,26 @@
     padding: 6px 14px;
     flex: none;
   }
+  /* Innboks-linjen (15.10): står til innboksen er tømt. */
+  .info.innboks {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .info.innboks .toem {
+    background: transparent;
+    color: #a9d8b8;
+    border: 1px solid #3f6a4e;
+    border-radius: 4px;
+    padding: 2px 10px;
+    cursor: pointer;
+    flex: none;
+    font-size: 13px;
+  }
+  .info.innboks .toem:hover {
+    background: #27402f;
+  }
   .melding {
     margin: auto;
     background: #141b22;
@@ -737,5 +821,12 @@
   .stage.lys .info {
     background: #e3f0e7;
     color: #2e6b45;
+  }
+  .stage.lys .info.innboks .toem {
+    color: #2e6b45;
+    border-color: #9fc7ac;
+  }
+  .stage.lys .info.innboks .toem:hover {
+    background: #d2e6d9;
   }
 </style>

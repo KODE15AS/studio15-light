@@ -118,20 +118,31 @@ function sisteZooAktivitet() {
 }
 
 async function varsleAgenten(nyeNavn) {
-  const en = nyeNavn.length === 1;
-  const liste = nyeNavn.map((n) => `«${n}»`).join(", ");
-  const tekst =
-    `Deltageren har nettopp lastet opp ${en ? "et dokument" : "dokumenter"} ` +
-    `i innboks/: ${liste}. Les ${en ? "det" : "dem"} nå, gi Deltageren en ` +
-    `kort oppsummering på norsk av innholdet, strukturer det inn i ` +
-    `prosjektet slik AGENTS.md beskriver, og avslutt med forslag til ` +
-    `neste steg.`;
   // Tålmodig løkke: API-et kan være uferdig rett etter oppstart, og en
   // PÅGÅENDE samtale skal ikke rives vekk (newTab lukker alle faner).
   // Vent til det har vært ro i 90 s, maks ~30 min, før oppgaven startes.
   for (let forsok = 0; forsok < 120; forsok++) {
     try {
+      // «Tøm innboksen»-knappen (Jørn 15.10): deltageren kan ha
+      // ombestemt seg mens vi ventet — varsle kun om filer som
+      // fortsatt ligger der.
+      nyeNavn = nyeNavn.filter((n) => {
+        try {
+          return fs.statSync(path.join(INNBOKS, n)).isFile();
+        } catch (_) {
+          return false;
+        }
+      });
+      if (nyeNavn.length === 0) return;
       if (Date.now() - sisteZooAktivitet() > 90_000) {
+        const en = nyeNavn.length === 1;
+        const liste = nyeNavn.map((n) => `«${n}»`).join(", ");
+        const tekst =
+          `Deltageren har nettopp lastet opp ${en ? "et dokument" : "dokumenter"} ` +
+          `i innboks/: ${liste}. Les ${en ? "det" : "dem"} nå, gi Deltageren en ` +
+          `kort oppsummering på norsk av innholdet, strukturer det inn i ` +
+          `prosjektet slik AGENTS.md beskriver, og avslutt med forslag til ` +
+          `neste steg.`;
         const api = await zooApi();
         if (api && api.startNewTask) {
           // newTab: Zoo lukker selv alle editorfaner og åpner oppgaven

@@ -57,6 +57,25 @@ utløser dialogen på nytt når han åpner skjermen.
   ekspert-flatene gjenskapt på nytt image (prosjektvolumene urørt).
 - Lobby bygget og restartet (ny kvitteringstekst).
 
+## Runde 2 samme kveld (Jørns korrigeringer etter test)
+
+1. **Innboks-linjen:** grønn statuslinje på deltagerskjermen som står så
+   lenge det ligger dokumenter i `innboks/` — med «Tøm innboksen»-knapp
+   (angre). Lobby: `GET/POST /api/arbeidsflater/{kortnavn}/innboks[/tom]`
+   (docker exec via ny `exec_sh`-hjelper i driveren); skjermen poller
+   hvert 8. s og kvitterer ulikt for «Agenten har tømt» vs. «du tømte».
+   Vakten i containeren sjekker at filene fortsatt finnes før den vekker
+   agenten (angre-vinduet). E2E-testet: opplast → liste → tøm → tom.
+2. **Samtalehistorikk:** «Ny samtale — prosjektet beholdes» SLETTER ikke
+   den gamle samtalen — den ligger i Zoo-historikken, som lå gjemt i
+   «…»-menyen i et usynlig fanehode (`showTabs: "none"` kollapser raden).
+   Ekspert-malen setter nå `showTabs: "single"`: fanehodet vises med to
+   knapper — ✏️ «Ny samtale» og 🕘 «Samtalehistorikk» (norske tooltips
+   via package.nls.json-patch). Settings/marketplace/popout fjernet fra
+   fanehodet (package.json-patch), split/close/mer skjult med CSS
+   (ikonklasser verifisert i DOM). Historikk-klikk åpner Zoo-historikken
+   med søk og gjenopptak — verifisert i nettleser.
+
 ## Funn til senere
 
 - **Zoo-oppgavehistorikken bor i container-fs**, ikke i prosjektvolumet

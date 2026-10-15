@@ -138,7 +138,17 @@ stil = ("<style>/* S15L-NYBEGYNNER (Jørn 05.10, rapport 4 pkt. 3.3-B1/B2) */ "
         "pointer-events: none !important; } "
         "/* 05.10 kveld: VS Code-varsler (port 5173, settings-import) er "
         "bare støy for nybegynnere — og skjemmer tavla. */ "
-        ".monaco-workbench .notifications-toasts { display: none !important; }"
+        ".monaco-workbench .notifications-toasts { display: none !important; } "
+        "/* 15.10 (ekspert): tittelraden vises (showTabs single) for «Ny "
+        "samtale»- og «Samtalehistorikk»-knappene — split/close/mer-støyen "
+        "skjules. */ "
+        ".monaco-workbench .part.editor .title .tab .tab-actions "
+        "{ display: none !important; } "
+        "/* Ikonklasser verifisert i DOM 15.10: edit og history beholdes. */ "
+        ".monaco-workbench .part.editor .title-actions .codicon-split-horizontal, "
+        ".monaco-workbench .part.editor .title-actions .codicon-close, "
+        ".monaco-workbench .part.editor .title-actions .codicon-toolbar-more "
+        "{ display: none !important; }"
         "</style>")
 open(sti, "w", encoding="utf-8").write(t.replace("</head>", stil + "</head>"))
 PY
@@ -206,6 +216,39 @@ t = t.replace("minRows:3,maxRows:15", "minRows:8,maxRows:28")
 open(sti, "w", encoding="utf-8").write(t)
 PY
     fi
+  done
+  # Samtalehistorikk i fanemodus (Jørn 15.10): historikk-knappen lå gjemt
+  # i «…»-menyen — løftes frem som synlig ikon ved siden av «Ny samtale»-
+  # blyanten. Settings/marketplace/popout fjernes fra fanehodet: støy, og
+  # settings lar deltageren velte agent-oppsettet. Tooltips på norsk.
+  # Idempotent: patchen gir samme resultat ved hver kjøring.
+  for PKG in /home/coder/.local/share/code-server/extensions/zoocodeorganization.zoo-code-*/package.json; do
+    [ -f "$PKG" ] || continue
+    python3 - "$PKG" <<'PY'
+import json, os, sys
+sti = sys.argv[1]
+p = json.load(open(sti, encoding="utf-8"))
+meny = p["contributes"]["menus"]
+behold = {
+    "zoo-code.plusButtonClicked": "navigation@1",
+    "zoo-code.historyButtonClicked": "navigation@2",
+}
+nytt = []
+for post in meny.get("editor/title", []):
+    k = post.get("command", "")
+    if k in behold:
+        post["group"] = behold[k]
+        nytt.append(post)
+    # settings/marketplace/popout: bevisst utelatt i blankt UI
+meny["editor/title"] = nytt
+json.dump(p, open(sti, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+nls = os.path.join(os.path.dirname(sti), "package.nls.json")
+if os.path.exists(nls):
+    n = json.load(open(nls, encoding="utf-8"))
+    n["command.newTask.title"] = "Ny samtale \u2014 prosjektet beholdes"
+    n["command.history.title"] = "Samtalehistorikk \u2014 tilbake til en tidligere samtale"
+    json.dump(n, open(nls, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+PY
   done
 fi
 
@@ -278,6 +321,20 @@ if [ ! -f "$SETTINGS_DIR/settings.json" ]; then
   "zoo-code.autoImportSettingsPath": "/home/coder/zoo-settings.json"
 }
 EOF
+fi
+
+# Ekspert-malen (Jørn 15.10): showTabs "none" kollapser hele editor-
+# tittelraden — da vises aldri «Ny samtale»- og «Samtalehistorikk»-
+# knappene (de bor i editor/title). "single" viser raden; split/close-
+# støyen i raden skjules med CSS i workbench.html-patchen over.
+if [ "${S15L_MAL:-full}" = "ekspert" ]; then
+  python3 - "$SETTINGS_DIR/settings.json" <<'PY'
+import json, sys
+sti = sys.argv[1]
+d = json.load(open(sti))
+d["workbench.editor.showTabs"] = "single"
+json.dump(d, open(sti, "w"), indent=2)
+PY
 fi
 
 # Den levende websiden (Vite leser WEB_BASE i vite.config)

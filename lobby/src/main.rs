@@ -1015,6 +1015,25 @@ async fn last_opp_dokument(
     Json(json!({ "lagret": format!("innboks/{navn}"), "bytes": kropp.len() })).into_response()
 }
 
+/// Innboks-status (Jørn 15.10): den grønne linjen på skjermen står til
+/// agenten har tømt innboksen — skjermen poller dette endepunktet.
+async fn innboks_status(State(app): State<Arc<App>>, Path(kortnavn): Path<String>) -> Response {
+    match app.driver.innboks_liste(&kortnavn).await {
+        Ok(filer) => Json(json!({ "filer": filer })).into_response(),
+        Err(e) => feil(StatusCode::INTERNAL_SERVER_ERROR, &format!("innboks: {e}")),
+    }
+}
+
+/// «Tøm innboksen» (Jørn 15.10): deltageren kan ombestemme seg etter en
+/// opplasting. Fjerner alt unntatt les-meg.md; innboks-vakten i
+/// containeren sjekker at filene finnes før den vekker agenten.
+async fn innboks_tom(State(app): State<Arc<App>>, Path(kortnavn): Path<String>) -> Response {
+    match app.driver.innboks_tom(&kortnavn).await {
+        Ok(_) => Json(json!({ "tomt": true })).into_response(),
+        Err(e) => feil(StatusCode::INTERNAL_SERVER_ERROR, &format!("innboks: {e}")),
+    }
+}
+
 async fn stopp_arbeidsflate(State(app): State<Arc<App>>, Path(kortnavn): Path<String>) -> Response {
     match app.driver.stop(&kortnavn).await {
         Ok(_) => Json(json!({ "stoppet": kortnavn })).into_response(),
@@ -1490,6 +1509,14 @@ async fn main() -> anyhow::Result<()> {
         .route(
             "/api/arbeidsflater/{kortnavn}/opplast",
             post(last_opp_dokument).layer(axum::extract::DefaultBodyLimit::max(50 * 1024 * 1024)),
+        )
+        .route(
+            "/api/arbeidsflater/{kortnavn}/innboks",
+            get(innboks_status),
+        )
+        .route(
+            "/api/arbeidsflater/{kortnavn}/innboks/tom",
+            post(innboks_tom),
         )
         .route("/api/arbeidsflater/{kortnavn}/stopp", post(stopp_arbeidsflate))
         .route("/api/arbeidsflater/{kortnavn}/vekk", post(vekk_arbeidsflate))

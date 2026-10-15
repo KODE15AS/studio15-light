@@ -233,6 +233,8 @@ impl Driver {
         }
     }
 
+    // (felles exec-hjelper `exec_sh` nederst i fila)
+
     /// Leser Zoo-dialogens meldingsfil (siste task) fra arbeidsflaten —
     /// grunnlaget for dialog-speilet på tavla (Jørn 06.10, rapport 1
     /// pkt. 2): tavlas egen code-server-økt viser en FERSK, tom Zoo-chat,
@@ -269,6 +271,48 @@ impl Driver {
                     }
                 }
                 Ok(String::from_utf8_lossy(&ut).into_owned())
+            }
+        }
+    }
+
+    /// Lister filene i prosjektets `innboks/` (uten `les-meg.md`) —
+    /// grunnlag for den grønne statuslinjen på deltagerskjermen
+    /// (Jørn 15.10): linjen står til agenten har tømt innboksen.
+    pub async fn innboks_liste(&self, kortnavn: &str) -> anyhow::Result<Vec<String>> {
+        match self {
+            Driver::Mock(_) => Ok(Vec::new()),
+            Driver::Docker(d) => {
+                let ut = exec_sh(
+                    d,
+                    kortnavn,
+                    "ls -1 /home/coder/project/innboks 2>/dev/null",
+                )
+                .await?;
+                Ok(ut
+                    .lines()
+                    .map(str::trim)
+                    .filter(|n| !n.is_empty() && *n != "les-meg.md" && !n.starts_with('.'))
+                    .map(str::to_string)
+                    .collect())
+            }
+        }
+    }
+
+    /// Tømmer innboksen (alt unntatt `les-meg.md`) — «Tøm innboksen»-
+    /// knappen (Jørn 15.10): deltageren kan ombestemme seg etter en
+    /// opplasting. Innboks-vakten i containeren sjekker at filene
+    /// fortsatt finnes før den vekker agenten.
+    pub async fn innboks_tom(&self, kortnavn: &str) -> anyhow::Result<()> {
+        match self {
+            Driver::Mock(_) => Ok(()),
+            Driver::Docker(d) => {
+                exec_sh(
+                    d,
+                    kortnavn,
+                    "find /home/coder/project/innboks -maxdepth 1 -type f ! -name les-meg.md -delete",
+                )
+                .await?;
+                Ok(())
             }
         }
     }
@@ -359,4 +403,29 @@ impl Driver {
             }
         }
     }
+}
+
+/// Kjører en sh-kommando i containeren og fanger stdout (docker exec).
+/// Samme mønster som `les_zoo_dialog`; brukes av innboks-endepunktene.
+async fn exec_sh(d: &Docker, kortnavn: &str, cmd: &str) -> anyhow::Result<String> {
+    let exec = d
+        .create_exec(
+            &container_name(kortnavn),
+            CreateExecOptions {
+                cmd: Some(vec!["sh", "-c", cmd]),
+                attach_stdout: Some(true),
+                attach_stderr: Some(false),
+                ..Default::default()
+            },
+        )
+        .await?;
+    let mut ut = Vec::new();
+    if let StartExecResults::Attached { mut output, .. } = d.start_exec(&exec.id, None).await? {
+        while let Some(melding) = output.next().await {
+            if let Ok(bollard::container::LogOutput::StdOut { message }) = melding {
+                ut.extend_from_slice(&message);
+            }
+        }
+    }
+    Ok(String::from_utf8_lossy(&ut).into_owned())
 }

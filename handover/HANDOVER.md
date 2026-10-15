@@ -78,7 +78,11 @@ starter automatisk en Zoo-oppgave i fullskjermfane
 (`startNewTask({newTab:true})` via Zoo-API-et) som leser, oppsummerer og
 strukturerer dokumentet — Deltageren ser Agentens «dialog med seg selv»
 umiddelbart etter opplasting. Ro-vakt: starter aldri mens en samtale er
-aktiv (<90 s siden siste melding). Se `2026-10-15-innboksvakt.md`.
+aktiv (<90 s siden siste melding). Runde 2 samme kveld: grønn
+innboks-linje på skjermen med «Tøm innboksen»-knapp (lobby-API +
+polling), og samtalehistorikk synlig i fanehodet (showTabs single +
+norske knapper; gamle samtaler slettes aldri av «Ny samtale»). Se
+`2026-10-15-innboksvakt.md`.
 
 ## Grunnlag — les disse først
 
