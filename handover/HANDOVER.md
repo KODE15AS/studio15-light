@@ -83,6 +83,11 @@ innboks-linje på skjermen med «Tøm innboksen»-knapp (lobby-API +
 polling), og samtalehistorikk synlig i fanehodet (showTabs single +
 norske knapper; gamle samtaler slettes aldri av «Ny samtale»). Se
 `2026-10-15-innboksvakt.md`.
+15.10 kveld: chat 3 avsluttes — kveldsundersøkelser ferdige (historikk
+til repo via customStoragePath, Zoo-moduser som malregime, RTX 5080 via
+LiteLLM). Zoo 3.88.0-oppgradering utsatt (ankre verifisert, lav risiko).
+Venter på Jørn: mal-orgens navn (forslag `STUDIO15-Maler`) og valg av
+historikk-variant. ALT i `2026-10-15-handover-chat-3-til-4.md`.
 
 ## Grunnlag — les disse først
 

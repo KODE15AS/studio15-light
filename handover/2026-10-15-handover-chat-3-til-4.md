@@ -1,0 +1,135 @@
+# Handover chat 3 → 4 (15.10.2026, kveld)
+
+Chat 3 leverte ekspert-malen og gjorde den moden gjennom Jørns DEFA-
+pretest. Denne handoveren samler kveldens leveranser, beslutningene som
+venter, og ferdig undersøkte designforslag for chat 4.
+
+## Levert og verifisert i chat 3 (alt committet og pushet)
+
+- **Ekspert-malen** (09.10): raven-fakta i stedet for regi, blankt UI +
+  autokjøring, dokumentopplasting → `innboks/`. Se
+  `2026-10-09-ekspertmal.md`.
+- **Innboks-vakten** (15.10): opplasting vekker Agenten automatisk i
+  fullskjermfane — les, oppsummer, strukturer. Ro-vakt mot pågående
+  samtaler, filsjekk mot «Tøm innboksen»-angring. Se
+  `2026-10-15-innboksvakt.md`.
+- **Innboks-linjen** (15.10): grønn statuslinje på deltagerskjermen står
+  til innboksen er tømt; «Tøm innboksen»-knapp; lobby-API
+  `GET/POST /api/arbeidsflater/{kortnavn}/innboks[/tom]`.
+- **Samtalehistorikk** (15.10): «Ny samtale — prosjektet beholdes»
+  sletter aldri noe; fanehodet viser ✏️ Ny samtale og 🕘
+  Samtalehistorikk (showTabs single, norske tooltips, støyknapper
+  fjernet). Jørn-testet i DEFA.
+
+## Venter på Jørns beslutning
+
+1. **Mal-org:** innholdsmaler som egne repoer i ny org. Forslag:
+   `STUDIO15-Maler` (Jørns utgangspunkt var «STUDIO15-templates»).
+   Vaktmester-appen må installeres i orgen når den opprettes.
+2. **Samtalehistorikk til repo:** design klart (under), valg av variant
+   gjenstår.
+
+## Utsatt til senere chat (Jørns beslutning 15.10)
+
+- **Zoo-oppgradering 3.87.100557 → 3.88.0.** Undersøkt og klargjort:
+  3.88.0 er stabil utgivelse (3.89.x er pre-release og hoppes over).
+  Relevant for oss: pålitligere lagring av oppgavemeldinger (leses av
+  dialogspeil + innboks-vakt), ryddigere oppgave-avbrytelse, raskere
+  filskriving, bedre håndtering av egendefinerte modellnavn mot
+  OpenAI-kompatible gatewayer (= vår LiteLLM). **Alle patch-ankre i
+  entrypoint er maskinelt verifisert til stede i 3.88.0-vsix-en**
+  (norske tekster, knappeskjuling, fanehode-meny, API-et vakten bruker).
+  Lav risiko; kjøres som egen kontrollert runde: bump i Dockerfile,
+  rebuild, verifiser på en testflate før deltagerflater friskes opp.
+
+## Designforslag A: samtalehistorikk til prosjektrepoet
+
+Dagens svakhet: Zoo-lageret bor i container-fs → historikken dør når en
+flate friskes opp (sett 15.10). Jørn vil ha samtalene **i repoet**.
+
+Undersøkt (Zoo 3.87-dist + reelt lager fra DEFA-flaten):
+
+- `zoo-code.customStoragePath` flytter HELE lageret: `tasks/` (per
+  samtale: `ui_messages.json`, `api_conversation_history.json`,
+  metadata), `settings/` (`mcp_settings.json`, `custom_modes.yaml`) og
+  `cache/`. API-nøkler/profiler bor i VS Codes secret storage og følger
+  IKKE med — ingen hemmeligheter i lageret (verifisert på kveldens
+  samtaler).
+- Størrelse: to DEFA-samtaler = 108 K tasks + 572 K modellkatalog-cache.
+  Cache bør gitignores; tasks er git-vennlige (JSON).
+- Viktig felle: sjekkpunkter er git-repoer (shadow git) under
+  `tasks/<id>/checkpoints/` — nestede .git-kataloger blir gitlinks og
+  kan IKKE committes meningsfullt. Ikke observert aktive hos oss, men
+  må gitignores uansett.
+- Merk: `/home/coder/project` er BÅDE prosjektvolumet og git-arbeidstreet
+  — «til volumet» og «til repoet» er samme sti; forskjellen er bare om
+  stien gitignores eller committes.
+
+Anbefalt variant: `customStoragePath = /home/coder/project/.zoo` satt i
+entrypoint (ekspert-malen), med `.gitignore` i malen for
+`.zoo/cache/` og `.zoo/tasks/*/checkpoints/`. Autosaven (hvert 2. min)
+committer da samtalene fortløpende til GitHub-repoet. Restrisiko å
+akseptere: samtaletekst kan sitere miljøverdier hvis agenten skriver dem
+ut (repoene er private). Premium-variant (senere): eksportere lesbare
+markdown-transkripter til `handover/samtaler/` i stedet for rå JSON.
+
+## Designforslag B: Zoo-moduser som del av malregimet
+
+Undersøkt modus-systemet (Roo-arv, verifisert i dist):
+
+- Innebygde moduser: Architect, Code, Ask, Debug, **Orchestrator**
+  (deloppgave-delegering via `new_task`).
+- Egendefinerte moduser på to nivåer — nøyaktig skillet vi ønsker:
+  - **Globalt** (`settings/custom_modes.yaml` i Zoo-lageret): eies av
+    UI-regimet/plattformen — kan settes fra entrypoint per mal.
+  - **Per prosjekt** (`.roomodes`-fil i reporoten): eies av
+    innholdsmalen — følger malrepoet.
+- En modus definerer: slug, navn, `roleDefinition` (systemprompt),
+  `whenToUse`, `customInstructions`, `groups` = verktøyrettigheter
+  (read/edit/command/mcp, med fil-regex-begrensning, f.eks. «kun
+  *.md»), `allowedMcpServers`, og regler i `.roo/rules-<slug>/`.
+- `modeApiConfigs`: egen modellprofil PER modus — f.eks. tunge moduser
+  på claude, lette/lokale moduser på fremtidig RTX 5080-backend.
+
+Skisse: ekspert-UI-regimet skiper 2–3 norske moduser (f.eks.
+«Prosjektleder» (orchestrator-variant), «Utvikler», «Dokumentar» med
+md-begrensning); en innholdsmal som DEFA legger fagmoduser i `.roomodes`
++ `.roo/rules-<slug>/`. Blankt UI skjuler modusvelgeren i dag — må få
+en enkel, norsk velger når modusene kommer.
+
+## Designforslag C: RTX 5080 i Studio 15 (forberedende tanker)
+
+Spørsmål fra Jørn: lokal RTX 5080 (egen container/repo, norm
+«container») som skal brukes lokalt OG fra andre servere på samme
+10G-nett — container-til-container, MCP eller annet?
+
+Anbefaling: **ingen av delene — bruk HTTP/OpenAI-kompatibelt API bak
+LiteLLM-proxyen.**
+
+- GPU-maskinen kjører en inferens-server (vLLM anbefalt; ev.
+  llama.cpp/Ollama) som egen 1:1-stack, eksponert som
+  OpenAI-kompatibelt endepunkt på 10G-nettet.
+- Registreres som ny modell i `proxy/litellm-config.yaml` (én blokk:
+  `model_name: lokal` → `api_base: http://<gpu-vert>:8000/v1`).
+  Dermed får ALT i Studio 15 (Zoo, fremtidige tjenester) tilgang uten
+  endringer — og fallback-regimet (standard/reserve) gjelder også
+  lokalmodellen.
+- Hvorfor ikke MCP: MCP er verktøykanal for agenter, ikke
+  modell-inferens — feil lag. (MCP blir derimot riktig når GPU-en skal
+  tilby TJENESTER, f.eks. bildegenerering som verktøy.)
+- Hvorfor ikke rå container-til-container: på tvers av fysiske maskiner
+  er det uansett HTTP over nettet; OpenAI-dialekten gir gratis
+  kompatibilitet med hele økosystemet.
+- Kobling til modus-designet: `modeApiConfigs` kan rute lette moduser
+  til lokalmodellen og tunge til claude — kostnadsstyring per modus.
+
+## Annet verdt å vite (fra 15.10)
+
+- Zoo-funksjoner kartlagt og tilgjengelige ved behov: `.rooignore`
+  (verne .env — bør inn i ekspert-malen uansett), todo-disiplin
+  (`newTaskRequireTodos`, `preventCompletionWithOpenTodos`),
+  sjekkpunkter (skjult i blankt UI i dag), kodebase-indeksering (krever
+  embeddings + vektordb — utsatt), bildegenerering (krever bildemodell
+  — utsatt).
+- Overvåkningsmønster brukt i kveld: docker exec-polling av innboks/
+  oppgaver/filer med varsling — gjenbrukbart ved senere deltagertester.
