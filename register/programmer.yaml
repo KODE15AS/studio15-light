@@ -26,7 +26,11 @@ programmer:
   navn: Ekspert
   github_org: KODE15-Ekspert
   prosjekter:
-  - slug: prosjekt-00-test-for-slettmeg
-    navn: Prosjekt 00 test for slettmeg
-    repo: file:///repos/ekspert-prosjekt-00-test-for-slettmeg.git
+  - slug: prosjekt-2-joern-oppstart-test
+    navn: Prosjekt 2 Jørn Oppstart test
+    repo: https://github.com/KODE15-Ekspert/prosjekt-2-joern-oppstart-test.git
+    mal: ekspert
+  - slug: prosjekt-defa-kaldstart-pretest-slettes
+    navn: Prosjekt DEFA Kaldstart pretest slettes
+    repo: https://github.com/KODE15-Ekspert/prosjekt-defa-kaldstart-pretest-slettes.git
     mal: ekspert
