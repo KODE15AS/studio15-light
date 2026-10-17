@@ -227,6 +227,14 @@ t = t.replace("`Start New Task`", "`Ny samtale \u2014 prosjektet beholdes`")
 # slår all CSS), så grensene patches her: 8 rader i ro (~¼ kolonne),
 # vokser til 28 (~halv kolonne) når deltagerne skriver langt.
 t = t.replace("minRows:3,maxRows:15", "minRows:8,maxRows:28")
+# Jørn 17.10: workspace-filteret i samtalehistorikken («Workspace:
+# Current/All») er irrelevant hos oss — lageret er låst til prosjekt-
+# volumet, én flate = ett workspace. Hele select-en renderes bort
+# (eksakt streng fra pinnet 3.87; ettersees ved Zoo-oppgradering).
+t = t.replace(
+    "(0,K.jsxs)(HK,{value:ge,onValueChange:_e,children:[xe,Oe]})",
+    "null",
+)
 open(sti, "w", encoding="utf-8").write(t)
 PY
     fi

@@ -197,6 +197,20 @@ men den skal overleve oppfriskinger. Løsning: volum-varianten (gitignorert):
   lager ved neste oppfrisking (gamle samtaler i container-fs følger ikke
   med — de dør som før, én siste gang).
 
+## Småjusteringer etter volum-flyttingen (17.10, ettermiddag)
+
+- DEFA-pretestflaten migrert manuelt (engangs): gammelt chatlager kopiert
+  til `.zoo` på volumet før oppfriskning — Jørn verifiserte at samtalene
+  kom tilbake. Nye flater trenger ingen migrering.
+- Workspace-filteret i samtalehistorikken («Workspace: Current/All»)
+  patches bort i webview-bygget (entrypoint): irrelevant hos oss — én
+  flate = ett workspace, lageret er låst til volumet. Patch-ankeret er
+  verifisert uendret i 3.88-vsix-en.
+- Redigerbare samtale-titler finnes IKKE i Zoo (verifisert 3.87 OG 3.88:
+  ingen renameTask/taskTitle) — tittelen i historikken er samtalens
+  første melding. Ettersees ved fremtidige Zoo-oppgraderinger; ekte
+  løsning krever endring oppstrøms eller egen fork.
+
 ## Annet verdt å vite (fra 15.10)
 
 - Zoo-funksjoner kartlagt og tilgjengelige ved behov: `.rooignore`
