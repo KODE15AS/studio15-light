@@ -322,45 +322,62 @@
           <div class="k15-card orgflyt">
             <span class="k15-kicker">Nytt prosjekt</span>
             <h3>Lag nytt prosjekt</h3>
-            <!-- Malvelger (Jørn 17.10): listen kommer fra mal-org-en -->
-            <div class="malvalg">
-              {#each maler as m}
-                <label class="mal" class:valgt={nyttProsjektMal === m.id}>
-                  <input type="radio" name="mal" value={m.id} bind:group={nyttProsjektMal} />
-                  <strong>{m.navn}</strong>
-                  <span>{m.beskrivelse}</span>
-                </label>
-              {/each}
-              {#if maler.length === 0}
-                <p class="hint">Henter maler …</p>
-              {/if}
-            </div>
+            <!-- Sekvensiell flyt (Jørn 17.10): navn → malvalg → opprett.
+                 Malvelgeren lister malbiblioteket i mal-org-en. -->
             <form
-              class="rad"
+              class="nyttprosjekt"
               onsubmit={(e) => {
                 e.preventDefault()
                 lagProsjekt()
               }}
             >
-              <input placeholder="Prosjektnavn" bind:value={nyttProsjektNavn} />
+              <div class="steg">
+                <strong class="stegtittel">1. Gi prosjektet et navn</strong>
+                <input placeholder="Prosjektnavn" bind:value={nyttProsjektNavn} />
+                <!-- Valideringstekst (Jørn 05.10): navnet blir en adresse -->
+                <p class="hint" class:ugyldig={nySlug.length > maksSlug}>
+                  Bokstaver, tall og mellomrom er lov — i adressen blir æ/ø/å
+                  til ae/oe/aa og andre tegn til bindestrek.
+                  {#if nySlug}
+                    Adressen blir <code>{nySlug}</code> ({nySlug.length} av maks
+                    {maksSlug} tegn{nySlug.length > maksSlug
+                      ? ' — for langt, velg et kortere navn'
+                      : ''}).
+                  {:else}
+                    Maks {maksSlug} tegn i adressen.
+                  {/if}
+                </p>
+              </div>
+
+              <div class="steg">
+                <strong class="stegtittel">2. Velg malen prosjektet skal starte fra</strong>
+                <p class="hint">
+                  Malene ligger i malbiblioteket <code>STUDIO15-Maler</code> —
+                  «Lagre som mal» på et prosjekt gjør det til en ny mal her.
+                </p>
+                <div class="malvalg">
+                  {#each maler as m}
+                    <label class="mal" class:valgt={nyttProsjektMal === m.id}>
+                      <input type="radio" name="mal" value={m.id} bind:group={nyttProsjektMal} />
+                      <span class="maltekst">
+                        <strong>{m.navn}</strong>
+                        <span>{m.beskrivelse}</span>
+                      </span>
+                    </label>
+                  {/each}
+                  {#if maler.length === 0}
+                    <p class="hint">Henter maler fra malbiblioteket …</p>
+                  {/if}
+                </div>
+              </div>
+
               <button
-                class="k15-btn k15-btn-primary"
-                disabled={opptatt || !nySlug || nySlug.length > maksSlug}>Opprett</button
+                class="k15-btn k15-btn-primary opprettknapp"
+                disabled={opptatt || !nySlug || nySlug.length > maksSlug}
               >
+                Opprett nytt prosjekt
+              </button>
             </form>
-            <!-- Valideringstekst (Jørn 05.10): navnet blir en adresse -->
-            <p class="hint" class:ugyldig={nySlug.length > maksSlug}>
-              Bokstaver, tall og mellomrom er lov — i adressen blir æ/ø/å til
-              ae/oe/aa og andre tegn til bindestrek.
-              {#if nySlug}
-                Adressen blir <code>{nySlug}</code> ({nySlug.length} av maks
-                {maksSlug} tegn{nySlug.length > maksSlug
-                  ? ' — for langt, velg et kortere navn'
-                  : ''}).
-              {:else}
-                Maks {maksSlug} tegn i adressen.
-              {/if}
-            </p>
           </div>
         {/if}
 
@@ -659,16 +676,43 @@
   .hint.ugyldig {
     color: #b3443f;
   }
+  /* Sekvensielt «Nytt prosjekt»-skjema (Jørn 17.10): navn → mal → opprett */
+  .nyttprosjekt {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 18px;
+  }
+  .steg {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .steg .hint {
+    margin: 0;
+  }
+  .steg input[type='text'],
+  .steg > input {
+    flex: none;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .stegtittel {
+    font-size: 14px;
+  }
+  .opprettknapp {
+    align-self: flex-start;
+  }
   .malvalg {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 10px;
-    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 4px;
   }
   .mal {
     display: flex;
-    flex-direction: column;
-    gap: 4px;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 10px;
     border: 1px solid var(--k15-linje);
     border-radius: 10px;
     padding: 10px 14px;
@@ -678,16 +722,27 @@
   .mal.valgt {
     border-color: var(--k15-blaagraa-mork);
     box-shadow: 0 0 0 1px var(--k15-blaagraa-mork);
+    background: var(--k15-flate);
   }
+  /* Synlig radioknapp (Jørn 17.10): det skal være TYDELIG at boksene er
+     tre valg man velger mellom. */
   .mal input {
-    position: absolute;
-    opacity: 0;
-    pointer-events: none;
+    flex: none;
+    width: 16px;
+    height: 16px;
+    min-width: 0;
+    margin: 2px 0 0;
+    accent-color: var(--k15-blaagraa-mork);
+  }
+  .maltekst {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
   }
   .mal strong {
     font-size: 13.5px;
   }
-  .mal span {
+  .maltekst > span {
     font-size: 12px;
     color: var(--k15-noytralgraa);
   }
