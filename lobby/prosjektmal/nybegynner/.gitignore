@@ -2,3 +2,5 @@ node_modules/
 dist/
 # Per-arbeidsflate-regler skrives av containeren ved oppstart
 .roo/
+# Zoo-samtalehistorikken (customStoragePath) — bor på volumet, aldri i git
+.zoo/

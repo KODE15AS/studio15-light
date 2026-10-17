@@ -178,6 +178,25 @@ LiteLLM-proxyen.**
   autosaven (pusher til main i dag), «Lagre som mal»-flushen og
   git-flyten i arbeidsflatene.
 
+## Designforslag A GJENNOMFØRT (17.10): samtaler på prosjektvolumet
+
+Jørns beslutning: chatten skal IKKE i repo (for tungt) og IKKE i maler —
+men den skal overleve oppfriskinger. Løsning: volum-varianten (gitignorert):
+
+- `zoo-code.customStoragePath = /home/coder/project/.zoo` (entrypoint,
+  alle maler) — lageret bor i arbeidstreet på prosjektvolumet.
+- `.zoo/` gitignoreres: linje i alle tre malene (lokalt + org-repoene) og
+  `.git/info/exclude` fra entrypoint som dekker eldre prosjektrepoer.
+- «Fersk container»-sjekken for settings-importen ser nå på BEGGE lagre
+  (gjenskapt container med levende volum-lager beholder brukeroppsettet).
+- Leserne av lagerstien oppdatert med kandidatstier (ny først, gammel
+  reserve): `les_zoo_dialog` i driveren og innboks-vaktens ro-sjekk.
+- E2E-verifisert: .zoo opprettes på volumet, git ser den ikke
+  (check-ignore), gammel sti tom, og lageret OVERLEVDE simulert
+  oppfrisking (docker rm + gjenskaping). Eksisterende flater får flyttet
+  lager ved neste oppfrisking (gamle samtaler i container-fs følger ikke
+  med — de dør som før, én siste gang).
+
 ## Annet verdt å vite (fra 15.10)
 
 - Zoo-funksjoner kartlagt og tilgjengelige ved behov: `.rooignore`

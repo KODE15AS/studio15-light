@@ -252,7 +252,11 @@ impl Driver {
                                 "sh",
                                 "-c",
                                 // Nyeste task-mappe = samtalen som pågår.
-                                "cat \"$(ls -td /home/coder/.local/share/code-server/User/globalStorage/zoocodeorganization.zoo-code/tasks/*/ 2>/dev/null | head -1)ui_messages.json\" 2>/dev/null",
+                                // To kandidatstier (17.10): prosjektvolumet
+                                // (.zoo, customStoragePath) + containerstien
+                                // som reserve for eldre flater; ls -td
+                                // sorterer på tvers.
+                                "cat \"$(ls -td /home/coder/project/.zoo/tasks/*/ /home/coder/.local/share/code-server/User/globalStorage/zoocodeorganization.zoo-code/tasks/*/ 2>/dev/null | head -1)ui_messages.json\" 2>/dev/null",
                             ]),
                             attach_stdout: Some(true),
                             attach_stderr: Some(false),

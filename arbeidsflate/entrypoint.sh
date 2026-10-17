@@ -67,6 +67,16 @@ if [ -n "${PROJECT_REPO:-}" ] && [ -z "$(ls -A "$PROJECT_DIR")" ]; then
   git clone "$PROJECT_REPO" "$PROJECT_DIR"
 fi
 
+# Samtalehistorikken bor på prosjektvolumet (Jørn 17.10): Zoo-lageret
+# flyttes til .zoo/ i arbeidstreet (customStoragePath i settings under),
+# så samtalene overlever oppfriskede containere — men holdes UTENFOR git:
+# malene har .zoo/ i .gitignore, og info/exclude (lokal, committes aldri)
+# dekker eldre prosjektrepoer som mangler linjen.
+if [ -d "$PROJECT_DIR/.git" ]; then
+  grep -qx '\.zoo/' "$PROJECT_DIR/.git/info/exclude" 2>/dev/null \
+    || echo '.zoo/' >> "$PROJECT_DIR/.git/info/exclude"
+fi
+
 # Zoo Code: provider-profil (proxy + nøkkel) auto-importeres ved oppstart via
 # zoo-code.autoImportSettingsPath. Importen overskriver brukerens egne valg
 # (f.eks. terminal-autokjøring PÅ), så den kjøres kun når containeren er
@@ -77,7 +87,11 @@ fi
 # vårt skal alltid gjelde (importen kjører ved hver aktivering av Zoo så
 # lenge fila finnes).
 ZOO_STORAGE=/home/coder/.local/share/code-server/User/globalStorage/zoocodeorganization.zoo-code
-if [ ! -d "$ZOO_STORAGE" ] || [ -n "$S15L_BLANK_UI" ]; then
+# Lageret bor på prosjektvolumet fra 17.10 — «fersk» betyr at INGEN av
+# stedene finnes (en gjenskapt container med levende volum-lager skal
+# beholde brukerens oppsett).
+ZOO_LAGER_VOLUM=/home/coder/project/.zoo
+if { [ ! -d "$ZOO_STORAGE" ] && [ ! -d "$ZOO_LAGER_VOLUM" ]; } || [ -n "$S15L_BLANK_UI" ]; then
   sed -e "s|__PROXY_BASE__|${LLM_PROXY_BASE:-http://s15l-litellm:4000/v1}|" \
       -e "s|__PROXY_KEY__|${LLM_PROXY_KEY:-}|" \
       /opt/s15l/zoo-settings.template.json > /home/coder/zoo-settings.json
@@ -318,6 +332,7 @@ if [ ! -f "$SETTINGS_DIR/settings.json" ]; then
   "chat.agent.enabled": false,
   "chat.disableAIFeatures": true,
   "github.gitAuthentication": false,
+  "zoo-code.customStoragePath": "/home/coder/project/.zoo",
   "zoo-code.autoImportSettingsPath": "/home/coder/zoo-settings.json"
 }
 EOF

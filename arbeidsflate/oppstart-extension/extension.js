@@ -100,20 +100,27 @@ async function zooApi() {
 // ny mtime ved hver melding). Trengs fordi API-ets getCurrentTaskStack
 // kun ser sidestolpe-provideren — i blankt UI kjører samtalen i en FANE
 // med egen provider, usynlig for API-et.
-const ZOO_TASKS =
+// To kandidatstier (17.10): lageret bor nå på prosjektvolumet
+// (customStoragePath = .zoo), med containerstien som reserve for flater
+// laget før flyttingen.
+const ZOO_TASKS_KANDIDATER = [
+  "/home/coder/project/.zoo/tasks",
   "/home/coder/.local/share/code-server/User/globalStorage/" +
-  "zoocodeorganization.zoo-code/tasks";
+    "zoocodeorganization.zoo-code/tasks",
+];
 
 function sisteZooAktivitet() {
   let nyest = 0;
-  try {
-    for (const id of fs.readdirSync(ZOO_TASKS)) {
-      try {
-        const st = fs.statSync(path.join(ZOO_TASKS, id, "ui_messages.json"));
-        if (st.mtimeMs > nyest) nyest = st.mtimeMs;
-      } catch (_) {}
-    }
-  } catch (_) {}
+  for (const base of ZOO_TASKS_KANDIDATER) {
+    try {
+      for (const id of fs.readdirSync(base)) {
+        try {
+          const st = fs.statSync(path.join(base, id, "ui_messages.json"));
+          if (st.mtimeMs > nyest) nyest = st.mtimeMs;
+        } catch (_) {}
+      }
+    } catch (_) {}
+  }
   return nyest;
 }
 
