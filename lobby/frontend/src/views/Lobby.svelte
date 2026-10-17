@@ -152,6 +152,28 @@
     )
   }
 
+  // «Lagre som mal» (17.10): prosjektet pushes renset til mal-org-en.
+  let malNavn = $state('')
+  let malMelding = $state('')
+  async function lagreSomMal(prosjekt: Prosjekt) {
+    if (!gruppen || !malNavn.trim()) return
+    malMelding = 'Lagrer malen …'
+    try {
+      const r = await fetch(`/api/prosjekter/${gruppen.slug}/${prosjekt.slug}/lagre-som-mal`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ navn: malNavn.trim() }),
+      })
+      const d = await r.json().catch(() => ({}))
+      malMelding = r.ok
+        ? `Malen «${malNavn.trim()}» er lagret: ${d.repo}`
+        : `Feil: ${d.feil ?? r.status}`
+      if (r.ok) malNavn = ''
+    } catch {
+      malMelding = 'Feil: fikk ikke kontakt med lobbyen.'
+    }
+  }
+
   async function slettProsjekt(prosjekt: Prosjekt) {
     if (!gruppen) return
     // Én bekreftelsesknapp (Jørn 05.10, rapport 4 pkt. 2) — avskrift av
@@ -429,6 +451,36 @@
                 deg (og tavla) hit; det forrige prosjektet ditt står urørt
                 og kan åpnes igjen når som helst.
               </p>
+
+              <!-- «Lagre som mal» (Jørn 17.10): renset kopi av prosjektet
+                   pushes som mal-<slug> til mal-org-en (STUDIO15-Maler).
+                   Samme navn på nytt = malen oppdateres. -->
+              <details class="slett">
+                <summary>Lagre som mal</summary>
+                <p>
+                  Lager en gjenbrukbar mal av prosjektet slik det er nå
+                  (uten innboks-innhold og kjørefiler). Samme malnavn på
+                  nytt oppdaterer malen.
+                </p>
+                <form
+                  onsubmit={(e) => {
+                    e.preventDefault()
+                    lagreSomMal(prosjekt)
+                  }}
+                >
+                  <input
+                    placeholder="Malens navn, f.eks. DEFA kaldstart"
+                    bind:value={malNavn}
+                    disabled={opptatt}
+                  />
+                  <button class="k15-btn k15-btn-secondary" disabled={opptatt || !malNavn.trim()}>
+                    Lagre malen
+                  </button>
+                </form>
+                {#if malMelding}
+                  <p class="hint">{malMelding}</p>
+                {/if}
+              </details>
 
               <!-- Sletting er eierens (Jørn 08.10): synlig kun for eieren
                    — eller for alle når prosjektet ikke har noen skjerm

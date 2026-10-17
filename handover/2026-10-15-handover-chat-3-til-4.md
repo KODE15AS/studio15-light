@@ -123,6 +123,29 @@ LiteLLM-proxyen.**
 - Kobling til modus-designet: `modeApiConfigs` kan rute lette moduser
   til lokalmodellen og tunge til claude — kostnadsstyring per modus.
 
+## Maler: org, vaktmester og «Lagre som mal» (17.10)
+
+- Ny org `STUDIO15-Maler` for innholdsmaler; vaktmester-appen verifisert
+  installert der (administration/contents: write, alle repoer).
+  Org-navnet kan overstyres med `S15L_MAL_ORG` i `.env` (default
+  `STUDIO15-Maler`).
+- Jørns beslutning: **mal er mal** — ikke skille UI-maler og
+  innholdsmaler. UI-regimet er feltet `ui:` i malens `mal.yaml`.
+- Bygget «Lagre som mal»: `POST /api/prosjekter/{program}/{prosjekt}/
+  lagre-som-mal` + skjema i prosjektkortet i lobbyen. Renset kopi
+  (uten .git-historikk, innboks-innhold, dist, node_modules, .zoo)
+  pushes som `mal-<slug>`; force-push gjør samme navn = oppdater malen.
+- E2E-verifisert 17.10: nybegynner-prosjekt → `mal-nybegynner-standard`
+  i STUDIO15-Maler med korrekt `mal.yaml` (ui: nybegynner). Malen står
+  igjen som eksempel; testprosjektet er slettet.
+- NESTE steg (Jørns bestilling): nytt prosjekt skal kunne starte fra
+  (a) en mal i STUDIO15-Maler eller (b) kopi av et tidligere prosjekt —
+  malvelgeren i «Nytt prosjekt»-skjemaet må liste org-ens `mal-*`-repoer
+  og seede derfra. Merk: malen bærer kildeprosjektets navn i
+  package.json/index.html (ingen __PROSJEKTNAVN__-plassholdere lenger);
+  seeding fra mal bør flette nytt prosjektnavn med søk/erstatt på
+  kildenavnet fra mal.yaml, eller la det stå.
+
 ## Annet verdt å vite (fra 15.10)
 
 - Zoo-funksjoner kartlagt og tilgjengelige ved behov: `.rooignore`

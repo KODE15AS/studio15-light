@@ -695,6 +695,147 @@ async fn nytt_prosjekt(State(app): State<Arc<App>>, Json(b): Json<NyttProsjekt>)
     Json(json!({ "slug": slug })).into_response()
 }
 
+/// Mal-org-en (Jørn 17.10): innholdsmaler bor som `mal-<slug>`-repoer i
+/// en egen org. «Mal er mal» utad — UI-regimet er et felt i malens
+/// mal.yaml, ikke en egen malkategori.
+fn mal_org() -> String {
+    std::env::var("S15L_MAL_ORG").unwrap_or_else(|_| "STUDIO15-Maler".to_string())
+}
+
+#[derive(Deserialize)]
+struct LagreSomMal {
+    navn: String,
+}
+
+/// «Lagre som mal» (Jørn 17.10): renset kopi av prosjektrepoet pushes som
+/// `mal-<slug>` til mal-org-en. Force-push gjør knappen idempotent — å
+/// lagre på nytt OPPDATERER malen. Rensingen fjerner kjøre-/historikk-
+/// artefakter (innboks-innhold, dist, .zoo); resten ER malen.
+async fn lagre_som_mal(
+    State(app): State<Arc<App>>,
+    Path((program, prosjekt)): Path<(String, String)>,
+    Json(b): Json<LagreSomMal>,
+) -> Response {
+    let mal_slug = slugify(&b.navn);
+    if mal_slug.is_empty() {
+        return feil(StatusCode::BAD_REQUEST, "malnavnet gir ingen gyldig slug");
+    }
+    let Some(vm) = app.vaktmester.as_ref() else {
+        return feil(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "mal-lagring krever vaktmester-appen (GITHUB_APP_ID i .env)",
+        );
+    };
+    // Kildeprosjektet fra registeret: repo-URL + UI-regime.
+    let (repo_url, ui_regime, kilde_navn) = {
+        let reg = app.register.lock().await;
+        let Some(pr) = reg
+            .programmer
+            .iter()
+            .find(|p| p.slug == program)
+            .and_then(|p| p.prosjekter.iter().find(|x| x.slug == prosjekt))
+        else {
+            return feil(StatusCode::NOT_FOUND, "ukjent prosjekt");
+        };
+        (pr.repo.clone(), pr.mal.clone(), pr.navn.clone())
+    };
+    // Klonekilde: GitHub-repoer trenger ferskt token; file:// går rett.
+    let kilde = if let Some((korg, krepo)) = vaktmester::parse_github_url(&repo_url) {
+        match vm.repo_token(&korg, &krepo).await {
+            Ok(t) => format!(
+                "https://x-access-token:{}@github.com/{korg}/{krepo}.git",
+                t.token
+            ),
+            Err(e) => return feil(StatusCode::INTERNAL_SERVER_ERROR, &format!("github: {e}")),
+        }
+    } else {
+        repo_url.clone()
+    };
+    let org = mal_org();
+    let mal_repo = format!("mal-{mal_slug}");
+    if let Err(e) = vm.opprett_repo(&org, &mal_repo).await {
+        return feil(StatusCode::INTERNAL_SERVER_ERROR, &format!("github: {e}"));
+    }
+    let mal_tok = match vm.repo_token(&org, &mal_repo).await {
+        Ok(t) => t,
+        Err(e) => return feil(StatusCode::INTERNAL_SERVER_ERROR, &format!("github: {e}")),
+    };
+    let remote = format!(
+        "https://x-access-token:{}@github.com/{org}/{mal_repo}.git",
+        mal_tok.token
+    );
+    let res = bygg_og_push_mal(
+        &kilde,
+        &remote,
+        &b.navn,
+        &ui_regime,
+        &format!("{program}/{prosjekt} ({kilde_navn})"),
+    );
+    if let Err(e) = res {
+        // Tokens må aldri lekke i feilmeldinger (git siterer URL-er).
+        let mut tekst = e.to_string().replace(&mal_tok.token, "***");
+        if let Some(t) = kilde.split("x-access-token:").nth(1).and_then(|s| s.split('@').next()) {
+            tekst = tekst.replace(t, "***");
+        }
+        return feil(StatusCode::INTERNAL_SERVER_ERROR, &format!("mal: {tekst}"));
+    }
+    Json(json!({
+        "mal": mal_slug,
+        "repo": format!("https://github.com/{org}/{mal_repo}"),
+    }))
+    .into_response()
+}
+
+/// Selve mal-byggingen: klon kilden grunt, rens, legg på mal.yaml,
+/// commit som ÉN ny historikk og force-push til malrepoet.
+fn bygg_og_push_mal(
+    kilde: &str,
+    remote: &str,
+    navn: &str,
+    ui_regime: &str,
+    kilde_beskrivelse: &str,
+) -> anyhow::Result<()> {
+    use std::process::Command;
+    let tmp = format!("/tmp/mal-{}", slugify(navn));
+    let _ = std::fs::remove_dir_all(&tmp);
+    kjor(Command::new("git").args(["clone", "--depth", "1", kilde, &tmp]))?;
+    // Rens: git-historikk, kjøreartefakter og samtalehistorikk er ikke mal.
+    for sti in [".git", "dist", "node_modules", ".zoo"] {
+        let _ = std::fs::remove_dir_all(format!("{tmp}/{sti}"));
+    }
+    if let Ok(poster) = std::fs::read_dir(format!("{tmp}/innboks")) {
+        for p in poster.flatten() {
+            if p.file_name() != "les-meg.md" {
+                let _ = std::fs::remove_file(p.path());
+            }
+        }
+    }
+    // mal.yaml: metadata lobbyen trenger når malen tas i bruk —
+    // «ui» er UI-regimet (nybegynner/ekspert/full) flaten skal kjøre med.
+    std::fs::write(
+        format!("{tmp}/mal.yaml"),
+        format!(
+            "# Studio 15 LIGHT-mal — brukes ved prosjektopprettelse\n\
+             navn: {navn}\n\
+             ui: {ui_regime}\n\
+             kilde: {kilde_beskrivelse}\n\
+             lagret: {}\n",
+            chrono::Utc::now().format("%Y-%m-%d")
+        ),
+    )?;
+    kjor(Command::new("git").args(["init", "-b", "main", &tmp]))?;
+    kjor(Command::new("git").args(["-C", &tmp, "add", "-A"]))?;
+    kjor(Command::new("git").args([
+        "-C", &tmp,
+        "-c", "user.name=Studio 15 LIGHT",
+        "-c", "user.email=lobby@studio15-light.lokal",
+        "commit", "-m", &format!("Mal lagret fra {kilde_beskrivelse}"),
+    ]))?;
+    kjor(Command::new("git").args(["-C", &tmp, "push", "--force", remote, "HEAD:main"]))?;
+    let _ = std::fs::remove_dir_all(&tmp);
+    Ok(())
+}
+
 #[derive(Deserialize)]
 struct Bekreftelse {
     bekreft: String,
@@ -1498,6 +1639,10 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/prosjekter", post(nytt_prosjekt))
         .route("/api/spilleplan/{mal}", get(spilleplan))
         .route("/api/prosjekter/{program}/{prosjekt}", delete(slett_prosjekt))
+        .route(
+            "/api/prosjekter/{program}/{prosjekt}/lagre-som-mal",
+            post(lagre_som_mal),
+        )
         .route("/api/arbeidsflater", post(ny_arbeidsflate))
         .route("/api/deltagere", get(deltagere_liste).post(deltager_registrer))
         .route("/api/deltagere/{slug}", delete(deltager_slett))
