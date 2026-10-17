@@ -150,28 +150,37 @@
 
   // «Lagre som mal» (17.10): prosjektet pushes til mal-org-en — med
   // webside/funksjonalitet (standard) eller som rent skjelett (purged).
-  let malNavn = $state('')
-  let malMedInnhold = $state(true)
-  let malMelding = $state('')
+  // Egen state per prosjektkort (17.10, runde 3): med delt state smittet
+  // skriving i ett kort over på alle de andre.
+  let malNavn: Record<string, string> = $state({})
+  let malMedInnhold: Record<string, boolean> = $state({})
+  let malMelding: Record<string, string> = $state({})
+  let malLenke: Record<string, string> = $state({})
   async function lagreSomMal(prosjekt: Prosjekt) {
-    if (!gruppen || !malNavn.trim()) return
-    malMelding = 'Lagrer malen …'
+    const navn = (malNavn[prosjekt.slug] ?? '').trim()
+    if (!gruppen || !navn) return
+    malMelding[prosjekt.slug] = 'Lagrer malen …'
+    malLenke[prosjekt.slug] = ''
     try {
       const r = await fetch(`/api/prosjekter/${gruppen.slug}/${prosjekt.slug}/lagre-som-mal`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ navn: malNavn.trim(), inkluder_innhold: malMedInnhold }),
+        body: JSON.stringify({
+          navn,
+          inkluder_innhold: malMedInnhold[prosjekt.slug] ?? true,
+        }),
       })
       const d = await r.json().catch(() => ({}))
-      malMelding = r.ok
-        ? `Malen «${malNavn.trim()}» er lagret: ${d.repo}`
-        : `Feil: ${d.feil ?? r.status}`
       if (r.ok) {
-        malNavn = ''
+        malMelding[prosjekt.slug] = `Malen «${navn}» er lagret i malbiblioteket.`
+        malLenke[prosjekt.slug] = d.repo ?? ''
+        malNavn[prosjekt.slug] = ''
         hentMaler() // den nye malen rett inn i malvelgeren
+      } else {
+        malMelding[prosjekt.slug] = `Feil: ${d.feil ?? r.status}`
       }
     } catch {
-      malMelding = 'Feil: fikk ikke kontakt med lobbyen.'
+      malMelding[prosjekt.slug] = 'Feil: fikk ikke kontakt med lobbyen.'
     }
   }
 
@@ -484,6 +493,7 @@
                   oppdaterer malen.
                 </p>
                 <form
+                  class="malskjema"
                   onsubmit={(e) => {
                     e.preventDefault()
                     lagreSomMal(prosjekt)
@@ -491,22 +501,37 @@
                 >
                   <input
                     placeholder="Malens navn, f.eks. DEFA kaldstart"
-                    bind:value={malNavn}
+                    bind:value={malNavn[prosjekt.slug]}
                     disabled={opptatt}
                   />
                   <!-- Jørn 17.10: med innhold (webside + funksjonalitet,
                        uten chat) ELLER ren mal (purged skjelett). -->
                   <label class="malvalg-innhold">
-                    <input type="checkbox" bind:checked={malMedInnhold} disabled={opptatt} />
-                    Inkluder nåværende webside og programfunksjonalitet i malen
-                    (ellers lagres et rent malskjelett)
+                    <input
+                      type="checkbox"
+                      checked={malMedInnhold[prosjekt.slug] ?? true}
+                      onchange={(e) => (malMedInnhold[prosjekt.slug] = e.currentTarget.checked)}
+                      disabled={opptatt}
+                    />
+                    <span>
+                      Inkluder nåværende webside og programfunksjonalitet i
+                      malen (ellers lagres et rent malskjelett)
+                    </span>
                   </label>
-                  <button class="k15-btn k15-btn-secondary" disabled={opptatt || !malNavn.trim()}>
+                  <button
+                    class="k15-btn k15-btn-secondary"
+                    disabled={opptatt || !(malNavn[prosjekt.slug] ?? '').trim()}
+                  >
                     Lagre malen
                   </button>
                 </form>
-                {#if malMelding}
-                  <p class="hint">{malMelding}</p>
+                {#if malMelding[prosjekt.slug]}
+                  <p class="hint">
+                    {malMelding[prosjekt.slug]}
+                    {#if malLenke[prosjekt.slug]}
+                      <a href={malLenke[prosjekt.slug]} target="_blank" rel="noreferrer">Se malen</a>
+                    {/if}
+                  </p>
                 {/if}
               </details>
 
@@ -746,16 +771,43 @@
     font-size: 12px;
     color: var(--k15-noytralgraa);
   }
+  /* «Lagre som mal»-skjemaet (Jørn 17.10, runde 3): kolonne nedover —
+     fullbreddefelt, checkbox-rad, knapp. De globale input-stilene
+     (flex/min-bredde/ramme) må overstyres for checkboxen. */
+  .malskjema {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    margin-top: 10px;
+  }
+  .malskjema > input {
+    flex: none;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .malskjema button {
+    align-self: flex-start;
+  }
   .malvalg-innhold {
     display: flex;
     align-items: flex-start;
-    gap: 0.5rem;
-    margin: 0.5rem 0;
-    font-size: 0.85rem;
-    color: var(--k15-dus, #555);
+    gap: 8px;
+    margin: 0;
+    font-size: 12.5px;
+    color: var(--k15-noytralgraa);
+    text-align: left;
+    cursor: pointer;
   }
   .malvalg-innhold input {
-    margin-top: 0.2rem;
+    flex: none;
+    width: 16px;
+    height: 16px;
+    min-width: 0;
+    margin: 1px 0 0;
+    padding: 0;
+    border: none;
+    accent-color: var(--k15-blaagraa-mork);
   }
 
   .slett {

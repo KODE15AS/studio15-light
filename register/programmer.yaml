@@ -30,6 +30,10 @@ programmer:
     navn: Okt 17 test 2 fra min mal slettmeg
     repo: https://github.com/KODE15AS-Nybegynner/okt-17-test-2-fra-min-mal-slettmeg.git
     mal: nybegynner
+  - slug: okt-17-test-3-fra-nybeg-slettmeg
+    navn: Okt 17 test 3 fra Nybeg slettmeg
+    repo: https://github.com/KODE15AS-Nybegynner/okt-17-test-3-fra-nybeg-slettmeg.git
+    mal: nybegynner
 - slug: ekspert
   navn: Ekspert
   github_org: KODE15-Ekspert
