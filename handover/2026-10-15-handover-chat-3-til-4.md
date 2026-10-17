@@ -161,6 +161,17 @@ LiteLLM-proxyen.**
   - Kopi av tidligere prosjekt = «Lagre som mal» + nytt prosjekt fra
     malen (bevisst: én mekanisme, ikke to).
 
+## Verktøyroller og Zoo-funksjonsliste (17.10)
+
+- Ny norm «verktøy» i `raven-platform/README.md` (Jørns beslutning):
+  Cursor = backend (utviklingsarbeid på plattformen, Jørn), Zoo Code =
+  frontend (sluttbrukere/deltakere i produktene; Jørn kun testing).
+  Motiv: full tilpassbarhet + forberedt hybrid modellkjøring (RTX 5080 /
+  Zoo-økosystemets modeller); claude fable 5 i dag er bekvemmelighet.
+- Jørns påminnelsesliste over Zoo-funksjonalitet er kryssjekket mot
+  3.87-dist-en (alt verifisert, inkl. followup-svar med modusbytte og
+  `.roo/mcp.json` per prosjekt) og bor i `docs/zoo-funksjonalitet.md`.
+
 ## Annet verdt å vite (fra 15.10)
 
 - Zoo-funksjoner kartlagt og tilgjengelige ved behov: `.rooignore`

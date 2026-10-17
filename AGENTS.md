@@ -1,6 +1,6 @@
 # AGENTS.md — studio15-light
 
-- Følg RAVEN-normene i `raven-platform/README.md` (handover, cursor, kontoer,
+- Følg RAVEN-normene i `raven-platform/README.md` (handover, cursor, verktøy, kontoer,
   tbd, container, stack, lenker, web-profil, bestilling, språk).
 - Start hver chat med å lese `handover/HANDOVER.md` og siste daterte
   handover — «les handover» er nok som første melding.
