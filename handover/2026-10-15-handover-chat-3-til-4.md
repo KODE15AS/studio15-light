@@ -138,13 +138,28 @@ LiteLLM-proxyen.**
 - E2E-verifisert 17.10: nybegynner-prosjekt → `mal-nybegynner-standard`
   i STUDIO15-Maler med korrekt `mal.yaml` (ui: nybegynner). Malen står
   igjen som eksempel; testprosjektet er slettet.
-- NESTE steg (Jørns bestilling): nytt prosjekt skal kunne starte fra
-  (a) en mal i STUDIO15-Maler eller (b) kopi av et tidligere prosjekt —
-  malvelgeren i «Nytt prosjekt»-skjemaet må liste org-ens `mal-*`-repoer
-  og seede derfra. Merk: malen bærer kildeprosjektets navn i
-  package.json/index.html (ingen __PROSJEKTNAVN__-plassholdere lenger);
-  seeding fra mal bør flette nytt prosjektnavn med søk/erstatt på
-  kildenavnet fra mal.yaml, eller la det stå.
+- Runde 2 (17.10, etter Jørns test): komplett malsirkel bygget og
+  E2E-verifisert.
+  - «Lagre som mal» har to varianter (Jørns beslutning): MED innhold
+    (webside + programfunksjonalitet, aldri chatten — standard,
+    avkrysningsboks i skjemaet) eller REN mal (purged skjelett for samme
+    ui-regime). Før innholds-lagring kjøres git-flush (commit+push) i
+    prosjektets kjørende containere — autosaven går bare hvert
+    2. minutt, så uten flush manglet de siste minuttenes arbeid (det
+    var dette Jørn opplevde som «sletter alle brukerdata»).
+  - Plassholder-reversering: ved lagring flettes kildeprosjektets
+    navn/slug TILBAKE til __PROSJEKTNAVN__/__PROSJEKTSLUG__ i
+    flettefilene, så neste prosjekt fra malen får sitt eget navn.
+  - Malvelgeren i «Nytt prosjekt» henter nå GET /api/maler = `mal-*` i
+    STUDIO15-Maler (mal.yaml gir navn/ui/beskrivelse); innebygde
+    skjeletter er reserve når org-en er utilgjengelig. De tre innebygde
+    malene er flyttet inn i org-en (mal-full, mal-nybegynner,
+    mal-ekspert, med plassholdere intakt).
+  - Seeding fra org-mal: grunn klon → mal.yaml ut → navnefletting →
+    push. E2E: prosjekt fra mal → endring → lagret som mal med innhold
+    → nytt prosjekt fra den malen arvet innholdet med riktig navn.
+  - Kopi av tidligere prosjekt = «Lagre som mal» + nytt prosjekt fra
+    malen (bevisst: én mekanisme, ikke to).
 
 ## Annet verdt å vite (fra 15.10)
 

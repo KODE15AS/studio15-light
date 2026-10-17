@@ -21,7 +21,15 @@ programmer:
 - slug: nybegynner
   navn: Nybegynner
   github_org: KODE15AS-Nybegynner
-  prosjekter: []
+  prosjekter:
+  - slug: okt-17-test-1-nybegynner-slettmeg
+    navn: Okt 17 test 1 nybegynner slettmeg
+    repo: https://github.com/KODE15AS-Nybegynner/okt-17-test-1-nybegynner-slettmeg.git
+    mal: nybegynner
+  - slug: okt-17-test-2-fra-min-mal-slettmeg
+    navn: Okt 17 test 2 fra min mal slettmeg
+    repo: https://github.com/KODE15AS-Nybegynner/okt-17-test-2-fra-min-mal-slettmeg.git
+    mal: nybegynner
 - slug: ekspert
   navn: Ekspert
   github_org: KODE15-Ekspert

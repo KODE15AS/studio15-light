@@ -349,6 +349,27 @@ impl Driver {
         }
     }
 
+    /// Commit + push av arbeidsflatens NÅVÆRENDE tilstand («Lagre som
+    /// mal», Jørn 17.10): autosaven går hvert 2. minutt, så uten denne
+    /// flushen kunne de siste minuttenes arbeid mangle i malen.
+    /// Best effort som autosaven — push-feil tolereres stille.
+    pub async fn git_flush(&self, kortnavn: &str) -> anyhow::Result<()> {
+        match self {
+            Driver::Mock(_) => Ok(()),
+            Driver::Docker(d) => {
+                exec_sh(
+                    d,
+                    kortnavn,
+                    "cd /home/coder/project && git add -A && \
+                     { git diff --cached --quiet || git commit -m 'Lagret som mal' >/dev/null; } && \
+                     git push >/dev/null 2>&1 || true",
+                )
+                .await?;
+                Ok(())
+            }
+        }
+    }
+
     /// Fjerner container + prosjektvolum. Del av sletteregimet
     /// («sletting er sletting»).
     pub async fn remove_workspace(&self, kortnavn: &str) -> anyhow::Result<()> {

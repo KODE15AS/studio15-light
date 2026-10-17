@@ -201,6 +201,53 @@ impl Vaktmester {
         Ok(format!("https://github.com/{org}/{repo}.git"))
     }
 
+    /// Org-bredt token til flere leseoperasjoner på rad (malvelgeren) —
+    /// spares IKKE utover kallerens levetid (tokens hentes alltid ferskt).
+    pub async fn org_token(&self, org: &str) -> anyhow::Result<Token> {
+        self.token(org, None).await
+    }
+
+    /// Lister repo-navnene i org-en (malvelgeren: `mal-*` i mal-org-en).
+    pub async fn list_repoer(&self, org: &str, tok: &str) -> anyhow::Result<Vec<String>> {
+        let (status, body) = self
+            .github(
+                reqwest::Method::GET,
+                &format!("/orgs/{org}/repos?per_page=100"),
+                tok,
+                None,
+            )
+            .await?;
+        if !status.is_success() {
+            anyhow::bail!("repo-listing i «{org}» feilet ({status}): {body}");
+        }
+        Ok(body
+            .as_array()
+            .map(|a| {
+                a.iter()
+                    .filter_map(|r| r["name"].as_str().map(str::to_string))
+                    .collect()
+            })
+            .unwrap_or_default())
+    }
+
+    /// Leser en fil fra repoet (rått innhold via contents-API-et) —
+    /// brukes til malenes `mal.yaml`. Feiler når fila ikke finnes.
+    pub async fn les_fil(&self, org: &str, repo: &str, sti: &str, tok: &str) -> anyhow::Result<String> {
+        let svar = self
+            .http
+            .get(format!("{API}/repos/{org}/{repo}/contents/{sti}"))
+            .bearer_auth(tok)
+            .header("Accept", "application/vnd.github.raw+json")
+            .header("X-GitHub-Api-Version", "2022-11-28")
+            .send()
+            .await?;
+        let status = svar.status();
+        if !status.is_success() {
+            anyhow::bail!("fant ikke {org}/{repo}/{sti} ({status})");
+        }
+        Ok(svar.text().await?)
+    }
+
     /// Sletter repoet (Administration RW — E2E-verifisert 03.10).
     /// 404 tolereres: borte er borte.
     pub async fn slett_repo(&self, org: &str, repo: &str) -> anyhow::Result<()> {

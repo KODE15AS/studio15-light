@@ -42,25 +42,21 @@
   let nyttProsjektMal = $state('full')
   let visNyttProsjekt = $state(false)
 
-  // Prosjektmalene (Jørn 05.10, testrapport 3) — navnene er Jørns.
-  const maler = [
-    {
-      id: 'full',
-      navn: 'Full Zoo Code UI og minimal konfetti-webside',
-      hjelp: 'Svelte + Vite med levende webside og hele editoren synlig.',
-    },
-    {
-      id: 'nybegynner',
-      navn: 'Nybegynner for enkle spill og samarbeide',
-      hjelp: 'Ryddet skjerm: websiden øverst, spilloppgave i fire trinn og hjelperen under.',
-    },
-    {
-      id: 'ekspert',
-      navn: 'Ekspert for profesjonelle prosjekter',
-      hjelp:
-        'Ryddet skjerm uten føringer: agenten kjenner raven-miljøet, prosjektbriefen styrer. Dokumenter lastes opp fra skjermen.',
-    },
-  ]
+  // Malvelgeren (Jørn 17.10): malene bor som mal-*-repoer i mal-org-en
+  // (STUDIO15-Maler) og hentes fra lobbyen — «Lagre som mal» gjør at nye
+  // maler dukker opp her av seg selv. Lobbyen faller tilbake til de
+  // innebygde skjelettene når org-en er utilgjengelig.
+  type Mal = { id: string; navn: string; ui: string; beskrivelse: string }
+  let maler: Mal[] = $state([])
+  async function hentMaler() {
+    try {
+      const r = await fetch('/api/maler')
+      if (r.ok) maler = (await r.json()).maler ?? []
+    } catch {
+      /* beholder forrige liste */
+    }
+  }
+  hentMaler()
 
   // Samme slugify som lobbyen (validering vises live — Jørn 05.10):
   // navnet blir en adresse, så æ/ø/å og tegn oversettes.
@@ -152,8 +148,10 @@
     )
   }
 
-  // «Lagre som mal» (17.10): prosjektet pushes renset til mal-org-en.
+  // «Lagre som mal» (17.10): prosjektet pushes til mal-org-en — med
+  // webside/funksjonalitet (standard) eller som rent skjelett (purged).
   let malNavn = $state('')
+  let malMedInnhold = $state(true)
   let malMelding = $state('')
   async function lagreSomMal(prosjekt: Prosjekt) {
     if (!gruppen || !malNavn.trim()) return
@@ -162,13 +160,16 @@
       const r = await fetch(`/api/prosjekter/${gruppen.slug}/${prosjekt.slug}/lagre-som-mal`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ navn: malNavn.trim() }),
+        body: JSON.stringify({ navn: malNavn.trim(), inkluder_innhold: malMedInnhold }),
       })
       const d = await r.json().catch(() => ({}))
       malMelding = r.ok
         ? `Malen «${malNavn.trim()}» er lagret: ${d.repo}`
         : `Feil: ${d.feil ?? r.status}`
-      if (r.ok) malNavn = ''
+      if (r.ok) {
+        malNavn = ''
+        hentMaler() // den nye malen rett inn i malvelgeren
+      }
     } catch {
       malMelding = 'Feil: fikk ikke kontakt med lobbyen.'
     }
@@ -321,15 +322,18 @@
           <div class="k15-card orgflyt">
             <span class="k15-kicker">Nytt prosjekt</span>
             <h3>Lag nytt prosjekt</h3>
-            <!-- Malvelger (Jørn 05.10, testrapport 3) -->
+            <!-- Malvelger (Jørn 17.10): listen kommer fra mal-org-en -->
             <div class="malvalg">
               {#each maler as m}
                 <label class="mal" class:valgt={nyttProsjektMal === m.id}>
                   <input type="radio" name="mal" value={m.id} bind:group={nyttProsjektMal} />
                   <strong>{m.navn}</strong>
-                  <span>{m.hjelp}</span>
+                  <span>{m.beskrivelse}</span>
                 </label>
               {/each}
+              {#if maler.length === 0}
+                <p class="hint">Henter maler …</p>
+              {/if}
             </div>
             <form
               class="rad"
@@ -458,9 +462,9 @@
               <details class="slett">
                 <summary>Lagre som mal</summary>
                 <p>
-                  Lager en gjenbrukbar mal av prosjektet slik det er nå
-                  (uten innboks-innhold og kjørefiler). Samme malnavn på
-                  nytt oppdaterer malen.
+                  Lager en gjenbrukbar mal av prosjektet. Samtalen
+                  (chatten) blir aldri med. Samme malnavn på nytt
+                  oppdaterer malen.
                 </p>
                 <form
                   onsubmit={(e) => {
@@ -473,6 +477,13 @@
                     bind:value={malNavn}
                     disabled={opptatt}
                   />
+                  <!-- Jørn 17.10: med innhold (webside + funksjonalitet,
+                       uten chat) ELLER ren mal (purged skjelett). -->
+                  <label class="malvalg-innhold">
+                    <input type="checkbox" bind:checked={malMedInnhold} disabled={opptatt} />
+                    Inkluder nåværende webside og programfunksjonalitet i malen
+                    (ellers lagres et rent malskjelett)
+                  </label>
                   <button class="k15-btn k15-btn-secondary" disabled={opptatt || !malNavn.trim()}>
                     Lagre malen
                   </button>
@@ -680,6 +691,18 @@
     font-size: 12px;
     color: var(--k15-noytralgraa);
   }
+  .malvalg-innhold {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin: 0.5rem 0;
+    font-size: 0.85rem;
+    color: var(--k15-dus, #555);
+  }
+  .malvalg-innhold input {
+    margin-top: 0.2rem;
+  }
+
   .slett {
     margin-top: 14px;
     font-size: 13px;

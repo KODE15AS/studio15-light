@@ -555,23 +555,51 @@ fn kjor(cmd: &mut std::process::Command) -> anyhow::Result<()> {
     Ok(())
 }
 
-/// Seeder et tomt remote-repo (bare-repo ELLER GitHub) fra prosjektmalen:
-/// git init → malen inn med navnefletting → commit → push HEAD:main.
-fn seed_fra_mal(app: &App, repo_slug: &str, navn: &str, mal: &str, remote: &str) -> anyhow::Result<()> {
+/// Hvor malinnholdet hentes fra ved seeding (Jørn 17.10: malene bor i
+/// mal-org-en; de innebygde skjelettene er reserve når org-en mangler).
+enum MalKilde {
+    /// Lokal skjelettmappe under PROSJEKTMAL (ui-regimet er mappenavnet).
+    Skjelett(String),
+    /// Klone-URL (med ferskt token) til en `mal-*` i mal-org-en.
+    Klon(String),
+}
+
+/// Filene som bærer prosjektnavnet — flettes ved seeding, og navnet
+/// byttes TILBAKE til plassholdere når et prosjekt lagres som mal.
+const FLETTEFILER: &[&str] = &[
+    "package.json",
+    "index.html",
+    "src/App.svelte",
+    // Ekspert-malen (09.10): skjelettene bærer også prosjektnavnet
+    "README.md",
+    "handover/HANDOVER.md",
+];
+
+/// Seeder et tomt remote-repo (bare-repo ELLER GitHub) fra en mal:
+/// malinnhold inn → navnefletting → git init → commit → push HEAD:main.
+fn seed_fra_mal(
+    app: &App,
+    repo_slug: &str,
+    navn: &str,
+    kilde: &MalKilde,
+    remote: &str,
+) -> anyhow::Result<()> {
     use std::process::Command;
     let tmp = format!("/tmp/seed-{repo_slug}");
     let _ = std::fs::remove_dir_all(&tmp);
-    kjor(Command::new("git").args(["init", "-b", "main", &tmp]))?;
-    kjor(Command::new("cp").args(["-rT", &format!("{}/{mal}", app.cfg.prosjektmal), &tmp]))?;
+    match kilde {
+        MalKilde::Skjelett(ui) => {
+            kjor(Command::new("cp").args(["-rT", &format!("{}/{ui}", app.cfg.prosjektmal), &tmp]))?;
+        }
+        MalKilde::Klon(url) => {
+            kjor(Command::new("git").args(["clone", "--depth", "1", url, &tmp]))?;
+            let _ = std::fs::remove_dir_all(format!("{tmp}/.git"));
+            // mal.yaml er malens metadata — ikke prosjektinnhold.
+            let _ = std::fs::remove_file(format!("{tmp}/mal.yaml"));
+        }
+    }
     // Flett prosjektnavnet inn i malen
-    for fil in [
-        "package.json",
-        "index.html",
-        "src/App.svelte",
-        // Ekspert-malen (09.10): skjelettene bærer også prosjektnavnet
-        "README.md",
-        "handover/HANDOVER.md",
-    ] {
+    for fil in FLETTEFILER {
         let sti = format!("{tmp}/{fil}");
         if let Ok(innhold) = std::fs::read_to_string(&sti) {
             let nytt = innhold
@@ -580,6 +608,7 @@ fn seed_fra_mal(app: &App, repo_slug: &str, navn: &str, mal: &str, remote: &str)
             std::fs::write(&sti, nytt)?;
         }
     }
+    kjor(Command::new("git").args(["init", "-b", "main", &tmp]))?;
     kjor(Command::new("git").args(["-C", &tmp, "add", "-A"]))?;
     kjor(Command::new("git").args([
         "-C", &tmp,
@@ -594,7 +623,7 @@ fn seed_fra_mal(app: &App, repo_slug: &str, navn: &str, mal: &str, remote: &str)
 
 /// Oppretter prosjektets bare-repo på repos-volumet og seeder det fra
 /// prosjektmalen. Brukes av programmer UTEN GitHub-org (lokale prosjekter).
-fn seed_bare_repo(app: &App, repo_slug: &str, navn: &str, mal: &str) -> anyhow::Result<String> {
+fn seed_bare_repo(app: &App, repo_slug: &str, navn: &str, kilde: &MalKilde) -> anyhow::Result<String> {
     use std::process::Command;
     let bare = format!("{}/{}.git", app.cfg.repos_dir, repo_slug);
     let url = format!("file://{bare}");
@@ -602,7 +631,7 @@ fn seed_bare_repo(app: &App, repo_slug: &str, navn: &str, mal: &str) -> anyhow::
         return Ok(url); // idempotent: «prøv igjen» er alltid trygt
     }
     kjor(Command::new("git").args(["init", "--bare", "-b", "main", &bare]))?;
-    seed_fra_mal(app, repo_slug, navn, mal, &url)?;
+    seed_fra_mal(app, repo_slug, navn, kilde, &url)?;
     // Arbeidsflatene kjører som coder (uid 1000) og skal både klone fra og
     // pushe til repoet — lobbyen kjører som root, så eierskapet må over
     // (samme klasse felle som testfunn 10: root-eide volumer).
@@ -618,7 +647,7 @@ async fn seed_github_repo(
     org: &str,
     repo_slug: &str,
     navn: &str,
-    mal: &str,
+    kilde: &MalKilde,
 ) -> anyhow::Result<String> {
     let vm = app
         .vaktmester
@@ -631,9 +660,142 @@ async fn seed_github_repo(
     let tok = vm.repo_token(org, repo_slug).await?;
     let auth = format!("https://x-access-token:{}@github.com/{org}/{repo_slug}.git", tok.token);
     // Tokenet må aldri lekke i feilmeldinger (git siterer gjerne URL-en).
-    seed_fra_mal(app, repo_slug, navn, mal, &auth)
+    seed_fra_mal(app, repo_slug, navn, kilde, &auth)
         .map_err(|e| anyhow::anyhow!("{}", e.to_string().replace(&tok.token, "***")))?;
     Ok(url)
+}
+
+/// Innebygde malskjeletter (Jørn 05.10) — navnene er Jørns. Brukes som
+/// reserve i malvelgeren når mal-org-en er utilgjengelig, og som kilde
+/// for «ren mal» i «Lagre som mal».
+const INNEBYGDE_MALER: &[(&str, &str, &str)] = &[
+    (
+        "full",
+        "Full Zoo Code UI og minimal konfetti-webside",
+        "Svelte + Vite med levende webside og hele editoren synlig.",
+    ),
+    (
+        "nybegynner",
+        "Nybegynner for enkle spill og samarbeide",
+        "Ryddet skjerm: websiden øverst, spilloppgave i fire trinn og hjelperen under.",
+    ),
+    (
+        "ekspert",
+        "Ekspert for profesjonelle prosjekter",
+        "Ryddet skjerm uten føringer: agenten kjenner raven-miljøet, prosjektbriefen \
+         styrer. Dokumenter lastes opp fra skjermen.",
+    ),
+];
+
+/// Malens metadata (mal.yaml i hvert `mal-*`-repo).
+#[derive(Deserialize)]
+struct MalYaml {
+    navn: String,
+    ui: String,
+    #[serde(default)]
+    beskrivelse: String,
+    #[serde(default)]
+    kilde: String,
+    #[serde(default)]
+    lagret: String,
+}
+
+fn innebygde_maler_json() -> Vec<serde_json::Value> {
+    INNEBYGDE_MALER
+        .iter()
+        .map(|(id, navn, beskrivelse)| {
+            json!({ "id": id, "navn": navn, "ui": id, "beskrivelse": beskrivelse })
+        })
+        .collect()
+}
+
+/// Malvelgeren (Jørn 17.10): malene bor som `mal-*`-repoer i mal-org-en.
+/// Utilgjengelig org (f.eks. uten nett) faller tilbake til de innebygde
+/// skjelettene, så studioet alltid kan lage prosjekter.
+async fn liste_maler(State(app): State<Arc<App>>) -> Response {
+    let mut maler = Vec::new();
+    if let Some(vm) = app.vaktmester.as_ref() {
+        let org = mal_org();
+        match vm.org_token(&org).await {
+            Ok(tok) => match vm.list_repoer(&org, &tok.token).await {
+                Ok(repoer) => {
+                    for repo in repoer.iter().filter(|r| r.starts_with("mal-")) {
+                        match vm.les_fil(&org, repo, "mal.yaml", &tok.token).await {
+                            Ok(y) => match serde_yaml::from_str::<MalYaml>(&y) {
+                                Ok(m) => maler.push(json!({
+                                    "id": repo.strip_prefix("mal-").unwrap_or(repo),
+                                    "navn": m.navn,
+                                    "ui": m.ui,
+                                    "beskrivelse": if m.beskrivelse.is_empty() {
+                                        format!("Lagret {} fra {}.", m.lagret, m.kilde)
+                                    } else {
+                                        m.beskrivelse
+                                    },
+                                    "lagret": m.lagret,
+                                })),
+                                Err(e) => eprintln!("[maler] ugyldig mal.yaml i {repo}: {e}"),
+                            },
+                            Err(e) => eprintln!("[maler] {repo} mangler mal.yaml: {e}"),
+                        }
+                    }
+                }
+                Err(e) => eprintln!("[maler] mal-org-en er utilgjengelig: {e}"),
+            },
+            Err(e) => eprintln!("[maler] mal-org-en er utilgjengelig: {e}"),
+        }
+    }
+    if maler.is_empty() {
+        maler = innebygde_maler_json();
+    }
+    maler.sort_by(|a, b| a["navn"].as_str().unwrap_or("").cmp(b["navn"].as_str().unwrap_or("")));
+    Json(json!({ "maler": maler })).into_response()
+}
+
+/// Slår opp malen for prosjektopprettelse: `mal-<id>` i mal-org-en
+/// (ui-regimet står i mal.yaml), ellers innebygd skjelett med samme id.
+/// Returnerer (ui-regime, seedingkilde).
+async fn finn_mal(app: &App, mal_id: &str) -> anyhow::Result<(String, MalKilde)> {
+    if let Some(vm) = app.vaktmester.as_ref() {
+        let org = mal_org();
+        let repo = format!("mal-{mal_id}");
+        if let Ok(tok) = vm.org_token(&org).await {
+            if let Ok(y) = vm.les_fil(&org, &repo, "mal.yaml", &tok.token).await {
+                let m: MalYaml = serde_yaml::from_str(&y)?;
+                let ui = if MALER.contains(&m.ui.as_str()) {
+                    m.ui
+                } else {
+                    "full".to_string()
+                };
+                let t = vm.repo_token(&org, &repo).await?;
+                return Ok((
+                    ui,
+                    MalKilde::Klon(format!(
+                        "https://x-access-token:{}@github.com/{org}/{repo}.git",
+                        t.token
+                    )),
+                ));
+            }
+        }
+    }
+    if MALER.contains(&mal_id) {
+        return Ok((mal_id.to_string(), MalKilde::Skjelett(mal_id.to_string())));
+    }
+    anyhow::bail!("ukjent prosjektmal «{mal_id}»")
+}
+
+/// Skjuler eventuelle tokens fra en Klon-kilde i feilmeldinger
+/// (git siterer gjerne URL-en).
+fn skjul_token(tekst: String, kilde: &MalKilde) -> String {
+    if let MalKilde::Klon(url) = kilde {
+        if let Some(t) = url
+            .split("x-access-token:")
+            .nth(1)
+            .and_then(|s| s.split('@').next())
+        {
+            return tekst.replace(t, "***");
+        }
+    }
+    tekst
 }
 
 async fn nytt_prosjekt(State(app): State<Arc<App>>, Json(b): Json<NyttProsjekt>) -> Response {
@@ -641,10 +803,13 @@ async fn nytt_prosjekt(State(app): State<Arc<App>>, Json(b): Json<NyttProsjekt>)
     if slug.is_empty() {
         return feil(StatusCode::BAD_REQUEST, "prosjektnavnet gir ingen gyldig slug");
     }
-    let mal = b.mal.unwrap_or_else(register::mal_standard);
-    if !MALER.contains(&mal.as_str()) {
-        return feil(StatusCode::BAD_REQUEST, "ukjent prosjektmal");
-    }
+    let mal_id = b.mal.unwrap_or_else(register::mal_standard);
+    // Malvelgeren (17.10): malene bor i mal-org-en; innebygde skjeletter
+    // er reserve. ui-regimet (registerfeltet `mal`) styrer skjermlayouten.
+    let (mal, kilde) = match finn_mal(&app, &mal_id).await {
+        Ok(x) => x,
+        Err(e) => return feil(StatusCode::BAD_REQUEST, &e.to_string()),
+    };
     let mut reg = app.register.lock().await;
     let Some(prog) = reg.programmer.iter_mut().find(|p| p.slug == b.program) else {
         return feil(StatusCode::NOT_FOUND, "ukjent program");
@@ -673,14 +838,20 @@ async fn nytt_prosjekt(State(app): State<Arc<App>>, Json(b): Json<NyttProsjekt>)
         format!("file:///repos/{repo_slug}.git")
     } else if let Some(org) = &github_org {
         // Repo-navnet i org-en er prosjekt-sluggen (org-en ER programmet).
-        match seed_github_repo(&app, org, &slug, &b.navn, &mal).await {
+        match seed_github_repo(&app, org, &slug, &b.navn, &kilde).await {
             Ok(u) => u,
-            Err(e) => return feil(StatusCode::INTERNAL_SERVER_ERROR, &format!("github: {e}")),
+            Err(e) => {
+                let t = skjul_token(e.to_string(), &kilde);
+                return feil(StatusCode::INTERNAL_SERVER_ERROR, &format!("github: {t}"));
+            }
         }
     } else {
-        match seed_bare_repo(&app, &repo_slug, &b.navn, &mal) {
+        match seed_bare_repo(&app, &repo_slug, &b.navn, &kilde) {
             Ok(u) => u,
-            Err(e) => return feil(StatusCode::INTERNAL_SERVER_ERROR, &format!("repo: {e}")),
+            Err(e) => {
+                let t = skjul_token(e.to_string(), &kilde);
+                return feil(StatusCode::INTERNAL_SERVER_ERROR, &format!("repo: {t}"));
+            }
         }
     };
     prog.prosjekter.push(Prosjekt {
@@ -705,12 +876,22 @@ fn mal_org() -> String {
 #[derive(Deserialize)]
 struct LagreSomMal {
     navn: String,
+    /// true (standard): websiden og programfunksjonaliteten blir med i
+    /// malen (men aldri chatten). false: rent malskjelett (purged) —
+    /// samme ui-regime, uten prosjektinnholdet.
+    #[serde(default = "ja")]
+    inkluder_innhold: bool,
 }
 
-/// «Lagre som mal» (Jørn 17.10): renset kopi av prosjektrepoet pushes som
-/// `mal-<slug>` til mal-org-en. Force-push gjør knappen idempotent — å
-/// lagre på nytt OPPDATERER malen. Rensingen fjerner kjøre-/historikk-
-/// artefakter (innboks-innhold, dist, .zoo); resten ER malen.
+fn ja() -> bool {
+    true
+}
+
+/// «Lagre som mal» (Jørn 17.10): kopi av prosjektet pushes som
+/// `mal-<slug>` til mal-org-en. To varianter (Jørns beslutning 17.10):
+/// MED innhold (webside + programfunksjonalitet, uten chat) eller REN
+/// (purged — malskjelettet for samme ui-regime). Force-push gjør knappen
+/// idempotent — å lagre på nytt med samme navn OPPDATERER malen.
 async fn lagre_som_mal(
     State(app): State<Arc<App>>,
     Path((program, prosjekt)): Path<(String, String)>,
@@ -739,17 +920,36 @@ async fn lagre_som_mal(
         };
         (pr.repo.clone(), pr.mal.clone(), pr.navn.clone())
     };
-    // Klonekilde: GitHub-repoer trenger ferskt token; file:// går rett.
-    let kilde = if let Some((korg, krepo)) = vaktmester::parse_github_url(&repo_url) {
-        match vm.repo_token(&korg, &krepo).await {
-            Ok(t) => format!(
-                "https://x-access-token:{}@github.com/{korg}/{krepo}.git",
-                t.token
-            ),
-            Err(e) => return feil(StatusCode::INTERNAL_SERVER_ERROR, &format!("github: {e}")),
+    let kilde = if b.inkluder_innhold {
+        // Arbeidsflatens NÅVÆRENDE tilstand skal med: flush (commit+push)
+        // i kjørende containere først — autosaven går bare hvert 2. minutt.
+        if let Ok(flater) = app.driver.list().await {
+            for f in flater
+                .iter()
+                .filter(|f| f.program == program && f.prosjekt == prosjekt && f.running)
+            {
+                if let Err(e) = app.driver.git_flush(&f.kortnavn).await {
+                    eprintln!("[mal] git-flush i {} feilet: {e}", f.kortnavn);
+                }
+            }
+        }
+        // Klonekilde: GitHub-repoer trenger ferskt token; file:// går rett.
+        if let Some((korg, krepo)) = vaktmester::parse_github_url(&repo_url) {
+            match vm.repo_token(&korg, &krepo).await {
+                Ok(t) => MalKilde::Klon(format!(
+                    "https://x-access-token:{}@github.com/{korg}/{krepo}.git",
+                    t.token
+                )),
+                Err(e) => {
+                    return feil(StatusCode::INTERNAL_SERVER_ERROR, &format!("github: {e}"))
+                }
+            }
+        } else {
+            MalKilde::Klon(repo_url.clone())
         }
     } else {
-        repo_url.clone()
+        // Ren mal (purged): malskjelettet for prosjektets ui-regime.
+        MalKilde::Skjelett(ui_regime.clone())
     };
     let org = mal_org();
     let mal_repo = format!("mal-{mal_slug}");
@@ -764,19 +964,31 @@ async fn lagre_som_mal(
         "https://x-access-token:{}@github.com/{org}/{mal_repo}.git",
         mal_tok.token
     );
+    // Repo-sluggen slik seedingen flettet den inn (plassholder-reversering).
+    let repo_slug = repo_url
+        .rsplit('/')
+        .next()
+        .unwrap_or("")
+        .trim_end_matches(".git")
+        .to_string();
+    let beskrivelse = if b.inkluder_innhold {
+        format!("Lagret fra prosjektet «{kilde_navn}» med webside og funksjonalitet.")
+    } else {
+        format!("Rent malskjelett ({ui_regime}) lagret fra prosjektet «{kilde_navn}».")
+    };
     let res = bygg_og_push_mal(
+        &app,
         &kilde,
         &remote,
         &b.navn,
         &ui_regime,
         &format!("{program}/{prosjekt} ({kilde_navn})"),
+        &beskrivelse,
+        (&kilde_navn, &repo_slug),
     );
     if let Err(e) = res {
         // Tokens må aldri lekke i feilmeldinger (git siterer URL-er).
-        let mut tekst = e.to_string().replace(&mal_tok.token, "***");
-        if let Some(t) = kilde.split("x-access-token:").nth(1).and_then(|s| s.split('@').next()) {
-            tekst = tekst.replace(t, "***");
-        }
+        let tekst = skjul_token(e.to_string().replace(&mal_tok.token, "***"), &kilde);
         return feil(StatusCode::INTERNAL_SERVER_ERROR, &format!("mal: {tekst}"));
     }
     Json(json!({
@@ -786,42 +998,72 @@ async fn lagre_som_mal(
     .into_response()
 }
 
-/// Selve mal-byggingen: klon kilden grunt, rens, legg på mal.yaml,
+/// Selve mal-byggingen: hent innholdet (grunn klon ELLER skjelettmappe),
+/// rens, flett prosjektnavnet TILBAKE til plassholdere, legg på mal.yaml,
 /// commit som ÉN ny historikk og force-push til malrepoet.
+#[allow(clippy::too_many_arguments)]
 fn bygg_og_push_mal(
-    kilde: &str,
+    app: &App,
+    kilde: &MalKilde,
     remote: &str,
     navn: &str,
     ui_regime: &str,
     kilde_beskrivelse: &str,
+    beskrivelse: &str,
+    plassholdere: (&str, &str),
 ) -> anyhow::Result<()> {
     use std::process::Command;
     let tmp = format!("/tmp/mal-{}", slugify(navn));
     let _ = std::fs::remove_dir_all(&tmp);
-    kjor(Command::new("git").args(["clone", "--depth", "1", kilde, &tmp]))?;
-    // Rens: git-historikk, kjøreartefakter og samtalehistorikk er ikke mal.
-    for sti in [".git", "dist", "node_modules", ".zoo"] {
-        let _ = std::fs::remove_dir_all(format!("{tmp}/{sti}"));
-    }
-    if let Ok(poster) = std::fs::read_dir(format!("{tmp}/innboks")) {
-        for p in poster.flatten() {
-            if p.file_name() != "les-meg.md" {
-                let _ = std::fs::remove_file(p.path());
+    match kilde {
+        MalKilde::Klon(url) => {
+            kjor(Command::new("git").args(["clone", "--depth", "1", url, &tmp]))?;
+            // Rens: git-historikk, kjøreartefakter og samtalehistorikk
+            // (.zoo) er ikke mal — websiden og koden ER malen.
+            for sti in [".git", "dist", "node_modules", ".zoo"] {
+                let _ = std::fs::remove_dir_all(format!("{tmp}/{sti}"));
             }
+            if let Ok(poster) = std::fs::read_dir(format!("{tmp}/innboks")) {
+                for p in poster.flatten() {
+                    if p.file_name() != "les-meg.md" {
+                        let _ = std::fs::remove_file(p.path());
+                    }
+                }
+            }
+            // Plassholder-reversering: kildeprosjektets navn ut, slik at
+            // neste prosjekt fra malen får SITT navn flettet inn.
+            let (prosjektnavn, repo_slug) = plassholdere;
+            for fil in FLETTEFILER {
+                let sti = format!("{tmp}/{fil}");
+                if let Ok(innhold) = std::fs::read_to_string(&sti) {
+                    let mut nytt = innhold;
+                    if !repo_slug.is_empty() {
+                        nytt = nytt.replace(repo_slug, "__PROSJEKTSLUG__");
+                    }
+                    if !prosjektnavn.is_empty() {
+                        nytt = nytt.replace(prosjektnavn, "__PROSJEKTNAVN__");
+                    }
+                    std::fs::write(&sti, nytt)?;
+                }
+            }
+        }
+        MalKilde::Skjelett(ui) => {
+            kjor(Command::new("cp").args(["-rT", &format!("{}/{ui}", app.cfg.prosjektmal), &tmp]))?;
         }
     }
     // mal.yaml: metadata lobbyen trenger når malen tas i bruk —
     // «ui» er UI-regimet (nybegynner/ekspert/full) flaten skal kjøre med.
+    // serde_yaml siterer verdiene trygt (malnavn kan inneholde hva som helst).
+    let meta = serde_yaml::to_string(&json!({
+        "navn": navn,
+        "ui": ui_regime,
+        "beskrivelse": beskrivelse,
+        "kilde": kilde_beskrivelse,
+        "lagret": chrono::Utc::now().format("%Y-%m-%d").to_string(),
+    }))?;
     std::fs::write(
         format!("{tmp}/mal.yaml"),
-        format!(
-            "# Studio 15 LIGHT-mal — brukes ved prosjektopprettelse\n\
-             navn: {navn}\n\
-             ui: {ui_regime}\n\
-             kilde: {kilde_beskrivelse}\n\
-             lagret: {}\n",
-            chrono::Utc::now().format("%Y-%m-%d")
-        ),
+        format!("# Studio 15 LIGHT-mal — brukes ved prosjektopprettelse\n{meta}"),
     )?;
     kjor(Command::new("git").args(["init", "-b", "main", &tmp]))?;
     kjor(Command::new("git").args(["-C", &tmp, "add", "-A"]))?;
@@ -1636,6 +1878,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/medspillere", get(medspillere))
         .route("/api/programmer", post(nytt_program))
         .route("/api/programmer/{program}", delete(slett_program))
+        .route("/api/maler", get(liste_maler))
         .route("/api/prosjekter", post(nytt_prosjekt))
         .route("/api/spilleplan/{mal}", get(spilleplan))
         .route("/api/prosjekter/{program}/{prosjekt}", delete(slett_prosjekt))
