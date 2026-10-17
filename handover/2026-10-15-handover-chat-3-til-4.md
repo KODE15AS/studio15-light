@@ -171,6 +171,12 @@ LiteLLM-proxyen.**
 - Jørns påminnelsesliste over Zoo-funksjonalitet er kryssjekket mot
   3.87-dist-en (alt verifisert, inkl. followup-svar med modusbytte og
   `.roo/mcp.json` per prosjekt) og bor i `docs/zoo-funksjonalitet.md`.
+- Norm «tbd» presisert (Jørn 17.10): TBD gjelder backend; frontend
+  (deltakernes prosjektrepoer) kjører TBD nå, men skal kunne flyttes til
+  GitHub Flow (branch → PR → senior-review → merge) senere — ikke bygg
+  frontend-flyt som antar at alt skjer på `main`. Berører på sikt
+  autosaven (pusher til main i dag), «Lagre som mal»-flushen og
+  git-flyten i arbeidsflatene.
 
 ## Annet verdt å vite (fra 15.10)
 
