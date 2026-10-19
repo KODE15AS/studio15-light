@@ -124,15 +124,16 @@
 # Wifi-inngangen (HTTPS, Let's Encrypt). Ren http (:8101-forsøket 04.10)
 # fungerte IKKE: Zoo-chatten er en webview som krever secure context —
 # panelet ble blankt. Derfor ekte sertifikat via DNS-navn på privat IP.
-# Sertifikatet dekker startside + lobby; gammelt navn redirectes.
+# Hovednavn er rot-domenet studio15.cloud (19.10 — Light overtok URL-en
+# fra fullversjonen). Gamle navn (startside, lobby) og www redirectes.
 :8102 {
-	tls /certs/startside.studio15.cloud.crt /certs/startside.studio15.cloud.key
-	@gammeltnavn host lobby.studio15.cloud
-	redir @gammeltnavn https://startside.studio15.cloud{uri} 308
+	tls /certs/studio15.cloud.crt /certs/studio15.cloud.key
+	@gammeltnavn host lobby.studio15.cloud startside.studio15.cloud www.studio15.cloud
+	redir @gammeltnavn https://studio15.cloud{uri} 308
 	import ruting
 }
 
-# Oppsamling for http://startside.studio15.cloud (og http://10.10.0.22)
+# Oppsamling for http://studio15.cloud (og http://10.10.0.33)
 :8103 {
-	redir https://startside.studio15.cloud{uri} 308
+	redir https://studio15.cloud{uri} 308
 }
