@@ -211,6 +211,37 @@ men den skal overleve oppfriskinger. Løsning: volum-varianten (gitignorert):
   første melding. Ettersees ved fremtidige Zoo-oppgraderinger; ekte
   løsning krever endring oppstrøms eller egen fork.
 
+## 19.10: Nettplan besluttet — FortiGate eier veien til enhetene
+
+Avklart med Jørn (han har FortiGate-admin; drengen `fortigate` har
+bestillingsflyt i drift). Wifi-«ruteren» var aldri en ruter: EAP650-Outdoor
+(AP, 10.10.0.10) henger rett på FortiGate 40F, som eier begge nett
+(Servernett 10.5.0.0/24 og Klientnett/wifi 10.10.0.0/24 = grensesnitt
+«lan») og er DHCP-server for wifi-nettet. Kabel→wifi var stengt kun fordi
+Servernett→lan-policy manglet.
+
+Besluttet plan (detaljer i fortigate/README «Planlagte ordrer»):
+
+1. Ordre `enhetsnett-adgang` (venter på Jørns «Ja» i UI-et på
+   http://10.5.0.22:8099): kun raven → Klientnettet. Permanent enhetsadgang
+   går over KABEL; wlo1 beholdes som overvåkningsverktøy og lobby-inngang
+   (A-postene lobby/startside → 10.10.0.33 består).
+2. DHCP-reservasjoner og docker-nettet «enhetsnett» for arbeidsflatene
+   som egne fortigate-ordrer. NAVN: «enhetsnett» (Jørns ønske om
+   beskrivende navn — «s15l-lab» forkastet). Innesperring (enheter ja,
+   internett nei) håndheves av FortiGate, ikke av raven.
+3. Omada-utbygging når TP-Link-utstyret kommer (OC200 + EAP650-er +
+   PoE+-switch — huskelapp levert Jørn 19.10): VLAN-er, trunk til raven,
+   kablet backhaul. 10.10.0.0/24 består som enhets-VLAN.
+4. Studio15-overtakelsen: rot-domenet er flyttet (gjort 19.10, se under);
+   SLETTING av fullversjonen (repo ~/dev/studio15, kontroll-server,
+   wildcard-DNS, web-gateway-wildcard) er egen planlagt operasjon.
+   Omdøping light→Studio15 (repo/prefikser) planlegges samtidig.
+5. NORM-vurdering (Jørns spørsmål 19.10): VENTER til Omada/VLAN er montert.
+   Begrunnelse: norm «bestilling» og «eksponering» dekker allerede at
+   FortiGate eier ruting/porter; intern netttopologi er i transisjon og
+   normfestes når VLAN-bildet er stabilt.
+
 ## 19.10: Light overtok studio15.cloud (rot-domenet)
 
 - Rot + www peker nå på Lights startside (10.10.0.33, privat IP i offentlig
