@@ -211,6 +211,22 @@ men den skal overleve oppfriskinger. Løsning: volum-varianten (gitignorert):
   første melding. Ettersees ved fremtidige Zoo-oppgraderinger; ekte
   løsning krever endring oppstrøms eller egen fork.
 
+## Funn 19.10: content_filter gir evig retry-løkke i Zoo
+
+Jørns nybegynner-test «finn Shelly-enheter på wifi-en» stoppet opp.
+Diagnose (reprodusert med replay mot proxyen): Anthropic-filteret svarer
+med TOMT innhold og `finish_reason: content_filter` på samtaler som ser
+ut som nettverksrekognosering (ip/arp/fib_trie-skanning etter enheter).
+Zoo viser bare «MODEL_NO_ASSISTANT_MESSAGES» og retryer samme kontekst
+i det uendelige med voksende ventetid — ser «dødt» ut for deltageren.
+
+- Samtalen er «forgiftet»: retry hjelper aldri, kun «Ny samtale».
+- Oppgaven var uansett umulig fra en flate: arbeidsflate-containerne er
+  nettisolert (kun proxy) — LAN/wifi-skanning er backend-arbeid på raven
+  (norm «verktøy»).
+- Forbedringsidé (senere): patche Zoo-retrymeldingen slik at deltageren
+  får beskjed om å starte ny samtale ved gjentatte tomsvar.
+
 ## Annet verdt å vite (fra 15.10)
 
 - Zoo-funksjoner kartlagt og tilgjengelige ved behov: `.rooignore`
