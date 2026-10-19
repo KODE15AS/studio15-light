@@ -211,6 +211,26 @@ men den skal overleve oppfriskinger. Løsning: volum-varianten (gitignorert):
   første melding. Ettersees ved fremtidige Zoo-oppgraderinger; ekte
   løsning krever endring oppstrøms eller egen fork.
 
+## Funn 19.10: raven på enhetsnettet — Mill og Shelly verifisert
+
+Hjemautomasjon-strategi utredet (UX foran maks sikkerhet). Nøkkelfakta:
+
+- Wifi-nettet KODE15 (10.10.0.0/24) rutes IKKE fra kabelnettet; enheter
+  der var unåelige fra raven. Løsning: raven har eget wifi-kort (wlo1)
+  som nå er koblet til KODE15 (uten default-rute, autoconnect). Raven
+  har 10.10.0.33 og full enhetsadgang. OBS: ingen antenner på kortet
+  ennå — signal ~24/100, virker men bør forsterkes.
+- Mill «KODE15 Mill 01» (Gen 3 konveksjon): 10.10.0.22. Offisielt lokalt
+  REST-API uten auth (github.com/Mill-International-AS/Generation_3_REST_API):
+  GET /status, GET /control-status, POST /set-temperature. Verifisert live.
+- Shelly Pro 3EM (Kodelader): har byttet IP 10.10.0.25 → 10.10.0.14
+  (dynamisk IP — DHCP-reservasjon bør inn). TP-Link AP: 10.10.0.10.
+- Neste byggetrinn (besluttet strategi): Docker-nett `s15l-lab`
+  (ikke-internt, NAT via wlo1, begrenset til 10.10.0.0/24) som opt-in
+  for flater; deretter `mal-hjemautomasjon` med Mill/Shelly-oppskrifter
+  og .roo-regler (kjente IP-er, ingen nettskanning — unngår
+  content_filter). Kodelader videreføres som ekspert-prosjekt.
+
 ## Funn 19.10: content_filter gir evig retry-løkke i Zoo
 
 Jørns nybegynner-test «finn Shelly-enheter på wifi-en» stoppet opp.
