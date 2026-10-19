@@ -65,6 +65,24 @@ slipper å gjette og aldri går på de samme fellene to ganger.
   som ingress, DNS styres via deploi-dns (GitOps). Ingen offentlig
   eksponering uten eksplisitt beslutning med egen risikovurdering.
 
+## Smartenheter på enhetsnettet
+
+Arbeidsflaten står på det delte Docker-nettet «enhetsnett» og når
+smartenhetene på KODE15s kontor-wifi (10.10.0.0/24) direkte med HTTP.
+Jobb ALLTID mot kjente IP-er — ikke skann nettverk (brede skann kan få
+språkmodellen til å nekte å fortsette):
+
+- **Mill panelovn Gen 3** — `http://10.10.0.22` (ingen autentisering).
+  Offisielt API: github.com/Mill-International-AS/Generation_3_REST_API.
+  Nyttigst: `GET /control-status` (temperatur/effekt),
+  `POST /set-temperature` med `{"type":"Normal","value":20}`,
+  `GET|POST /operation-mode`.
+- **Shelly Pro 3EM energimåler** — `http://10.10.0.14` (gen 2 RPC).
+  F.eks. `GET /rpc/EM.GetStatus?id=0`. OBS: enheten brukes av
+  Kodelader-systemet i drift — kun lesing uten avtale med Jørn.
+- Flere enheter kommer (hjemautomasjon er satsningsområde). Spør Jørn
+  om IP hvis en enhet mangler her — ikke let selv.
+
 ## Lagring
 
 - Foretrukket: SQLite som fil i prosjektet (CLI-en `sqlite3` finnes;

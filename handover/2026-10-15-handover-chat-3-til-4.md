@@ -211,6 +211,32 @@ men den skal overleve oppfriskinger. Løsning: volum-varianten (gitignorert):
   første melding. Ettersees ved fremtidige Zoo-oppgraderinger; ekte
   løsning krever endring oppstrøms eller egen fork.
 
+## 19.10 kveld: enhetsnettet BYGGET — flater og drenger når enhetene
+
+Jørns beslutning: alle drengr og alle Studio15-flater (Zoo-agentene) skal
+nå alle smartenheter. Bygget og verifisert:
+
+- Delt docker-nett `enhetsnett` (172.31.100.0/24, bro `enhetsnett`),
+  opprettet utenfor compose (`docker network create`). Gjenskapes med:
+  `docker network create --driver bridge --subnet 172.31.100.0/24
+  --opt com.docker.network.bridge.name=enhetsnett enhetsnett`
+- Lobby-driveren kobler hver arbeidsflate på nettet automatisk
+  (ensure_workspace → connect_network, idempotent, tolererer manglende
+  nett). Eksisterende flater kobles ved neste vekking; den aktive
+  testflaten ble koblet manuelt.
+- Verifisert fra flate: Mill /control-status OK, Shelly RPC OK.
+- Kodelader-drengen koblet på (live + varig i compose) — når Shelly
+  direkte i tillegg til innringings-WS-en. Mønster for andre drenger:
+  fortigate/README «Planlagte ordrer» pkt. 3.
+- Ekspert-malens AGENTS.md har fått enhetsseksjon (kjente IP-er, Mill- og
+  Shelly-API, ADVARSEL mot nettverksskanning pga. content_filter).
+- KONSEKVENS meldt Jørn: flatene har nå også utgående internett (vanlig
+  docker-NAT). Bevisst UX-valg; innstramming (deny → wan i FortiGate)
+  ligger som valgfri fremtidig ordre.
+- FortiGate-ordren `enhetsnett-adgang` ble utført 19.10 (policy 19).
+  Provider-felle (mkey 0) dokumentert i fortigate/README med fiks.
+- Mill tilbake på nett etter av-perioden, beholdt 10.10.0.22, satt 20,5 °C.
+
 ## 19.10: Nettplan besluttet — FortiGate eier veien til enhetene
 
 Avklart med Jørn (han har FortiGate-admin; drengen `fortigate` har

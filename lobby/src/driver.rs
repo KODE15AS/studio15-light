@@ -4,14 +4,16 @@
 // uten Docker.
 //
 // Arbeidsflate-containere får ALDRI: docker-socket, privileged, host-
-// filsystem, host-nettverk eller GPU — kun prosjektvolumet, repos-volumet
-// og arbeidsflate-nettet.
+// filsystem, host-nettverk eller GPU — kun prosjektvolumet, repos-volumet,
+// arbeidsflate-nettet og enhetsnettet (delt nett for smartenheter/drengr,
+// besluttet av Jørn 19.10.2026 — UX foran maks isolasjon).
 
 use bollard::container::{
     Config, CreateContainerOptions, ListContainersOptions, RemoveContainerOptions,
     StartContainerOptions, StopContainerOptions,
 };
 use bollard::exec::{CreateExecOptions, StartExecResults};
+use bollard::network::ConnectNetworkOptions;
 use futures_util::StreamExt;
 use bollard::models::{HostConfig, RestartPolicy, RestartPolicyNameEnum};
 use bollard::volume::{CreateVolumeOptions, RemoveVolumeOptions};
@@ -187,6 +189,26 @@ impl Driver {
                     .await;
                 if let Err(e) = res {
                     tolerer(e, &[409])?; // finnes allerede — greit
+                }
+                // Enhetsnettet (delt docker-nett «enhetsnett», 172.31.100.0/24,
+                // opprettet utenfor compose): gir flaten direkte adgang til
+                // smartenhetene på kontor-wifi-en (Mill, Shelly, …) via
+                // FortiGate-policyen «Raven til Klientnett (enheter)».
+                // Feil tolereres: flaten skal virke selv om nettet mangler.
+                let kobling = d
+                    .connect_network(
+                        "enhetsnett",
+                        ConnectNetworkOptions {
+                            container: navn.clone(),
+                            ..Default::default()
+                        },
+                    )
+                    .await;
+                if let Err(e) = kobling {
+                    // 403: allerede tilkoblet (idempotent), 404: nettet mangler
+                    if let Err(e2) = tolerer(e, &[403]) {
+                        eprintln!("ADVARSEL: enhetsnett-tilkobling feilet for {navn}: {e2}");
+                    }
                 }
                 self.start(&spec.kortnavn).await
             }
