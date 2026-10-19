@@ -21,15 +21,16 @@ services:
       # Wifi-en (KODE15) er et EGET nett med egen internettlinje — derfor
       # står raven også på wifi via wlo1 (nmcli-tilkobling «kode15-wifi»,
       # uten standardrute/DNS). Adressen er DHCP-tildelt; endrer den seg,
-      # må linjene under OG A-posten lobby.studio15.cloud i deploi-dns
+      # (skjedde 19.10: .22→.33, Mill-ovnen overtok .22 — reserver i ruter!)
+      # må linjene under OG A-postene lobby/startside.studio15.cloud i deploi-dns
       # oppdateres. Standardporter (443/80) → adressen er bare
       # https://lobby.studio15.cloud — ingen port å huske.
-      - "10.10.0.22:443:8102"
-      - "10.10.0.22:80:8103"
+      - "10.10.0.33:443:8102"
+      - "10.10.0.33:80:8103"
       # Selvhelbredende legacy-adresse: 8100 levde kort på wifi-IP-en
       # (04.10) og sitter i nettlesernes autofullføring/bokmerker —
       # redirect i stedet for død port.
-      - "10.10.0.22:8100:8103"
+      - "10.10.0.33:8100:8103"
     volumes:
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - ./certs:/certs:ro
@@ -43,7 +44,7 @@ services:
   # garantert vei for media også PC↔raven over Tailscale (ICE-kandidater
   # på tvers av nett kan feile — relé på raven er den varige løsningen).
   # host-nett: TURN trenger UDP-portspennet og ravens ekte adresser
-  # (10.10.0.22 på wifi, 100.65.19.39 på tailnettet). Ikke offentlig:
+  # (10.10.0.33 på wifi, 100.65.19.39 på tailnettet). Ikke offentlig:
   # raven har ingen offentlig IP, og Funnel rører ikke disse portene.
   coturn:
     image: coturn/coturn:4.7.0-alpine
@@ -55,9 +56,9 @@ services:
       - --log-file=stdout
       - --no-cli
       - --listening-port=3478
-      - --listening-ip=10.10.0.22
+      - --listening-ip=10.10.0.33
       - --listening-ip=100.65.19.39
-      - --relay-ip=10.10.0.22
+      - --relay-ip=10.10.0.33
       - --relay-ip=100.65.19.39
       - --fingerprint
       - --lt-cred-mech
@@ -88,12 +89,12 @@ services:
       IDLE_MINUTES: "${IDLE_MINUTES:-45}"
       # Ravens egne adresser (tavla/kiosken via ts.net, localhost, wifi-IP):
       # trafikk herfra teller aldri som aktivitet i dvale-vakten (05.10).
-      REAPER_IGNORE_IPS: "100.65.19.39,127.0.0.1,::1,10.10.0.22"
+      REAPER_IGNORE_IPS: "100.65.19.39,127.0.0.1,::1,10.10.0.33"
       # STUN/TURN for webside-strømmen (coturn over, host-nett): klientene
       # prøver direkte først; reléet er garantert vei over Tailscale.
       ICE_SERVERS: >-
-        [{"urls":["stun:10.10.0.22:3478","stun:100.65.19.39:3478"]},
-         {"urls":["turn:10.10.0.22:3478?transport=udp","turn:100.65.19.39:3478?transport=udp"],
+        [{"urls":["stun:10.10.0.33:3478","stun:100.65.19.39:3478"]},
+         {"urls":["turn:10.10.0.33:3478?transport=udp","turn:100.65.19.39:3478?transport=udp"],
           "username":"s15l","credential":"${TURN_PASSORD}"}]
       # Reconnect-vindu for presence før identiteten ryddes bort.
       # Overstyres kun i presence-smoketesten (PRESENCE_TIMEOUT_SECS=2).
