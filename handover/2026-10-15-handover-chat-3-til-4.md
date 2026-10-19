@@ -211,6 +211,22 @@ men den skal overleve oppfriskinger. Løsning: volum-varianten (gitignorert):
   første melding. Ettersees ved fremtidige Zoo-oppgraderinger; ekte
   løsning krever endring oppstrøms eller egen fork.
 
+## 19.10: Light overtok studio15.cloud (rot-domenet)
+
+- Rot + www peker nå på Lights startside (10.10.0.33, privat IP i offentlig
+  DNS — samme mønster som lobby). Fullversjonens server (62.92.43.149) har
+  kun wildcard `*` igjen — avklar med Jørn om den kan flippes/slettes.
+- Sertifikatet dekker studio15.cloud + www/startside/lobby (evig redirect
+  til rot). PUBLIC_BASE = https://studio15.cloud. «startside»-prefikset utgår.
+- Lærdom: DNS-01-hooken kan tape et git-push-race mot applikatorens
+  sync-commit (exit 128) — ufarlig, kjør lobby-sertifikat.sh på nytt.
+- Appen forblir privat (wifi/tailnett) — URL-overtakelsen endrer ikke
+  eksponeringen. Offentlig app-eksponering er fortsatt egen beslutning.
+- Omada-plan diskutert (OC200 + kablede EAP650): anbefalt, med VLAN-trunk
+  til raven over kabel som permanent erstatning for wifi-kort-avhengigheten;
+  behold 10.10.0.0/24 som IoT-VLAN ved migrering. s15l-lab bygges mot
+  wlo1 nå, flyttes til trunk senere.
+
 ## Funn 19.10: raven på enhetsnettet — Mill og Shelly verifisert
 
 Hjemautomasjon-strategi utredet (UX foran maks sikkerhet). Nøkkelfakta:
