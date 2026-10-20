@@ -1,8 +1,11 @@
-# Handover chat 3 → 4 (15.10.2026, kveld)
+# Handover chat 3 → 4 (påbegynt 15.10, chat 3 avsluttet 20.10.2026)
 
 Chat 3 leverte ekspert-malen og gjorde den moden gjennom Jørns DEFA-
-pretest. Denne handoveren samler kveldens leveranser, beslutningene som
-venter, og ferdig undersøkte designforslag for chat 4.
+pretest — og vokste så videre: komplett malsirkel (17.10), samtaler på
+prosjektvolumet (17.10), enhetsnettet og nettplanen (19.10),
+studio15.cloud-overtakelsen (19.10) og WifiOmada-drengen (20.10).
+Dokumentet er ført kronologisk; **chat 4 starter med seksjonen «Chat 3
+avsluttet — start her» nederst.**
 
 ## Levert og verifisert i chat 3 (alt committet og pushet)
 
@@ -21,13 +24,14 @@ venter, og ferdig undersøkte designforslag for chat 4.
   Samtalehistorikk (showTabs single, norske tooltips, støyknapper
   fjernet). Jørn-testet i DEFA.
 
-## Venter på Jørns beslutning
+## Venter på Jørns beslutning (15.10 — BEGGE AVGJORT 17.10)
 
 1. **Mal-org:** innholdsmaler som egne repoer i ny org. Forslag:
    `STUDIO15-Maler` (Jørns utgangspunkt var «STUDIO15-templates»).
    Vaktmester-appen må installeres i orgen når den opprettes.
+   → AVGJORT: org `STUDIO15-Maler` opprettet og i drift, se malseksjonen.
 2. **Samtalehistorikk til repo:** design klart (under), valg av variant
-   gjenstår.
+   gjenstår. → AVGJORT: volum-varianten, se «Designforslag A GJENNOMFØRT».
 
 ## Utsatt til senere chat (Jørns beslutning 15.10)
 
@@ -331,3 +335,58 @@ i det uendelige med voksende ventetid — ser «dødt» ut for deltageren.
   — utsatt).
 - Overvåkningsmønster brukt i kveld: docker exec-polling av innboks/
   oppgaver/filer med varsling — gjenbrukbart ved senere deltagertester.
+
+## 20.10: WifiOmada-drengen født — Omada fikk permanent hjem
+
+Jørns strategispørsmål: er web-gateway riktig hjem for Omada-styringen?
+Nei — web-gateway er L7 (HTTP/TLS), Omada er radiolaget (L1/L2). Besluttet
+og utført samme formiddag:
+
+- **Ny drengr `KODE15AS/WifiOmada`** (privat, klonet til `~/dev/WifiOmada`),
+  Handover 0 skrevet og pushet: README (lenketabell, FortiGate-porttopologi,
+  målarkitektur), AGENTS.md (firelags arbeidsdeling deploi-dns /
+  web-gateway / fortigate / WifiOmada) og handover/HANDOVER.md med hele
+  utredningen, montasje-huskelapp for leveringsdagen og fase-plan.
+  **Fasiten for alt Omada/wifi-arbeid bor nå DER, ikke her.**
+- OC200-boksen KANSELLERT — Omada Software Controller skal kjøres som
+  container `wifiomada` på raven (gratis, proprietær TP-Link-programvare;
+  community-image velges og pinnes i fase 1).
+- Innkjøp 20.10 (levering 1–3 dager): EAP653 AX3000 tak-AP (1 198 kr —
+  datablad-verifisert identisk radio med dyrere EAP650; differansen er
+  bare en strømadapter som er unødvendig med PoE) og TL-SG2210MP managed
+  PoE+-switch 150 W (1 912 kr — krav: 802.1Q, Omada-styrt, 802.3at).
+- Berører denne drengen: ved montasje (fase 1) skal enhetene
+  (Mill/Shelly/Kodelader) overvåkes herfra, og SSID «KODE15» gjenskapes
+  identisk så flater og enheter flytter uten re-paring.
+
+## Chat 3 avsluttet 20.10 — start her, chat 4
+
+Alt over er kronologisk logg; dette er status ved chat-skiftet.
+
+**I drift og verifisert:** ekspert-mal + innboks-vakt, komplett malsirkel
+mot org `STUDIO15-Maler` (lagre som mal med/uten innhold, mal-i-mal
+E2E-verifisert 17.10), samtaler på prosjektvolumet (overlever
+oppfrisking), enhetsnettet (flater + drenger når Mill/Shelly, policy 19),
+studio15.cloud som reell startside.
+
+**Åpne punkter, i anbefalt prioritet:**
+
+1. **Zoo 3.88.0-oppgraderingen** — ferdig undersøkt (se egen seksjon),
+   alle patch-ankre verifisert; egen kontrollert runde med testflate.
+2. **WifiOmada fase 1** når utstyret kommer (1–3 dager): Jørn følger
+   huskelappen i WifiOmada/handover/HANDOVER.md og sier fra ved steg 3 —
+   da bygges kontroller-containeren, og denne drengens enheter overvåkes
+   under flyttingen.
+3. **Sletting av fullversjonen** (repo ~/dev/studio15, kontroll-server
+   62.92.43.149, wildcard-DNS og web-gateway-wildcard) + omdøping
+   light→Studio15 — egen planlagt operasjon, krever Jørns klarsignal.
+4. **Designforslag B (Zoo-moduser som malregime)** — undersøkt og klart
+   til bygging; naturlig sammen med `mal-hjemautomasjon` (Mill/Shelly-
+   oppskrifter, kjente IP-er, ingen nettskanning).
+5. Mindre: DHCP-reservasjonsordre i fortigate (raven/Mill/Shelly — venter
+   uansett til Omada-montasjen er gjort), patche Zoo-retrymeldingen ved
+   content_filter-tomsvar, NORM-vurdering av netttopologien (bevisst
+   utsatt til VLAN-bildet er stabilt).
+
+**Designforslag C (RTX 5080 via LiteLLM)** er ferdig utredet og ligger
+klart til maskinvaren finnes — ingen aksjon nå.

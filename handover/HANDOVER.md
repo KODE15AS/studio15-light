@@ -83,11 +83,26 @@ innboks-linje på skjermen med «Tøm innboksen»-knapp (lobby-API +
 polling), og samtalehistorikk synlig i fanehodet (showTabs single +
 norske knapper; gamle samtaler slettes aldri av «Ny samtale»). Se
 `2026-10-15-innboksvakt.md`.
-15.10 kveld: chat 3 avsluttes — kveldsundersøkelser ferdige (historikk
-til repo via customStoragePath, Zoo-moduser som malregime, RTX 5080 via
-LiteLLM). Zoo 3.88.0-oppgradering utsatt (ankre verifisert, lav risiko).
-Venter på Jørn: mal-orgens navn (forslag `STUDIO15-Maler`) og valg av
-historikk-variant. ALT i `2026-10-15-handover-chat-3-til-4.md`.
+15.10 kveld: kveldsundersøkelser ferdige (historikk til repo via
+customStoragePath, Zoo-moduser som malregime, RTX 5080 via LiteLLM).
+Zoo 3.88.0-oppgradering utsatt (ankre verifisert, lav risiko).
+17.10: **komplett malsirkel** — org `STUDIO15-Maler` i drift, «Lagre som
+mal» med/uten innhold (git-flush først), plassholder-reversering,
+malvelger fra org-en, mal-i-mal E2E-verifisert; samtalene flyttet til
+prosjektvolumet (`.zoo`, gitignorert — overlever oppfrisking); ny norm
+«verktøy» (Cursor = backend, Zoo = frontend); norm «tbd» presisert
+(frontend forberedes for GitHub Flow). 19.10: **Light overtok
+studio15.cloud** (rot + www → startsiden, cert + redirects); 
+**enhetsnettet bygget** — docker-nettet `enhetsnett` + FortiGate-policy
+19 gir alle flater og drenger adgang til smartenhetene (Mill/Shelly,
+verifisert); nettplan besluttet (FortiGate eier veien, fortigate-drengen
+har ordreflyten); content_filter-fella i Zoo diagnostisert (nettskanning
+→ evig retry — kun «Ny samtale» hjelper). 20.10: **ny drengr
+`KODE15AS/WifiOmada`** fikk Handover 0 — Omada-wifi-styringen bor der
+(software-kontroller i container på raven, OC200 kansellert, EAP653 +
+PoE-switch kjøpt; montasje-huskelapp i det repoet). Samme dag: chat 3
+avsluttet. **Chat 4 starter med seksjonen «Chat 3 avsluttet — start her»
+i `2026-10-15-handover-chat-3-til-4.md`.**
 
 ## Grunnlag — les disse først
 
