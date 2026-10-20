@@ -256,9 +256,10 @@ Besluttet plan (detaljer i fortigate/README «Planlagte ordrer»):
    som egne fortigate-ordrer. NAVN: «enhetsnett» (Jørns ønske om
    beskrivende navn — «s15l-lab» forkastet). Innesperring (enheter ja,
    internett nei) håndheves av FortiGate, ikke av raven.
-3. Omada-utbygging når TP-Link-utstyret kommer (OC200 + EAP650-er +
-   PoE+-switch — huskelapp levert Jørn 19.10): VLAN-er, trunk til raven,
-   kablet backhaul. 10.10.0.0/24 består som enhets-VLAN.
+3. Omada-utbygging: egen drengr `KODE15AS/WifiOmada` opprettet 20.10
+   (Handover 0 der er fasit). OC200 kansellert — software-kontroller i
+   container på raven; kjøpt EAP653 + TL-SG2210MP. Montasje-huskelapp og
+   fase-plan: WifiOmada/handover/HANDOVER.md.
 4. Studio15-overtakelsen: rot-domenet er flyttet (gjort 19.10, se under);
    SLETTING av fullversjonen (repo ~/dev/studio15, kontroll-server,
    wildcard-DNS, web-gateway-wildcard) er egen planlagt operasjon.
