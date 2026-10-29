@@ -102,7 +102,11 @@ har ordreflyten); content_filter-fella i Zoo diagnostisert (nettskanning
 (software-kontroller i container på raven, OC200 kansellert, EAP653 +
 PoE-switch kjøpt; montasje-huskelapp i det repoet). Samme dag: chat 3
 avsluttet. **Chat 4 starter med seksjonen «Chat 3 avsluttet — start her»
-i `2026-10-15-handover-chat-3-til-4.md`.**
+i `2026-10-15-handover-chat-3-til-4.md`.** 29.10 (chat 4): feilmelding på
+70-tommeren ved gjenopptatt testing — GNOME-krasj (kjent hotplug-bug) +
+NVIDIA-driver-mismatch → reboot → caddy døde på boot-rekkefølge-fella
+(kode15-wifi hadde autoconnect av). Alt fikset og verifisert; tre
+lærdommer i `2026-10-29-reboot-grafikk-caddy.md`.
 
 ## Grunnlag — les disse først
 
