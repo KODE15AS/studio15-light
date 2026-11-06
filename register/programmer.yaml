@@ -38,6 +38,14 @@ programmer:
     navn: Man 19 okt nr 1 Jorn Slettmeg
     repo: https://github.com/KODE15AS-Nybegynner/man-19-okt-nr-1-jorn-slettmeg.git
     mal: ekspert
+  - slug: oeystein-defa-6-november
+    navn: Øystein defa 6 november
+    repo: https://github.com/KODE15AS-Nybegynner/oeystein-defa-6-november.git
+    mal: nybegynner
+  - slug: joern-6-nov-slettmeg
+    navn: Jørn 6 nov slettmeg
+    repo: https://github.com/KODE15AS-Nybegynner/joern-6-nov-slettmeg.git
+    mal: nybegynner
 - slug: ekspert
   navn: Ekspert
   github_org: KODE15-Ekspert
@@ -49,4 +57,16 @@ programmer:
   - slug: prosjekt-defa-kaldstart-pretest-slettes
     navn: Prosjekt DEFA Kaldstart pretest slettes
     repo: https://github.com/KODE15-Ekspert/prosjekt-defa-kaldstart-pretest-slettes.git
+    mal: ekspert
+- slug: studio-defa
+  navn: Studio DEFA
+  github_org: Studio-DEFA
+  prosjekter:
+  - slug: joern-6-nov-sletmeg
+    navn: Jørn 6 nov sletmeg
+    repo: https://github.com/Studio-DEFA/joern-6-nov-sletmeg.git
+    mal: ekspert
+  - slug: oeystein-6-november
+    navn: Øystein 6 november
+    repo: https://github.com/Studio-DEFA/oeystein-6-november.git
     mal: ekspert

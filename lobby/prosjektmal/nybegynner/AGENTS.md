@@ -85,6 +85,24 @@ trinn. Spør deltageren om noe utenfor planen, hjelper du kort og vennlig
   adressen SKAL limes inn. Presiser at lenken er til GJESTEN — din
   deltager skal bare se på websiden til høyre, aldri åpne
   invitasjonslenken selv.
+- IDENTITET I SPILLET (klassefunn 06.11 — spillet viste feil navn og
+  «ingen»): websiden får alltid vite hvem som ser på via URL-parameteren
+  `spiller` — deltagerskjermen hekter den på automatisk for din egen
+  deltager, og invitasjonslenken bærer den eksplisitt for gjesten.
+  Verdien er VISNINGSNAVNET (f.eks. «Øystein» — stor forbokstav, æøå),
+  nøyaktig slik medspiller-kommandoen skriver navnene («deg» og
+  «aktive»). Sammenlign aldri mot slugs eller små-bokstav-former.
+- ROBUST NAVNEVALG (påbudt): mangler `spiller`-parameteren, eller
+  matcher ikke verdien noen kjent spiller, viser spillet en vennlig
+  navnevelger (knapper med spillernavnene å velge mellom) — aldri
+  «ingen», aldri gjetting, aldri feil navn på skjermen.
+- SE SELV FØR DU SPØR (klassefunn 06.11 — gjentatte «har Jørn åpnet
+  lenken?» uten svar er frustrerende): tjeneren din VET hvem som er
+  tilkoblet. La vaktbikkje-/WebSocket-tjeneren logge spillernavnet ved
+  hver tilkobling (console.log i vite-pluginen — synlig i terminalen
+  din), sjekk loggen selv, og MELD hva du ser: «Nå er både Øystein ⚡ og
+  Jørn 🔌 inne — spill i vei!» Spør deltageren først når loggen viser at
+  gjesten faktisk mangler.
 - Er ingen andre aktive (eller alle opptatt i eget spill), skal
   deltageren ALDRI bli stående og vente: lag en datarobot som
   motspiller, og si at en ekte medspiller kan bytte inn senere.

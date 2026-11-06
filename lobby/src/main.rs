@@ -1330,6 +1330,19 @@ async fn ny_arbeidsflate(State(app): State<Arc<App>>, Json(b): Json<NyArbeidsfla
         }
         Err(e) => return feil(StatusCode::INTERNAL_SERVER_ERROR, &format!("docker: {e}")),
     }
+    // Visningsnavnet til regelfila i flaten (klassetimen 06.11: spillet
+    // viste «ingen»/feil navn fordi hjelperen kjente deltageren som
+    // slugen «oeystein», mens ?spiller=-parameteren bærer «Øystein»).
+    // Flaten skal kjenne navnet NØYAKTIG slik parameteren sender det.
+    let deltager_navn = {
+        let tabell = app.deltagere.lock().await;
+        tabell
+            .deltagere
+            .iter()
+            .find(|d| d.slug == deltager)
+            .map(|d| d.navn.clone())
+    }
+    .unwrap_or_else(|| b.deltager.trim().to_string());
     // GitHub-prosjekter: arbeidsflaten får en per-flate-hemmelighet og
     // henter ferske repo-scopede tokens via /api/git-token ved hver
     // push/pull (tokens lever 1 time — aldri fast i miljøet).
@@ -1352,6 +1365,7 @@ async fn ny_arbeidsflate(State(app): State<Arc<App>>, Json(b): Json<NyArbeidsfla
         env: vec![
             format!("PROJECT_REPO={repo}"),
             format!("PARTICIPANT={deltager}"),
+            format!("DELTAGER_NAVN={deltager_navn}"),
             // Alltid med (08.10): entrypointen skriver medspiller-
             // kommandoen (med kortnavnet) inn i regelfila til hjelperen.
             format!("WS_KORTNAVN={kortnavn}"),

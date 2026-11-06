@@ -281,9 +281,14 @@ mkdir -p "$PROJECT_DIR/.roo/rules"
 cat > "$PROJECT_DIR/.roo/rules/01-webside.md" <<EOF
 # Adresser i denne arbeidsflaten
 
-- Denne skjermen tilhører deltageren: ${PARTICIPANT:-ukjent}
+- Denne skjermen tilhører deltageren: ${DELTAGER_NAVN:-${PARTICIPANT:-ukjent}}
   (bruk navnet når du snakker om hvem som gjør hva)
 - Prosjektets levende webside: ${WEB_URL:-ukjent — spør i lobbyen}
+- Deltagerskjermen åpner websiden med URL-parameteren
+  \`?spiller=<deltagerens navn>\` hektet på automatisk. Kode som skal
+  vite HVEM som ser på siden leser parameteren \`spiller\` — verdien er
+  ALLTID visningsnavnet nøyaktig som over (stor forbokstav, æøå),
+  aldri en liten-bokstav-/slug-form (klassefunn 06.11).
 - Oppgi ALLTID denne adressen når brukeren spør hvor websiden er.
 - ALDRI henvis til localhost eller 127.0.0.1 — det virker bare inne i
   containeren, ikke på brukerens maskin.
