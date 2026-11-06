@@ -480,7 +480,50 @@ struct NyttProgram {
     github_org: Option<String>,
 }
 
+/// Org-feltet tåler både rent org-navn og limte GitHub-URL-er
+/// («https://github.com/Studio-DEFA», med/uten skråstrek på slutten) —
+/// bommen Jørn gjorde to ganger før vakta kom (06.11).
+fn normaliser_org(felt: &str) -> String {
+    let f = felt.trim();
+    let f = f.strip_prefix("https://").or(f.strip_prefix("http://")).unwrap_or(f);
+    let f = f.strip_prefix("www.").unwrap_or(f);
+    let f = f.strip_prefix("github.com/").unwrap_or(f);
+    f.trim_matches('/').split('/').next().unwrap_or("").to_string()
+}
+
 async fn nytt_program(State(app): State<Arc<App>>, Json(b): Json<NyttProgram>) -> Response {
+    // Vakta mot org-bommen (Jørn 06.11): URL i navnefeltet avvises med
+    // veiledning, org-feltet normaliseres, og installasjonen verifiseres
+    // mot GitHub FØR noe lagres — før oppdaget man feilen først når det
+    // første prosjektet skulle opprettes.
+    if b.navn.trim().starts_with("http") || b.navn.contains("github.com/") {
+        return feil(
+            StatusCode::BAD_REQUEST,
+            "Navnefeltet skal ha visningsnavnet (f.eks. «Studio DEFA») — \
+             lim GitHub-adressen i org-feltet i stedet.",
+        );
+    }
+    let github_org = b
+        .github_org
+        .as_deref()
+        .map(normaliser_org)
+        .filter(|o| !o.is_empty());
+    if let Some(org) = &github_org {
+        match app.vaktmester.as_ref() {
+            Some(vm) => {
+                if let Err(e) = vm.sjekk_installasjon(org).await {
+                    return feil(StatusCode::BAD_REQUEST, &e.to_string());
+                }
+            }
+            None => {
+                return feil(
+                    StatusCode::BAD_REQUEST,
+                    "GitHub-org er angitt, men vaktmester-appen er ikke \
+                     konfigurert på denne installasjonen (GITHUB_APP_ID/-KEY_FILE).",
+                );
+            }
+        }
+    }
     let slug = slugify(&b.navn);
     if slug.is_empty() {
         return feil(StatusCode::BAD_REQUEST, "programnavnet gir ingen gyldig slug");
@@ -492,7 +535,7 @@ async fn nytt_program(State(app): State<Arc<App>>, Json(b): Json<NyttProgram>) -
     reg.programmer.push(Program {
         slug: slug.clone(),
         navn: b.navn,
-        github_org: b.github_org.filter(|o| !o.trim().is_empty()),
+        github_org,
         prosjekter: vec![],
     });
     if let Err(e) = reg.save(&app.cfg.register_path) {

@@ -134,6 +134,29 @@ impl Vaktmester {
         Ok(id)
     }
 
+    /// Vakta ved program-opprettelse (Jørn 06.11 — «jeg bommer på denne
+    /// hver gang»): sjekk FERSKT (uten cache) at appen er installert i
+    /// org-en, FØR programmet lagres. 404 betyr at org-en ikke finnes
+    /// eller at appen mangler der — meldingen bærer installasjonslenken.
+    pub async fn sjekk_installasjon(&self, org: &str) -> anyhow::Result<()> {
+        let jwt = self.jwt()?;
+        let (status, _) = self
+            .github(reqwest::Method::GET, &format!("/orgs/{org}/installation"), &jwt, None)
+            .await?;
+        if status.as_u16() == 404 {
+            anyhow::bail!(
+                "Org-en «{org}» finnes ikke på GitHub, eller vaktmester-appen er \
+                 ikke installert der. Installer appen i org-en først: \
+                 https://github.com/apps/studio15-light-vaktmester/installations/new \
+                 (velg org-en og «All repositories») — og registrer gruppen igjen."
+            );
+        }
+        if !status.is_success() {
+            anyhow::bail!("fikk ikke sjekket org-en «{org}» mot GitHub ({status}) — prøv igjen");
+        }
+        Ok(())
+    }
+
     /// Ferskt installasjonstoken. `repo_scope`: Some((repo, kun contents:rw))
     /// for arbeidsflatene, None = org-bredt (kun lobbyens egne operasjoner).
     async fn token(&self, org: &str, repo_scope: Option<&str>) -> anyhow::Result<Token> {

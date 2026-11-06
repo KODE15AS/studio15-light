@@ -37,6 +37,7 @@
 
   // Skjemafelter
   let nyGruppeNavn = $state('')
+  let nyGruppeOrg = $state('')
   let visOrgFlyt = $state(false)
   let nyttProsjektNavn = $state('')
   let nyttProsjektMal = $state('full')
@@ -117,8 +118,12 @@
 
   async function lagGruppe() {
     if (!nyGruppeNavn.trim()) return
-    await kall('POST', '/api/programmer', { navn: nyGruppeNavn })
+    await kall('POST', '/api/programmer', {
+      navn: nyGruppeNavn,
+      github_org: nyGruppeOrg.trim() || null,
+    })
     nyGruppeNavn = ''
+    nyGruppeOrg = ''
     visOrgFlyt = false
   }
 
@@ -265,14 +270,20 @@
               <li>Org-navn: bruk gruppenavnet med KODE15-prefiks, f.eks. <code>KODE15-&lt;gruppe&gt;</code>.</li>
               <li>Eier: KODE15-kontoen. Ikke inviter medlemmer.</li>
               <li>
-                Installer vaktmester-appen på org-en (se
-                <code>docs/vaktmester-klikkeliste.md</code>) — da oppretter og
-                sletter lobbytjenesten prosjektrepoene i org-en automatisk.
+                Installer vaktmester-appen på org-en — velg org-en og
+                «All repositories»:
+                <a href="https://github.com/apps/studio15-light-vaktmester/installations/new"
+                   target="_blank" rel="noreferrer">
+                  github.com/apps/studio15-light-vaktmester/installations/new
+                </a>
+                — da oppretter og sletter lobbytjenesten prosjektrepoene
+                i org-en automatisk.
               </li>
             </ol>
             <p>
-              Registrer prosjektgruppen her — org-navnet kan legges til i
-              <code>register/programmer.yaml</code> når org-en er laget:
+              Registrer så prosjektgruppen her. Startsiden sjekker at org-en
+              finnes og at vaktmesteren er installert før noe lagres — du får
+              klar beskjed hvis noe mangler.
             </p>
             <form
               onsubmit={(e) => {
@@ -280,7 +291,11 @@
                 lagGruppe()
               }}
             >
-              <input placeholder="Navn på prosjektgruppen" bind:value={nyGruppeNavn} />
+              <input placeholder="Navn på prosjektgruppen (f.eks. Studio DEFA)" bind:value={nyGruppeNavn} />
+              <input
+                placeholder="GitHub-org — navn eller lim inn URL (f.eks. https://github.com/Studio-DEFA)"
+                bind:value={nyGruppeOrg}
+              />
               <button class="k15-btn k15-btn-primary" disabled={opptatt}>Registrer</button>
             </form>
           </div>
