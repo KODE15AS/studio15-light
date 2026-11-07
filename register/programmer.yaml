@@ -22,29 +22,9 @@ programmer:
   navn: Nybegynner
   github_org: KODE15AS-Nybegynner
   prosjekter:
-  - slug: okt-17-test-1-nybegynner-slettmeg
-    navn: Okt 17 test 1 nybegynner slettmeg
-    repo: https://github.com/KODE15AS-Nybegynner/okt-17-test-1-nybegynner-slettmeg.git
-    mal: nybegynner
   - slug: okt-17-test-2-fra-min-mal-slettmeg
     navn: Okt 17 test 2 fra min mal slettmeg
     repo: https://github.com/KODE15AS-Nybegynner/okt-17-test-2-fra-min-mal-slettmeg.git
-    mal: nybegynner
-  - slug: okt-17-test-3-fra-nybeg-slettmeg
-    navn: Okt 17 test 3 fra Nybeg slettmeg
-    repo: https://github.com/KODE15AS-Nybegynner/okt-17-test-3-fra-nybeg-slettmeg.git
-    mal: nybegynner
-  - slug: man-19-okt-nr-1-jorn-slettmeg
-    navn: Man 19 okt nr 1 Jorn Slettmeg
-    repo: https://github.com/KODE15AS-Nybegynner/man-19-okt-nr-1-jorn-slettmeg.git
-    mal: ekspert
-  - slug: oeystein-defa-6-november
-    navn: Øystein defa 6 november
-    repo: https://github.com/KODE15AS-Nybegynner/oeystein-defa-6-november.git
-    mal: nybegynner
-  - slug: joern-6-nov-slettmeg
-    navn: Jørn 6 nov slettmeg
-    repo: https://github.com/KODE15AS-Nybegynner/joern-6-nov-slettmeg.git
     mal: nybegynner
 - slug: ekspert
   navn: Ekspert
@@ -61,12 +41,4 @@ programmer:
 - slug: studio-defa
   navn: Studio DEFA
   github_org: Studio-DEFA
-  prosjekter:
-  - slug: joern-6-nov-sletmeg
-    navn: Jørn 6 nov sletmeg
-    repo: https://github.com/Studio-DEFA/joern-6-nov-sletmeg.git
-    mal: ekspert
-  - slug: oeystein-6-november
-    navn: Øystein 6 november
-    repo: https://github.com/Studio-DEFA/oeystein-6-november.git
-    mal: ekspert
+  prosjekter: []

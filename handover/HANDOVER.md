@@ -100,13 +100,25 @@ har ordreflyten); content_filter-fella i Zoo diagnostisert (nettskanning
 → evig retry — kun «Ny samtale» hjelper). 20.10: **ny drengr
 `KODE15AS/WifiOmada`** fikk Handover 0 — Omada-wifi-styringen bor der
 (software-kontroller i container på raven, OC200 kansellert, EAP653 +
-PoE-switch kjøpt; montasje-huskelapp i det repoet). Samme dag: chat 3
-avsluttet. **Chat 4 starter med seksjonen «Chat 3 avsluttet — start her»
-i `2026-10-15-handover-chat-3-til-4.md`.** 29.10 (chat 4): feilmelding på
+PoE-switch kjøpt; montasje-huskelapp i det repoet). Samme dag ble
+midtveis-dokumentet `2026-10-15-chat-3-midtveis.md` ført — men chatten
+fortsatte, så chat 3 løp videre til 07.11. 29.10: feilmelding på
 70-tommeren ved gjenopptatt testing — GNOME-krasj (kjent hotplug-bug) +
 NVIDIA-driver-mismatch → reboot → caddy døde på boot-rekkefølge-fella
 (kode15-wifi hadde autoconnect av). Alt fikset og verifisert; tre
-lærdommer i `2026-10-29-reboot-grafikk-caddy.md`.
+lærdommer i `2026-10-29-reboot-grafikk-caddy.md`. 29.10–06.11:
+smartenhetene på plass (2× DEFA Power via Modbus TCP, Mill, Shelly —
+fasit i kodelader-drengen), content-filter-fella lukket med enhetsfakta
+i malene. 06.11: vaktmester-vakta for org-registrering (commit
+21936fd) og **klassetime 1 med Øystein** — tre funn fikset samme dag
+(mal-ekspert `6b814a1`, plattform `d855bf2`, mal-nybegynner `1bc31c1`;
+lærdom: maler er fasit — enkeltprosjekt-fikser SKAL inn i malen).
+07.11: **STRATEGIDAGEN — pivot til kode15.studio** (generell
+webtilgang, demokratisk tavle, rebranding i nytt repo, MCAD som
+ultimat mål; Opper verifisert OpenAI-kompatibel, LiteLLM-sporet
+avsluttes — se `docs/2026-11-07-mcad-konklusjon.md`). Samme dag: chat 3
+avsluttet. **Chat 4 starter med seksjonen «Chat 3 avsluttet — start
+her» i `2026-11-07-handover-chat-3-til-4.md`.**
 
 ## Grunnlag — les disse først
 
@@ -123,6 +135,13 @@ To personer på hver sin PC over Tailscale (wifi), hver med sin arbeidsflate:
 VS Code i nettleseren (code-server) + Zoo Code koblet mot LiteLLM-proxy +
 Vite-dev-server som viser websiden levende. Ravens 70"-skjerm viser begge
 flatene 50/50. Ingen innlogging, ingen database, ingen offentlig eksponering.
+
+> **NB (07.11.2026):** Målbildet over var V1/V2-målet og er NÅDD.
+> Pivoten til **kode15.studio** (se
+> `2026-11-07-handover-chat-3-til-4.md`) reverserer bevisst «ingen
+> offentlig eksponering» (inviterte grupper på web, trusselmodell
+> først) og «én deltager per prosjekt». «Ingen innlogging» består
+> (signerte invitasjonslenker). LiteLLM erstattes av Opper.
 
 ## Begreper (avklart 03.10 — brukes konsekvent)
 

@@ -1,11 +1,16 @@
-# Handover chat 3 → 4 (påbegynt 15.10, chat 3 avsluttet 20.10.2026)
+# Chat 3 midtveis (påbegynt 15.10; omdøpt 07.11)
+
+> **NB (07.11.2026):** Dette dokumentet het opprinnelig «Handover chat
+> 3 → 4» og meldte chat 3 avsluttet 20.10 — men chatten fortsatte i
+> samme Cursor-chat (29.10–07.11), så chat 3 løp videre. Den reelle
+> handoveren 3 → 4 er `2026-11-07-handover-chat-3-til-4.md`. Innholdet
+> under står urørt som midtveis-dokumentasjon for 03.10–20.10.
 
 Chat 3 leverte ekspert-malen og gjorde den moden gjennom Jørns DEFA-
 pretest — og vokste så videre: komplett malsirkel (17.10), samtaler på
 prosjektvolumet (17.10), enhetsnettet og nettplanen (19.10),
 studio15.cloud-overtakelsen (19.10) og WifiOmada-drengen (20.10).
-Dokumentet er ført kronologisk; **chat 4 starter med seksjonen «Chat 3
-avsluttet — start her» nederst.**
+Dokumentet er ført kronologisk.
 
 ## Levert og verifisert i chat 3 (alt committet og pushet)
 
