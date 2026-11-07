@@ -119,6 +119,21 @@ ultimat mål; Opper verifisert OpenAI-kompatibel, LiteLLM-sporet
 avsluttes — se `docs/2026-11-07-mcad-konklusjon.md`). Samme dag: chat 3
 avsluttet. **Chat 4 starter med seksjonen «Chat 3 avsluttet — start
 her» i `2026-11-07-handover-chat-3-til-4.md`.**
+07.11, chat 4: **org-strukturen frosset** — én org `KODE15studio`,
+prosjektgrupper som prefiks `<gruppe>-<prosjekt>`, maler som `mal-<navn>`,
+vaktmesteren installeres én gang. Teams utsettes. Light urørt til
+høstingen. Se `docs/2026-11-07-org-struktur.md`.
+Samme dag: org-en opprettet og vaktmesteren verifisert der
+(installasjon `179558664`, all repositories). Jørn opprettet de tomme
+repoene `studio` (plattformen) og `mal-studio` (grunnmalen andre maler
+bygger på). Samme ettermiddag: rammen korrigert av Jørn — raven ER
+webserveren (ingen VPS), FortiGate er kontrollpunktet, swarm + hybrid
+LLM (RTX 5080/5090) er utbyggingstrappen; kode15.no (WordPress +
+WooCommerce) og kode15.studio er to risikodomener, og innlogging
+utredes som WooCommerce-kjøp → signert gruppenøkkel. Beslutningsnotat:
+`docs/2026-11-07-aapen-kant-beslutningsnotat.md` (fem åpne
+beslutningspunkter til Jørn). Etappeplan E1–E8:
+`docs/2026-11-07-plan-chat-4.md`.
 
 ## Grunnlag — les disse først
 
