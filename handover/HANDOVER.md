@@ -136,7 +136,11 @@ beslutningspunktene BESLUTTET av Jørn samme dag: FortiGate-kanten
 bekreftet, invitasjoner 14 dager, budsjett/betaling/nøkkel per
 DELTAKER (Vipps kommer, Fiken-faktura etter deltakerens
 faktura-innstillinger), HUD-mål eksperimentelt. Etappeplan E1–E8:
-`docs/2026-11-07-plan-chat-4.md` (E1 ferdig).
+`docs/2026-11-07-plan-chat-4.md`. E2 også ferdig samme dag:
+flerdeltaker-designet (`docs/2026-11-07-flerdeltaker-design.md`) —
+arbeidsflyt-innstilling `tbd`/`github-flow` per prosjekt,
+merge-autoritet (deltaker v1 / LLM reservert), milepæl-deling,
+gruppe-adgang, tavle maks 4 fliser demokratisk. Neste: E3 (høsting).
 
 ## Grunnlag — les disse først
 
