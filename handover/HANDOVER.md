@@ -140,7 +140,13 @@ faktura-innstillinger), HUD-mål eksperimentelt. Etappeplan E1–E8:
 flerdeltaker-designet (`docs/2026-11-07-flerdeltaker-design.md`) —
 arbeidsflyt-innstilling `tbd`/`github-flow` per prosjekt,
 merge-autoritet (deltaker v1 / LLM reservert), milepæl-deling,
-gruppe-adgang, tavle maks 4 fliser demokratisk. Neste: E3 (høsting).
+gruppe-adgang, tavle maks 4 fliser demokratisk. E3 første skive FERDIG
+samme kveld: `KODE15studio/studio` født (høstet tre, én org,
+arbeidsflyt i registeret, Opper uten LiteLLM, k15s-navn/port 8200 —
+Light kjører urørt parallelt) og `mal-studio` seedet (grunnmal +
+fellesregler). Handover 0 med gjenstår-listen bor i
+`~/dev/studio/handover/HANDOVER.md` — NESTE CHAT om studio-bygging bor
+i `~/dev/studio` (norm «cursor»).
 
 ## Grunnlag — les disse først
 
