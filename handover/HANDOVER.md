@@ -1,5 +1,24 @@
 # HANDOVER — Studio 15 LIGHT
 
+> **AVVIKLET 2026-11-07.** Studio 15 LIGHT er lagt ned ved brutal overgang
+> til **KODE15.studio** (repo `KODE15studio/studio`, lokalt
+> `~/dev/studio`) etter strategidagen 07.11. Alt videre arbeid skjer der.
+> Hva som skjedde ved avviklingen:
+>
+> - Malene `mal-full`, `mal-nybegynner` og `mal-ekspert` er reddet med
+>   full historikk til org-en `KODE15studio`
+>   (`mal-ojt-17-test-3-lagre-som-mal` var testavfall og ble ikke reddet).
+> - Beslutningsnotatene fra 07.11 (`docs/2026-11-07-*.md`) er høstet til
+>   `studio/docs/`.
+> - Stacken på raven er revet: alle `s15l-*`-containere, -volumer og
+>   -nett fjernet (`docker compose down -v`), sertifikat-cronen slått av.
+> - DNS: `kode15.studio` og `www` peker på raven (10.10.0.33) via
+>   deploi-dns.
+> - Org-ene `STUDIO15-Maler`, `KODE15-Ekspert`, `KODE15AS-Nybegynner`,
+>   `Studio-DEFA` og `KODE15-saturday-test-2` slettes manuelt av Jørn.
+> - Dette repoet og `KODE15AS/studio15` er arkivert (read-only) som
+>   erfaringsarkiv.
+
 Levende spesifikasjon (norm «handover»). Punktene krysses av etter hvert som
 de leveres. Chat 0 startet 2026-10-03. Chat 1 leverte V1 samme dag. Chat 2
 (samme dag) fullførte V1 (vaktmester-integrasjonen) og bygget V2 maskintestet
