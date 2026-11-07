@@ -131,9 +131,12 @@ webserveren (ingen VPS), FortiGate er kontrollpunktet, swarm + hybrid
 LLM (RTX 5080/5090) er utbyggingstrappen; kode15.no (WordPress +
 WooCommerce) og kode15.studio er to risikodomener, og innlogging
 utredes som WooCommerce-kjøp → signert gruppenøkkel. Beslutningsnotat:
-`docs/2026-11-07-aapen-kant-beslutningsnotat.md` (fem åpne
-beslutningspunkter til Jørn). Etappeplan E1–E8:
-`docs/2026-11-07-plan-chat-4.md`.
+`docs/2026-11-07-aapen-kant-beslutningsnotat.md` — alle fem
+beslutningspunktene BESLUTTET av Jørn samme dag: FortiGate-kanten
+bekreftet, invitasjoner 14 dager, budsjett/betaling/nøkkel per
+DELTAKER (Vipps kommer, Fiken-faktura etter deltakerens
+faktura-innstillinger), HUD-mål eksperimentelt. Etappeplan E1–E8:
+`docs/2026-11-07-plan-chat-4.md` (E1 ferdig).
 
 ## Grunnlag — les disse først
 

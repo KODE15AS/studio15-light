@@ -69,41 +69,48 @@ eller bruker en arbeidsflate som gratis regnekraft.
 
 ## Produktegenskaper (ikke paranoia)
 
-1. **Signerte invitasjonslenker per prosjektgruppe.** HMAC, samme
-   stateless mønster som `flate_hemmelighet` i dagens lobby. Lenken
-   bærer gruppe + utløp; lobbyen verifiserer uten database.
-   Revokering = roter gruppens nøkkel.
+1. **Signerte invitasjonslenker per DELTAKER.** HMAC, samme stateless
+   mønster som `flate_hemmelighet` i dagens lobby. Lenken bærer
+   deltaker + prosjektgruppe + utløp (14 dager, Jørn 07.11); lobbyen
+   verifiserer uten database. Revokering = roter deltakerens nøkkel.
 2. **Kill-switch per gruppe.** Én bryter i registeret: lobbyen avviser
    gruppen, containerne stoppes, invitasjonsnøkkelen roteres. Grovere
    nødbrems finnes alltid i FortiGate (policyen av).
-3. **Budsjett-tak per gruppe via Opper.** Forbruks-merkelapper per
-   kall og programmatisk nøkkelforvaltning er innebygd — tak blir
-   konfigurasjon. Nådd tak varsler og kan utløse kill-switchen.
+3. **Budsjett-tak per DELTAKER via Opper** (Jørn 07.11 — ikke per
+   gruppe): deltakeren er betalende enhet. Opper-merkelappene settes
+   per deltaker, taket settes spesifikt per deltaker, og nådd tak
+   stopper deltakerens flater — ikke gruppens.
 4. **Hygiene i flatene:** CPU/minne/pids-grenser per container og et
    enkelt egress-tak (rate, ikke allowlist — npm skal virke). Vanlig
    husholdning, ikke frykt.
 
-## Innlogging: utredes som kjøpsflyt, ikke brukerdatabase
+## Innlogging og betaling: deltakeren er enheten
 
-Betalende kunder trenger identitet — men den bor i
-WordPress/WooCommerce (som har kontoer, GDPR-verktøy og betalingsflyt),
-ikke i studio. Modellen som utredes: kjøp/tildeling i WooCommerce
-utsteder en signert gruppenøkkel/invitasjonslenke til kode15.studio.
-Fakturaflyt WooCommerce → Fiken via regnskaps-drengen. Studio lagrer
-fortsatt null persondata. Utredningen bor i wordpress-drengen;
-studio-siden trenger bare et endepunkt som utsteder lenker mot
-gruppenøkkel.
+Besluttet retning (Jørn 07.11): betalende enhet er **deltakeren**,
+ikke gruppen. To betalingsveier:
 
-## Beslutningspunkter til Jørn
+- **Vipps** (kommer) — via WooCommerce på kode15.no.
+- **Fiken-faktura** til kontakten angitt i deltakerens
+  faktura-innstillinger («Deltaker Faktura Settings»).
 
-1. **Kanten:** bekreft FortiGate-port-forward til caddy på raven som
-   eneste offentlige inngang for kode15.studio (ingen Funnel for
-   produktet).
-2. **Invitasjonslevetid:** forslag 14 dager standard, fornybar av
-   gruppeeier.
-3. **LLM-budsjett:** forslag at tak per gruppe settes ved opprettelse
-   med et fornuftig standardnivå (tall når Opper-kontoen er oppe).
-4. **Innloggingsmodellen:** bekreft WooCommerce-kjøp → signert
-   gruppenøkkel som utredningsretning (utredes i wordpress-drengen).
-5. **HUD-budsjettmål:** forslag tastetrykk→skjerm < 50 ms i rommet,
-   < 120 ms hjemmefra — fryses først når HUD-en måler.
+Identiteten bor i WordPress/WooCommerce og Fiken — ikke i studio.
+Kjøp/tildeling utsteder en signert invitasjonslenke per deltaker.
+Studio-siden av deltakerregisteret holder bare visningsnavn og
+uforanderlige referanser (Fiken-kontakt-ID, ordre-ID) — aldri
+persondataene selv. Fakturaflyt WooCommerce → Fiken via
+regnskaps-drengen. Utredningen av kjøpsflyten bor i
+wordpress-drengen; studio bygger endepunktet som utsteder
+invitasjonslenker mot deltakernøkkel.
+
+## Besluttet (Jørn 07.11)
+
+1. **Kanten:** FortiGate-port-forward til caddy på raven er eneste
+   offentlige inngang for kode15.studio. Bekreftet.
+2. **Invitasjonslevetid:** 14 dager.
+3. **LLM-budsjett:** per deltaker, ikke per gruppe. Deltakeren er
+   betalende enhet (Vipps kommer; Fiken-faktura etter deltakerens
+   faktura-innstillinger). Tall settes når Opper-kontoen er oppe.
+4. **Innloggingsmodellen:** WooCommerce-kjøp → signert nøkkel per
+   DELTAKER (ikke gruppe). Utredes i wordpress-drengen.
+5. **HUD-budsjettmål:** fastsettes eksperimentelt når HUD-en måler —
+   50/120 ms står som arbeidshypotese, ikke vedtak.
